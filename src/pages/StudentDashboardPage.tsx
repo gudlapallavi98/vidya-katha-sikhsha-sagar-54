@@ -4,50 +4,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Video, Calendar, BookOpen, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { 
+  useStudentEnrolledCourses, 
+  useStudentUpcomingSessions, 
+  useStudentCompletedSessions 
+} from "@/hooks/use-dashboard-data";
+import { useToast } from "@/hooks/use-toast";
+import { joinSession } from "@/api/dashboard";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Mock data for enrolled courses and upcoming sessions
-const enrolledCourses = [
-  {
-    id: 1,
-    title: "Mathematics for Class 10",
-    progress: 60,
-    nextLesson: "Quadratic Equations",
-    teacherName: "Dr. Ravi Kumar",
-    lastAccessed: "2 days ago",
-  },
-  {
-    id: 2,
-    title: "Advanced Java Programming",
-    progress: 25,
-    nextLesson: "Object-Oriented Programming",
-    teacherName: "Prof. Anita Sharma",
-    lastAccessed: "5 days ago",
-  },
-];
+// Create a client
+const queryClient = new QueryClient();
 
-const upcomingSessions = [
-  {
-    id: 1,
-    courseTitle: "Mathematics for Class 10",
-    teacherName: "Dr. Ravi Kumar",
-    date: "Jun 5, 2025",
-    time: "4:00 PM - 5:30 PM",
-    status: "confirmed",
-    meetingLink: "https://meet.jit.si/class-123-456-789",
-  },
-  {
-    id: 2,
-    courseTitle: "Advanced Java Programming",
-    teacherName: "Prof. Anita Sharma",
-    date: "Jun 7, 2025",
-    time: "10:00 AM - 11:30 AM",
-    status: "pending",
-    meetingLink: null,
-  },
-];
+// Wrapper component to provide React Query context
+const StudentDashboardWithQueryClient = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <StudentDashboard />
+    </QueryClientProvider>
+  );
+};
 
-const StudentDashboardPage = () => {
+const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrolledCourses();
+  const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
+  const { data: completedSessions = 0, isLoading: completedSessionsLoading } = useStudentCompletedSessions();
+
+  const handleJoinClass = async (sessionId: string) => {
+    try {
+      if (!user) return;
+      
+      const meetingLink = await joinSession(sessionId, user.id);
+      
+      if (meetingLink) {
+        window.open(meetingLink, '_blank');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Meeting link not available yet. Try again in a few minutes.",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error joining class",
+        description: error instanceof Error ? error.message : "Something went wrong",
+      });
+    }
+  };
 
   return (
     <div className="container py-12">
@@ -61,7 +71,7 @@ const StudentDashboardPage = () => {
                   <User className="h-8 w-8 text-indian-saffron" />
                 </div>
                 <div>
-                  <CardTitle>Anjali Sharma</CardTitle>
+                  <CardTitle>{user?.user_metadata?.first_name || "Student"} {user?.user_metadata?.last_name || ""}</CardTitle>
                   <CardDescription>Student</CardDescription>
                 </div>
               </div>
@@ -136,7 +146,7 @@ const StudentDashboardPage = () => {
                   <CardContent className="p-6 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Completed Sessions</p>
-                      <h3 className="text-2xl font-bold">12</h3>
+                      <h3 className="text-2xl font-bold">{completedSessions}</h3>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-indian-blue/20 flex items-center justify-center">
                       <Video className="h-6 w-6 text-indian-blue" />
@@ -152,27 +162,48 @@ const StudentDashboardPage = () => {
                     <CardDescription>Your scheduled tutoring sessions</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {upcomingSessions.length > 0 ? (
+                    {sessionsLoading ? (
+                      <div className="text-center py-8">Loading sessions...</div>
+                    ) : upcomingSessions.length > 0 ? (
                       <div className="space-y-4">
                         {upcomingSessions.map((session) => (
                           <div key={session.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-muted rounded-lg">
                             <div>
-                              <h4 className="font-medium">{session.courseTitle}</h4>
-                              <p className="text-sm text-muted-foreground">with {session.teacherName}</p>
+                              <h4 className="font-medium">{session.title}</h4>
+                              <p className="text-sm text-muted-foreground">from {session.course?.title || "Unknown Course"}</p>
                               <div className="flex items-center gap-2 mt-2">
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">{session.date}</span>
-                                <span className="text-sm">{session.time}</span>
+                                <span className="text-sm">
+                                  {new Date(session.start_time).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                                <span className="text-sm">
+                                  {new Date(session.start_time).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })} - 
+                                  {new Date(session.end_time).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
                               </div>
                             </div>
                             <div className="mt-4 md:mt-0 flex items-center gap-2">
-                              {session.status === "confirmed" ? (
-                                <Button size="sm" className="bg-indian-green">
+                              {session.status === "in_progress" && session.meeting_link ? (
+                                <Button 
+                                  size="sm" 
+                                  className="bg-indian-green"
+                                  onClick={() => handleJoinClass(session.id)}
+                                >
                                   Join Class
                                 </Button>
                               ) : (
                                 <div className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">
-                                  Pending
+                                  {session.status === "scheduled" ? "Upcoming" : session.status}
                                 </div>
                               )}
                             </div>
@@ -193,29 +224,48 @@ const StudentDashboardPage = () => {
                     <CardDescription>Your enrolled courses</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {enrolledCourses.length > 0 ? (
+                    {coursesLoading ? (
+                      <div className="text-center py-8">Loading courses...</div>
+                    ) : enrolledCourses.length > 0 ? (
                       <div className="space-y-4">
-                        {enrolledCourses.map((course) => (
-                          <div key={course.id} className="flex flex-col p-4 bg-muted rounded-lg">
-                            <div className="flex justify-between mb-2">
-                              <h4 className="font-medium">{course.title}</h4>
-                              <span className="text-xs text-muted-foreground">Last accessed: {course.lastAccessed}</span>
+                        {enrolledCourses.map((enrollment) => {
+                          const course = enrollment.course;
+                          const progress = course.total_lessons > 0 
+                            ? Math.round((enrollment.completed_lessons / course.total_lessons) * 100)
+                            : 0;
+                            
+                          return (
+                            <div key={enrollment.id} className="flex flex-col p-4 bg-muted rounded-lg">
+                              <div className="flex justify-between mb-2">
+                                <h4 className="font-medium">{course.title}</h4>
+                                <span className="text-xs text-muted-foreground">
+                                  Last accessed: {
+                                    new Date(enrollment.last_accessed_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })
+                                  }
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {course.description.substring(0, 100)}
+                                {course.description.length > 100 ? '...' : ''}
+                              </p>
+                              <div className="w-full bg-background rounded-full h-2.5 mb-2">
+                                <div 
+                                  className="bg-indian-saffron h-2.5 rounded-full" 
+                                  style={{ width: `${progress}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-muted-foreground">{progress}% completed</span>
+                                <Button variant="ghost" size="sm" className="text-indian-saffron">
+                                  Continue Learning
+                                </Button>
+                              </div>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-2">Teacher: {course.teacherName}</p>
-                            <div className="w-full bg-background rounded-full h-2.5 mb-2">
-                              <div 
-                                className="bg-indian-saffron h-2.5 rounded-full" 
-                                style={{ width: `${course.progress}%` }}
-                              ></div>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-muted-foreground">{course.progress}% completed</span>
-                              <Button variant="ghost" size="sm" className="text-indian-saffron">
-                                Continue Learning
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-center py-8 text-muted-foreground">
@@ -231,9 +281,64 @@ const StudentDashboardPage = () => {
               <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-center py-12 text-muted-foreground">
-                    Detailed course content will be implemented with Supabase integration.
-                  </p>
+                  {coursesLoading ? (
+                    <div className="text-center py-8">Loading courses...</div>
+                  ) : enrolledCourses.length > 0 ? (
+                    <div className="space-y-6">
+                      {enrolledCourses.map((enrollment) => {
+                        const course = enrollment.course;
+                        const progress = course.total_lessons > 0 
+                          ? Math.round((enrollment.completed_lessons / course.total_lessons) * 100)
+                          : 0;
+                          
+                        return (
+                          <div key={enrollment.id} className="flex flex-col p-6 border rounded-lg">
+                            <div className="flex flex-col md:flex-row gap-6">
+                              <div className="w-full md:w-1/4">
+                                <div className="aspect-video rounded-md bg-muted flex items-center justify-center">
+                                  {course.image_url ? (
+                                    <img 
+                                      src={course.image_url} 
+                                      alt={course.title} 
+                                      className="w-full h-full object-cover rounded-md"
+                                    />
+                                  ) : (
+                                    <BookOpen className="h-12 w-12 text-muted-foreground" />
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-xl font-bold">{course.title}</h3>
+                                <p className="text-muted-foreground mt-2">{course.description}</p>
+                                <div className="mt-4 space-y-2">
+                                  <div className="flex justify-between text-sm">
+                                    <span>Progress</span>
+                                    <span className="font-medium">{progress}%</span>
+                                  </div>
+                                  <div className="w-full bg-background rounded-full h-2">
+                                    <div 
+                                      className="bg-indian-saffron h-2 rounded-full" 
+                                      style={{ width: `${progress}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                                <div className="mt-6 flex justify-end">
+                                  <Button>Continue Learning</Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-medium mb-2">No Courses Enrolled</h3>
+                      <p className="text-muted-foreground mb-6">You haven't enrolled in any courses yet.</p>
+                      <Button>Browse Courses</Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -242,9 +347,69 @@ const StudentDashboardPage = () => {
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
               <Card>
                 <CardContent className="p-6">
-                  <p className="text-center py-12 text-muted-foreground">
-                    Session management will be implemented with Supabase and Jitsi integration.
-                  </p>
+                  {sessionsLoading ? (
+                    <div className="text-center py-8">Loading sessions...</div>
+                  ) : upcomingSessions.length > 0 ? (
+                    <div className="space-y-6">
+                      {upcomingSessions.map((session) => (
+                        <div key={session.id} className="border rounded-lg p-6">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                              <h3 className="text-lg font-medium">{session.title}</h3>
+                              <p className="text-muted-foreground mt-1">{session.course?.title || "Unknown Course"}</p>
+                              <div className="flex items-center gap-2 mt-3">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span>
+                                  {new Date(session.start_time).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                              <div className="mt-1">
+                                <span className="text-sm text-muted-foreground ml-6">
+                                  {new Date(session.start_time).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })} - 
+                                  {new Date(session.end_time).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                              {session.description && (
+                                <p className="mt-3 text-sm">{session.description}</p>
+                              )}
+                            </div>
+                            
+                            <div className="w-full md:w-auto">
+                              {session.status === "in_progress" && session.meeting_link ? (
+                                <Button 
+                                  className="w-full md:w-auto bg-indian-green"
+                                  onClick={() => handleJoinClass(session.id)}
+                                >
+                                  Join Session
+                                </Button>
+                              ) : (
+                                <div className="w-full md:w-auto px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded text-center">
+                                  {session.status === "scheduled" ? "Upcoming" : session.status}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-medium mb-2">No Upcoming Sessions</h3>
+                      <p className="text-muted-foreground mb-6">You don't have any upcoming sessions scheduled.</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -266,4 +431,4 @@ const StudentDashboardPage = () => {
   );
 };
 
-export default StudentDashboardPage;
+export default StudentDashboardWithQueryClient;

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,13 +8,47 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, ChevronDown, GraduationCap } from "lucide-react";
+import { Menu, ChevronDown, GraduationCap, User, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  // Fetch the user's role from the profile
+  const fetchUserRole = async () => {
+    if (user) {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+          
+        if (data) {
+          setUserRole(data.role);
+        }
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+      }
+    }
+  };
+
+  // Call fetchUserRole when user changes
+  useState(() => {
+    fetchUserRole();
+  });
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
   };
 
   return (
@@ -64,12 +98,45 @@ const Header = () => {
         </div>
         
         <div className="hidden md:flex items-center gap-4">
-          <Link to="/login">
-            <Button variant="ghost">Login</Button>
-          </Link>
-          <Link to="/signup">
-            <Button className="bg-indian-saffron hover:bg-indian-saffron/90">Sign Up</Button>
-          </Link>
+          {user ? (
+            <>
+              {userRole === 'student' && (
+                <Link to="/student-dashboard">
+                  <Button variant="ghost">Dashboard</Button>
+                </Link>
+              )}
+              {userRole === 'teacher' && (
+                <Link to="/teacher-dashboard">
+                  <Button variant="ghost">Dashboard</Button>
+                </Link>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Account</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Link to="/profile" className="w-full">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-2" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost">Login</Button>
+              </Link>
+              <Link to="/signup">
+                <Button className="bg-indian-saffron hover:bg-indian-saffron/90">Sign Up</Button>
+              </Link>
+            </>
+          )}
         </div>
         
         <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleMenu}>
@@ -89,14 +156,32 @@ const Header = () => {
             <Link to="/contact" className="px-2 py-1 hover:bg-muted rounded-md">
               Contact
             </Link>
+            {user && userRole === 'student' && (
+              <Link to="/student-dashboard" className="px-2 py-1 hover:bg-muted rounded-md">
+                Dashboard
+              </Link>
+            )}
+            {user && userRole === 'teacher' && (
+              <Link to="/teacher-dashboard" className="px-2 py-1 hover:bg-muted rounded-md">
+                Dashboard
+              </Link>
+            )}
           </div>
           <div className="flex gap-4">
-            <Link to="/login" className="flex-1">
-              <Button variant="outline" className="w-full">Login</Button>
-            </Link>
-            <Link to="/signup" className="flex-1">
-              <Button className="w-full bg-indian-saffron hover:bg-indian-saffron/90">Sign Up</Button>
-            </Link>
+            {user ? (
+              <Button onClick={handleSignOut} variant="outline" className="w-full">
+                <LogOut className="h-4 w-4 mr-2" /> Sign Out
+              </Button>
+            ) : (
+              <>
+                <Link to="/login" className="flex-1">
+                  <Button variant="outline" className="w-full">Login</Button>
+                </Link>
+                <Link to="/signup" className="flex-1">
+                  <Button className="w-full bg-indian-saffron hover:bg-indian-saffron/90">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

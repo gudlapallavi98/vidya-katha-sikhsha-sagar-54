@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const SignUpPage = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -71,18 +72,48 @@ const SignUpPage = () => {
         throw new Error("Incorrect captcha answer");
       }
       
-      // TODO: Will be implemented with Supabase later
-      console.log("Form submitted:", formData);
+      // Sign up with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.name.split(' ')[0],
+            last_name: formData.name.split(' ').slice(1).join(' ') || '',
+            role: formData.role
+          }
+        }
+      });
       
-      // For now, simulate successful registration
-      setTimeout(() => {
+      if (authError) throw authError;
+      
+      if (authData.user) {
+        // Create profile entry
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              id: authData.user.id,
+              first_name: formData.name.split(' ')[0],
+              last_name: formData.name.split(' ').slice(1).join(' ') || '',
+              role: formData.role
+            }
+          ]);
+        
+        if (profileError) throw profileError;
+        
         toast({
           title: "Registration Successful!",
           description: "Welcome to Vidya Katha Online. Please check your email for verification.",
         });
-        navigate("/login");
-      }, 1500);
-      
+        
+        // Redirect based on role
+        if (formData.role === "student") {
+          navigate("/student-dashboard");
+        } else {
+          navigate("/teacher-dashboard");
+        }
+      }
     } catch (error) {
       toast({
         variant: "destructive",
