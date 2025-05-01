@@ -87,7 +87,7 @@ const SignUpPage = () => {
       if (authError) throw authError;
       
       if (authData.user) {
-        // Create profile entry
+        // Create profile entry - the key fix here is using authData.user.id for the profile id
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -99,7 +99,10 @@ const SignUpPage = () => {
             }
           ]);
         
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+          throw new Error("Failed to create user profile");
+        }
         
         toast({
           title: "Registration Successful!",
