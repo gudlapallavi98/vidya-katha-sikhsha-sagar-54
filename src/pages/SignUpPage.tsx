@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,16 +25,17 @@ const SignUpPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Generate captcha values when component mounts
-  useState(() => {
-    generateCaptcha();
-  });
-
+  // Define the generateCaptcha function first, before using it
   const generateCaptcha = () => {
     const num1 = Math.floor(Math.random() * 10);
     const num2 = Math.floor(Math.random() * 10);
     setCaptchaValue({ num1, num2 });
   };
+  
+  // Use useEffect instead of useState to run code on component mount
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
