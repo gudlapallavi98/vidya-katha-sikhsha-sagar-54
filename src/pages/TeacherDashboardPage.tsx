@@ -7,9 +7,8 @@ import { Video, Calendar, BookOpen, User, Check, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   useTeacherCourses, 
-  useTeacherSessionRequests, 
-  useTeacherUpcomingSessions,
-  useTeacherTotalSessions
+  useSessionRequests, 
+  useTeacherSessions
 } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
@@ -33,9 +32,18 @@ const TeacherDashboard = () => {
   const { toast } = useToast();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
-  const { data: sessionRequests = [], isLoading: requestsLoading } = useTeacherSessionRequests();
-  const { data: upcomingSessions = [], isLoading: sessionsLoading } = useTeacherUpcomingSessions();
-  const { data: totalSessions = { completed: 0, upcoming: 0 }, isLoading: totalSessionsLoading } = useTeacherTotalSessions();
+  const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests();
+  const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
+  
+  // Calculate metrics from sessions data
+  const upcomingSessions = teacherSessions.filter(s => 
+    s.status === 'scheduled' || s.status === 'in_progress'
+  );
+  
+  const totalSessions = {
+    completed: teacherSessions.filter(s => s.status === 'completed').length,
+    upcoming: upcomingSessions.length
+  };
 
   const handleAcceptSession = async (sessionId: string) => {
     try {
@@ -47,8 +55,7 @@ const TeacherDashboard = () => {
       
       // Invalidate the queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['session_requests'] });
-      queryClient.invalidateQueries({ queryKey: ['teacher_upcoming_sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['teacher_total_sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher_sessions'] });
     } catch (error) {
       toast({
         variant: "destructive",

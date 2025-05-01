@@ -168,6 +168,7 @@ export const useStudentAchievements = () => {
   });
 };
 
+// Add the missing function for student upcoming sessions
 export const useStudentUpcomingSessions = () => {
   const { user } = useAuth();
 

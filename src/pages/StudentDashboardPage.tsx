@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Video, Calendar, BookOpen, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
-  useStudentEnrolledCourses, 
+  useStudentEnrollments, 
   useStudentUpcomingSessions, 
-  useStudentCompletedSessions 
+  useStudentProgress, 
+  useStudentAchievements 
 } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/api/dashboard";
@@ -31,9 +32,13 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrolledCourses();
+  const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrollments();
+  const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
   const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
-  const { data: completedSessions = 0, isLoading: completedSessionsLoading } = useStudentCompletedSessions();
+  const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
+
+  // Calculate completed sessions from progress data
+  const completedSessions = progress.filter(p => p.completed).length;
 
   const handleJoinClass = async (sessionId: string) => {
     try {
