@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,28 +19,27 @@ const Header = () => {
   const navigate = useNavigate();
 
   // Fetch the user's role from the profile
-  const fetchUserRole = async () => {
-    if (user) {
-      try {
-        const { data } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-          
-        if (data) {
-          setUserRole(data.role);
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+            
+          if (data) {
+            setUserRole(data.role);
+          }
+        } catch (error) {
+          console.error("Error fetching user role:", error);
         }
-      } catch (error) {
-        console.error("Error fetching user role:", error);
       }
-    }
-  };
-
-  // Call fetchUserRole when user changes
-  useState(() => {
+    };
+    
     fetchUserRole();
-  });
+  }, [user]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

@@ -3,18 +3,22 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Type definitions
-interface Course {
+export interface Course {
   id: string;
   title: string;
   description: string;
-  image_url?: string;
-  teacher_id: string;
   category: string;
+  image_url: string | null;
   total_lessons: number;
+  teacher_id: string;
+  teacher?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
 }
 
-interface Enrollment {
+export interface Enrollment {
   id: string;
   student_id: string;
   course_id: string;
@@ -24,26 +28,46 @@ interface Enrollment {
   course: Course;
 }
 
-interface Session {
+export interface Lesson {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  duration: number;
+  order_index: number;
+  video_url: string | null;
+  materials_url: string | null;
+  created_at: string;
+}
+
+export interface Progress {
+  id: string;
+  student_id: string;
+  lesson_id: string;
+  course_id: string;
+  completed: boolean;
+  watched_duration: number;
+  completed_at: string | null;
+  last_watched_at: string;
+  lesson?: Lesson;
+}
+
+export interface Session {
   id: string;
   course_id: string;
   teacher_id: string;
   title: string;
-  description?: string;
+  description: string | null;
   start_time: string;
   end_time: string;
-  meeting_link?: string;
+  meeting_link: string | null;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
-  course?: Course;
+  course?: {
+    title: string;
+  };
 }
 
-interface Progress {
-  course_id: string;
-  completed_lessons: number;
-  total_lessons: number;
-}
-
-interface SessionRequest {
+export interface SessionRequest {
   id: string;
   student_id: string;
   teacher_id: string;
@@ -52,29 +76,48 @@ interface SessionRequest {
   proposed_date: string;
   proposed_duration: number;
   status: 'pending' | 'approved' | 'rejected';
-  request_message?: string;
+  request_message: string;
   created_at: string;
   updated_at: string;
-  student?: { id: string, first_name: string, last_name: string };
-  course?: { id: string, title: string };
+  student: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+  course: {
+    title: string;
+  };
 }
 
-// Student dashboard hooks
-export const useStudentEnrolledCourses = () => {
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  image_url: string | null;
+  criteria: string;
+}
+
+export interface StudentAchievement {
+  id: string;
+  student_id: string;
+  achievement_id: string;
+  earned_at: string;
+  achievement?: Achievement;
+}
+
+export const useStudentEnrollments = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ['enrollments', user?.id],
     queryFn: async () => {
-      if (!user) return [];
-      
       const { data, error } = await supabase
         .from('enrollments')
         .select(`
           *,
           course:courses(*)
         `)
-        .eq('student_id', user.id);
+        .eq('student_id', user?.id);
         
       if (error) throw error;
       return data as Enrollment[];
@@ -83,27 +126,77 @@ export const useStudentEnrolledCourses = () => {
   });
 };
 
+export const useStudentProgress = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['progress', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('progress')
+        .select(`
+          *,
+          lesson:lessons(*)
+        `)
+        .eq('student_id', user?.id);
+        
+      if (error) throw error;
+      return data as Progress[];
+    },
+    enabled: !!user,
+  });
+};
+
+export const useStudentAchievements = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['achievements', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('student_achievements')
+        .select(`
+          *,
+          achievement:achievements(*)
+        `)
+        .eq('student_id', user?.id);
+        
+      if (error) throw error;
+      return data as StudentAchievement[];
+    },
+    enabled: !!user,
+  });
+};
+
 export const useStudentUpcomingSessions = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ['upcoming_sessions', user?.id],
     queryFn: async () => {
-      if (!user) return [];
+      const { data: enrollments, error: enrollmentsError } = await supabase
+        .from('enrollments')
+        .select('course_id')
+        .eq('student_id', user?.id);
+        
+      if (enrollmentsError) throw enrollmentsError;
+      
+      if (!enrollments.length) {
+        return [];
+      }
+      
+      const courseIds = enrollments.map(e => e.course_id);
       
       const { data, error } = await supabase
         .from('sessions')
         .select(`
           *,
-          course:courses(*)
+          course:courses(title)
         `)
-        .in('course_id', (await supabase
-          .from('enrollments')
-          .select('course_id')
-          .eq('student_id', user.id)).data?.map(e => e.course_id) || [])
-        .gte('start_time', new Date().toISOString())
+        .in('course_id', courseIds)
+        .gt('start_time', new Date().toISOString())
         .order('start_time', { ascending: true })
-        .limit(5);
+        .limit(10);
         
       if (error) throw error;
       return data as Session[];
@@ -112,40 +205,16 @@ export const useStudentUpcomingSessions = () => {
   });
 };
 
-export const useStudentCompletedSessions = () => {
-  const { user } = useAuth();
-  
-  return useQuery({
-    queryKey: ['completed_sessions', user?.id],
-    queryFn: async () => {
-      if (!user) return 0;
-      
-      const { count, error } = await supabase
-        .from('session_attendees')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', user.id)
-        .eq('attended', true);
-        
-      if (error) throw error;
-      return count || 0;
-    },
-    enabled: !!user,
-  });
-};
-
-// Teacher dashboard hooks
 export const useTeacherCourses = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: ['teacher_courses', user?.id],
     queryFn: async () => {
-      if (!user) return [];
-      
       const { data, error } = await supabase
         .from('courses')
         .select('*')
-        .eq('teacher_id', user.id);
+        .eq('teacher_id', user?.id);
         
       if (error) throw error;
       return data as Course[];
@@ -154,48 +223,20 @@ export const useTeacherCourses = () => {
   });
 };
 
-export const useTeacherSessionRequests = () => {
+export const useTeacherSessions = () => {
   const { user } = useAuth();
-  
-  return useQuery({
-    queryKey: ['session_requests', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      
-      const { data, error } = await supabase
-        .from('session_requests')
-        .select(`
-          *,
-          student:profiles(id, first_name, last_name),
-          course:courses(id, title)
-        `)
-        .eq('teacher_id', user.id)
-        .eq('status', 'pending');
-        
-      if (error) throw error;
-      return data as SessionRequest[];
-    },
-    enabled: !!user,
-  });
-};
 
-export const useTeacherUpcomingSessions = () => {
-  const { user } = useAuth();
-  
   return useQuery({
-    queryKey: ['teacher_upcoming_sessions', user?.id],
+    queryKey: ['teacher_sessions', user?.id],
     queryFn: async () => {
-      if (!user) return [];
-      
       const { data, error } = await supabase
         .from('sessions')
         .select(`
           *,
-          course:courses(*)
+          course:courses(title)
         `)
-        .eq('teacher_id', user.id)
-        .gte('start_time', new Date().toISOString())
-        .order('start_time', { ascending: true });
+        .eq('teacher_id', user?.id)
+        .order('start_time', { ascending: false });
         
       if (error) throw error;
       return data as Session[];
@@ -204,31 +245,26 @@ export const useTeacherUpcomingSessions = () => {
   });
 };
 
-export const useTeacherTotalSessions = () => {
+export const useSessionRequests = () => {
   const { user } = useAuth();
-  
+
   return useQuery({
-    queryKey: ['teacher_total_sessions', user?.id],
+    queryKey: ['session_requests', user?.id],
     queryFn: async () => {
-      if (!user) return { completed: 0, upcoming: 0 };
-      
-      const [completedResult, upcomingResult] = await Promise.all([
-        supabase
-          .from('sessions')
-          .select('*', { count: 'exact', head: true })
-          .eq('teacher_id', user.id)
-          .eq('status', 'completed'),
-        supabase
-          .from('sessions')
-          .select('*', { count: 'exact', head: true })
-          .eq('teacher_id', user.id)
-          .in('status', ['scheduled', 'in_progress'])
-      ]);
+      const { data, error } = await supabase
+        .from('session_requests')
+        .select(`
+          *,
+          student:profiles!session_requests_student_id_fkey(id, first_name, last_name),
+          course:courses(title)
+        `)
+        .eq('teacher_id', user?.id)
+        .eq('status', 'pending');
         
-      return { 
-        completed: completedResult.count || 0, 
-        upcoming: upcomingResult.count || 0 
-      };
+      if (error) throw error;
+      
+      // Type assertion to ensure compatibility
+      return (data as unknown) as SessionRequest[];
     },
     enabled: !!user,
   });

@@ -26,15 +26,14 @@ const SignUpPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Define the generateCaptcha function first, before using it
-  const generateCaptcha = () => {
-    const num1 = Math.floor(Math.random() * 10);
-    const num2 = Math.floor(Math.random() * 10);
-    setCaptchaValue({ num1, num2 });
-  };
-  
-  // Use useEffect instead of useState to run code on component mount
+  // Generate a simple math captcha
   useEffect(() => {
+    const generateCaptcha = () => {
+      const num1 = Math.floor(Math.random() * 10);
+      const num2 = Math.floor(Math.random() * 10);
+      setCaptchaValue({ num1, num2 });
+    };
+    
     generateCaptcha();
   }, []);
 
