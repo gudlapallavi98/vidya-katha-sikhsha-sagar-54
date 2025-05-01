@@ -6,16 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { useContactMessages, ContactFormData } from "@/hooks/use-contact-messages";
 
 const ContactUsPage = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
     phone: "",
     subject: "",
     message: ""
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoading, submitContactMessage } = useContactMessages();
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -28,7 +29,6 @@ const ContactUsPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
     try {
       // Form validation
@@ -36,25 +36,18 @@ const ContactUsPage = () => {
         throw new Error("Please fill in all required fields");
       }
       
-      // This will be implemented with Supabase or edge function later
-      console.log("Contact form submitted:", formData);
+      const success = await submitContactMessage(formData);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Message sent successfully!",
-        description: "We'll get back to you as soon as possible.",
-      });
-      
-      // Reset form
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        subject: "",
-        message: ""
-      });
+      // Reset form on success
+      if (success) {
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          subject: "",
+          message: ""
+        });
+      }
       
     } catch (error) {
       toast({
@@ -62,8 +55,6 @@ const ContactUsPage = () => {
         title: "Error",
         description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 

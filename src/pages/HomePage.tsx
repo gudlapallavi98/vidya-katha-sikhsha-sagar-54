@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +13,7 @@ const HomePage = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Hero Section with Auto-scrolling Carousel */}
+      {/* Hero Section with Auto-scrolling Carousel and Hero Image */}
       <section className="relative overflow-hidden bg-indian-blue text-white">
         <div className="absolute inset-0 overflow-hidden">
           <div className="flex animate-carousel">
