@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -87,7 +86,9 @@ const SignUpPage = () => {
       if (authError) throw authError;
       
       if (authData.user) {
-        // Create profile entry - the key fix here is using authData.user.id for the profile id
+        console.log("User created successfully:", authData.user.id);
+        
+        // Create profile entry with explicit user ID
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -101,7 +102,19 @@ const SignUpPage = () => {
         
         if (profileError) {
           console.error("Profile creation error:", profileError);
-          throw new Error("Failed to create user profile");
+          
+          // Check if it's a duplicate key error (profile might already exist)
+          if (profileError.code === '23505') {
+            console.log("Profile already exists - continuing with login flow");
+            // Profile already exists (could happen with auth changes) - continue with login flow
+          } else {
+            // For other profile errors, show the error but don't prevent login
+            toast({
+              variant: "destructive",
+              title: "Profile setup issue",
+              description: "Your account was created but profile setup failed. Some features may be limited.",
+            });
+          }
         }
         
         toast({
@@ -122,6 +135,7 @@ const SignUpPage = () => {
         title: "Registration failed",
         description: error instanceof Error ? error.message : "Something went wrong",
       });
+      console.error("Registration error:", error);
     } finally {
       setIsLoading(false);
     }
