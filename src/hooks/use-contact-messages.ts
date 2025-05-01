@@ -23,6 +23,7 @@ export const useContactMessages = () => {
         throw new Error("Name, email and message are required fields");
       }
       
+      // Send data to the contact_messages table
       const { error } = await supabase
         .from('contact_messages')
         .insert({
@@ -35,6 +36,27 @@ export const useContactMessages = () => {
         });
         
       if (error) throw error;
+      
+      // Also send confirmation email using the edge function
+      try {
+        const response = await fetch('https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-contact-confirmation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            name: formData.name,
+            email: formData.email
+          })
+        });
+        
+        if (!response.ok) {
+          console.error('Error sending confirmation email');
+        }
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Continue with success message even if email fails
+      }
       
       toast({
         title: "Message sent successfully!",
