@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
+import { FileUpload } from "@/components/ui/file-upload";
 import BasicInfoSection from "./form-sections/BasicInfoSection";
 import LocationSection from "./form-sections/LocationSection";
 import BioSection from "./form-sections/BioSection";
@@ -43,6 +44,7 @@ const formSchema = z.object({
   experience: z.string().optional(),
   intro_video_url: z.string().url().optional().or(z.literal("")),
   subjects_interested: z.array(z.string()).optional(),
+  avatar_url: z.string().optional(),
 });
 
 export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
@@ -51,6 +53,7 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [certificates, setCertificates] = useState<string[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -68,6 +71,7 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
       experience: "",
       intro_video_url: "",
       subjects_interested: [],
+      avatar_url: "",
     },
   });
 
@@ -90,12 +94,18 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
         experience: profile.experience || "",
         intro_video_url: profile.intro_video_url || "",
         subjects_interested: profile.subjects_interested || [],
+        avatar_url: profile.avatar_url || "",
       });
 
       setSelectedSubjects(profile.subjects_interested || []);
       setCertificates(profile.certificates || []);
+      setAvatarUrl(profile.avatar_url);
     }
   }, [profile, profileLoading, form]);
+
+  const handleAvatarUpload = (url: string) => {
+    setAvatarUrl(url);
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
@@ -118,6 +128,7 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
         intro_video_url: values.intro_video_url,
         subjects_interested: selectedSubjects,
         certificates: certificates,
+        avatar_url: avatarUrl,
         profile_completed: true,
         updated_at: new Date().toISOString(),
       };
@@ -155,6 +166,16 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {user && (
+          <div className="flex justify-center mb-6">
+            <FileUpload 
+              onUploadComplete={handleAvatarUpload} 
+              currentImageUrl={avatarUrl} 
+              userId={user.id}
+            />
+          </div>
+        )}
+        
         <BasicInfoSection form={form} />
         <LocationSection form={form} />
         <BioSection form={form} />
