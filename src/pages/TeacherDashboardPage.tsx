@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,7 @@ import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import AvailabilityScheduler from "@/components/teacher/AvailabilityScheduler";
+import SessionRequestSearch from "@/components/teacher/SessionRequestSearch";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -35,9 +35,10 @@ const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
-  const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests();
+  const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
   
   useEffect(() => {
@@ -118,6 +119,10 @@ const TeacherDashboard = () => {
         description: error instanceof Error ? error.message : "Something went wrong",
       });
     }
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
   };
 
   return (
@@ -292,7 +297,7 @@ const TeacherDashboard = () => {
                       </div>
                     ) : (
                       <p className="text-center py-8 text-muted-foreground">
-                        No pending session requests.
+                        {searchQuery ? "No matching session requests found." : "No pending session requests."}
                       </p>
                     )}
                   </CardContent>
@@ -417,6 +422,9 @@ const TeacherDashboard = () => {
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Session Requests</h1>
               <Card>
                 <CardContent className="p-6">
+                  {/* Add search component */}
+                  <SessionRequestSearch onSearch={handleSearch} />
+                  
                   {requestsLoading ? (
                     <div className="text-center py-8">Loading session requests...</div>
                   ) : sessionRequests.length > 0 ? (
@@ -495,7 +503,9 @@ const TeacherDashboard = () => {
                     <div className="text-center py-12">
                       <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-xl font-medium mb-2">No Pending Requests</h3>
-                      <p className="text-muted-foreground">You don't have any pending session requests.</p>
+                      <p className="text-muted-foreground">
+                        {searchQuery ? "No matching session requests found." : "You don't have any pending session requests."}
+                      </p>
                     </div>
                   )}
                 </CardContent>
