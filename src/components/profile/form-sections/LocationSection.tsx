@@ -8,12 +8,77 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LocationSectionProps {
   form: UseFormReturn<any>;
 }
 
+// Top Indian states
+const indianStates = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Delhi",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+];
+
+// Major cities by state
+const indianCities: Record<string, string[]> = {
+  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool"],
+  "Delhi": ["New Delhi", "Delhi", "Noida", "Gurgaon", "Faridabad"],
+  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar"],
+  "Karnataka": ["Bengaluru", "Mysuru", "Hubli", "Mangaluru", "Belgaum"],
+  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik"],
+  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem"],
+  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"],
+  "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Prayagraj"],
+  "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri"],
+  // Add more as needed
+};
+
+// Default list of cities for the dropdown initial state
+const defaultCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad"];
+
 const LocationSection = ({ form }: LocationSectionProps) => {
+  // Get the current state value
+  const selectedState = form.watch("state");
+  
+  // Get cities based on selected state or use default list
+  const availableCities = selectedState && indianCities[selectedState] 
+    ? indianCities[selectedState] 
+    : defaultCities;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <FormField
@@ -22,9 +87,24 @@ const LocationSection = ({ form }: LocationSectionProps) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>City</FormLabel>
-            <FormControl>
-              <Input placeholder="New Delhi" {...field} />
-            </FormControl>
+            <Select
+              onValueChange={field.onChange}
+              value={field.value}
+              defaultValue={field.value}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select city" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {availableCities.map(city => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
@@ -36,9 +116,28 @@ const LocationSection = ({ form }: LocationSectionProps) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>State</FormLabel>
-            <FormControl>
-              <Input placeholder="Delhi" {...field} />
-            </FormControl>
+            <Select
+              onValueChange={(value) => {
+                field.onChange(value);
+                // Reset city when state changes
+                form.setValue("city", "");
+              }}
+              value={field.value}
+              defaultValue={field.value}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select state" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {indianStates.map(state => (
+                  <SelectItem key={state} value={state}>
+                    {state}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <FormMessage />
           </FormItem>
         )}
@@ -51,7 +150,7 @@ const LocationSection = ({ form }: LocationSectionProps) => {
           <FormItem>
             <FormLabel>Country</FormLabel>
             <FormControl>
-              <Input placeholder="India" {...field} />
+              <Input placeholder="India" value="India" readOnly {...field} onChange={(e) => field.onChange("India")} />
             </FormControl>
             <FormMessage />
           </FormItem>

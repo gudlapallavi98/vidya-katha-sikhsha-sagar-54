@@ -1,84 +1,159 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { FormLabel } from "@/components/ui/form";
-
-interface Subject {
-  id: string;
-  name: string;
-  category: string;
-}
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SubjectsSectionProps {
   selectedSubjects: string[];
-  setSelectedSubjects: (subjects: string[]) => void;
+  setSelectedSubjects: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
+// Expanded list of subjects
+const subjectOptions = [
+  // Sanskrit Language and Literature
+  "Sanskrit Grammar (Vyākaraṇa)",
+  "Sanskrit Conversation",
+  "Sanskrit Poetry (Kāvya)",
+  "Sanskrit Prose (Gadya)",
+  "Sanskrit Drama (Nāṭaka)",
+  "Sanskrit Literature Survey",
+  "Vedic Sanskrit",
+  
+  // Vedic Studies
+  "Rigveda",
+  "Yajurveda",
+  "Samaveda",
+  "Atharvaveda",
+  "Vedānta",
+  "Upaniṣads",
+  "Vedic Rituals",
+  "Vedic Chanting",
+  
+  // Philosophical Systems
+  "Advaita Vedānta",
+  "Dvaita Vedānta",
+  "Viśiṣṭādvaita",
+  "Sāṅkhya Philosophy",
+  "Yoga Philosophy",
+  "Nyāya Logic",
+  "Vaiśeṣika",
+  "Mīmāṃsā",
+  "Buddhist Philosophy",
+  "Jain Philosophy",
+  
+  // Yoga and Meditation
+  "Haṭha Yoga",
+  "Aṣṭāṅga Yoga",
+  "Yoga Sūtras of Patañjali",
+  "Meditation Techniques",
+  "Prāṇāyāma",
+  "Yoga for Health",
+  "Yogic Philosophy",
+  
+  // Ayurveda
+  "Ayurvedic Principles",
+  "Ayurvedic Herbs",
+  "Ayurvedic Nutrition",
+  "Ayurvedic Lifestyle",
+  "Ayurvedic Diagnosis",
+  
+  // Traditional Arts
+  "Indian Classical Dance",
+  "Indian Classical Music",
+  "Sacred Geometry",
+  "Temple Architecture",
+  "Iconography",
+  "Ritual Arts",
+  
+  // Historical and Cultural Studies
+  "Ancient Indian History",
+  "Cultural Heritage of India",
+  "Indian Festivals",
+  "Indian Mythology",
+  
+  // Epics and Texts
+  "Bhagavad Gītā",
+  "Rāmāyaṇa",
+  "Mahābhārata",
+  "Purāṇas",
+  "Dharmaśāstras",
+  
+  // Modern Applications
+  "Sanskrit and Computational Linguistics",
+  "Sanskrit and Modern Science",
+  "Sanskrit and Wellness"
+];
+
 const SubjectsSection = ({ selectedSubjects, setSelectedSubjects }: SubjectsSectionProps) => {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const { toast } = useToast();
+  const [selectedSubject, setSelectedSubject] = React.useState("");
 
-  // Fetch subjects
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("*")
-        .order("name");
+  const handleAddSubject = () => {
+    if (selectedSubject && !selectedSubjects.includes(selectedSubject)) {
+      setSelectedSubjects([...selectedSubjects, selectedSubject]);
+      setSelectedSubject("");
+    }
+  };
 
-      if (error) {
-        console.error("Error fetching subjects:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load subjects. Please try again later.",
-        });
-        return;
-      }
-
-      if (data) {
-        setSubjects(data);
-      }
-    };
-
-    fetchSubjects();
-  }, [toast]);
-
-  const handleSubjectToggle = (subjectName: string) => {
-    setSelectedSubjects(
-      selectedSubjects.includes(subjectName)
-        ? selectedSubjects.filter((s) => s !== subjectName)
-        : [...selectedSubjects, subjectName]
-    );
+  const handleRemoveSubject = (subject: string) => {
+    setSelectedSubjects(selectedSubjects.filter((s) => s !== subject));
   };
 
   return (
-    <div className="space-y-2">
-      <FormLabel>Subjects Interested</FormLabel>
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {subjects.map((subject) => (
-              <div key={subject.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={subject.id}
-                  checked={selectedSubjects.includes(subject.name)}
-                  onCheckedChange={() => handleSubjectToggle(subject.name)}
-                />
-                <label
-                  htmlFor={subject.id}
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Subjects Interested</h3>
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        {selectedSubjects.map((subject) => (
+          <Badge key={subject} variant="secondary" className="px-3 py-1.5 text-sm">
+            {subject}
+            <button
+              type="button"
+              onClick={() => handleRemoveSubject(subject)}
+              className="ml-2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+        {selectedSubjects.length === 0 && (
+          <div className="text-sm text-muted-foreground">No subjects selected</div>
+        )}
+      </div>
+
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <Select
+            value={selectedSubject}
+            onValueChange={setSelectedSubject}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a subject" />
+            </SelectTrigger>
+            <SelectContent>
+              {subjectOptions.map((subject) => (
+                <SelectItem
+                  key={subject}
+                  value={subject}
+                  disabled={selectedSubjects.includes(subject)}
                 >
-                  {subject.name}
-                </label>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                  {subject}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button type="button" onClick={handleAddSubject} disabled={!selectedSubject}>
+          Add
+        </Button>
+      </div>
     </div>
   );
 };
