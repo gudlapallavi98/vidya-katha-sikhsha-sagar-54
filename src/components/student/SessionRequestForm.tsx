@@ -2,10 +2,11 @@
 import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTeacherSearch } from "@/hooks/useTeacherSearch";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ interface TeacherAvailability {
     id: string;
     first_name: string;
     last_name: string;
+    bio?: string;
   };
 }
 
@@ -57,7 +59,8 @@ export function SessionRequestForm() {
   const [message, setMessage] = useState("");
   const [courseId, setCourseId] = useState("");
   const [availabilityId, setAvailabilityId] = useState("");
-  const [availableTeachers, setAvailableTeachers] = useState<TeacherAvailability[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { teachers: availableTeachers, isLoading: teachersLoading } = useTeacherSearch(searchQuery);
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
 
@@ -113,40 +116,6 @@ export function SessionRequestForm() {
 
     fetchEnrolledCourses();
   }, [user]);
-
-  // Fetch teacher availabilities when a course is selected
-  useEffect(() => {
-    const fetchTeacherAvailability = async () => {
-      if (!courseId) {
-        setAvailableTeachers([]);
-        return;
-      }
-
-      // First get the teacher ID from the course
-      const selectedCourse = enrolledCourses.find((course) => course.id === courseId);
-      if (!selectedCourse) return;
-
-      const { data, error } = await supabase
-        .from("teacher_availability")
-        .select(`
-          *,
-          subject:subjects(id, name),
-          teacher:profiles(id, first_name, last_name)
-        `)
-        .eq("teacher_id", selectedCourse.teacher_id)
-        .eq("status", "available")
-        .gte("available_date", new Date().toISOString().split("T")[0]);
-
-      if (error) {
-        console.error("Error fetching teacher availability:", error);
-        return;
-      }
-
-      setAvailableTeachers(data || []);
-    };
-
-    fetchTeacherAvailability();
-  }, [courseId, enrolledCourses]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,6 +181,7 @@ export function SessionRequestForm() {
       setMessage("");
       setCourseId("");
       setAvailabilityId("");
+      setSearchQuery("");
     } catch (error) {
       toast({
         variant: "destructive",
@@ -283,7 +253,21 @@ export function SessionRequestForm() {
             </Select>
           </div>
 
-          {courseId && availableTeachers.length > 0 ? (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Search for Teachers or Subjects</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-10"
+                placeholder="Enter teacher name or subject"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {teachersLoading && <p className="text-sm text-muted-foreground">Searching...</p>}
+          </div>
+
+          {availableTeachers.length > 0 ? (
             <div className="space-y-2">
               <label className="text-sm font-medium">Available Sessions</label>
               <Select value={availabilityId} onValueChange={setAvailabilityId}>
@@ -293,15 +277,15 @@ export function SessionRequestForm() {
                 <SelectContent>
                   {availableTeachers.map((avail) => (
                     <SelectItem key={avail.id} value={avail.id}>
-                      {format(new Date(avail.available_date), "MMM dd, yyyy")} | {formatTimeRange(avail.start_time, avail.end_time)} | {avail.subject.name}
+                      {avail.teacher.first_name} {avail.teacher.last_name} | {format(new Date(avail.available_date), "MMM dd, yyyy")} | {formatTimeRange(avail.start_time, avail.end_time)} | {avail.subject.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          ) : courseId ? (
+          ) : searchQuery.length > 0 && !teachersLoading ? (
             <p className="text-sm text-muted-foreground">
-              No availability found for the teacher of this course.
+              No available teachers found matching "{searchQuery}"
             </p>
           ) : null}
 
