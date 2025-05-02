@@ -3,51 +3,61 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Session request handling
 export const acceptSessionRequest = async (requestId: string) => {
-  // Get the request details first
-  const { data: request, error: fetchError } = await supabase
-    .from('session_requests')
-    .select('*')
-    .eq('id', requestId)
-    .single();
+  try {
+    // Get the request details first
+    const { data: request, error: fetchError } = await supabase
+      .from('session_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+      
+    if (fetchError) throw fetchError;
     
-  if (fetchError) throw fetchError;
-  
-  // Create a session based on the request
-  const { data: session, error: sessionError } = await supabase
-    .from('sessions')
-    .insert([{
-      course_id: request.course_id,
-      teacher_id: request.teacher_id,
-      title: request.proposed_title,
-      description: request.request_message,
-      start_time: request.proposed_date,
-      end_time: new Date(new Date(request.proposed_date).getTime() + request.proposed_duration * 60000).toISOString(),
-      status: 'scheduled'
-    }])
-    .select()
-    .single();
+    // Create a session based on the request
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .insert([{
+        course_id: request.course_id,
+        teacher_id: request.teacher_id,
+        title: request.proposed_title,
+        description: request.request_message,
+        start_time: request.proposed_date,
+        end_time: new Date(new Date(request.proposed_date).getTime() + request.proposed_duration * 60000).toISOString(),
+        status: 'scheduled'
+      }])
+      .select();
     
-  if (sessionError) throw sessionError;
-  
-  // Update the request status
-  const { error: updateError } = await supabase
-    .from('session_requests')
-    .update({ status: 'approved' })
-    .eq('id', requestId);
+    if (sessionError) throw sessionError;
     
-  if (updateError) throw updateError;
-  
-  // Create session attendance entry for the student
-  const { error: attendeeError } = await supabase
-    .from('session_attendees')
-    .insert([{
-      session_id: session.id,
-      student_id: request.student_id
-    }]);
+    if (!session || session.length === 0) {
+      throw new Error("Failed to create session");
+    }
     
-  if (attendeeError) throw attendeeError;
-  
-  return session;
+    const newSession = session[0];
+    
+    // Update the request status
+    const { error: updateError } = await supabase
+      .from('session_requests')
+      .update({ status: 'approved' })
+      .eq('id', requestId);
+      
+    if (updateError) throw updateError;
+    
+    // Create session attendance entry for the student
+    const { error: attendeeError } = await supabase
+      .from('session_attendees')
+      .insert([{
+        session_id: newSession.id,
+        student_id: request.student_id
+      }]);
+      
+    if (attendeeError) throw attendeeError;
+    
+    return newSession;
+  } catch (error) {
+    console.error("Error accepting session request:", error);
+    throw error;
+  }
 };
 
 export const rejectSessionRequest = async (requestId: string) => {
