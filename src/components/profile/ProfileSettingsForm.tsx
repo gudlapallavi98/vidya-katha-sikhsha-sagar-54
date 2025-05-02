@@ -174,26 +174,29 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
     setIsLoading(true);
     
     try {
-      // Update profile with form values
+      // Format date_of_birth to ISO string if it exists before sending to Supabase
+      const formattedData = {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        display_name: values.display_name,
+        gender: values.gender,
+        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : null,
+        city: values.city,
+        state: values.state,
+        country: values.country,
+        bio: values.bio,
+        experience: values.experience,
+        intro_video_url: values.intro_video_url,
+        subjects_interested: selectedSubjects,
+        certificates: certificates,
+        profile_completed: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Update profile with formatted values
       const { error } = await supabase
         .from("profiles")
-        .update({
-          first_name: values.first_name,
-          last_name: values.last_name,
-          display_name: values.display_name,
-          gender: values.gender,
-          date_of_birth: values.date_of_birth,
-          city: values.city,
-          state: values.state,
-          country: values.country,
-          bio: values.bio,
-          experience: values.experience,
-          intro_video_url: values.intro_video_url,
-          subjects_interested: selectedSubjects,
-          certificates: certificates,
-          profile_completed: true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(formattedData)
         .eq("id", user.id);
 
       if (error) {
