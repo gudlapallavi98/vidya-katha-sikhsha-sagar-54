@@ -114,7 +114,45 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 
-export {
+// Add useToast hook directly in this file
+import { useToast as useToastHook } from "@radix-ui/react-toast";
+import { useState, useEffect, createContext, useContext } from "react";
+
+type ToasterToast = ToastProps & {
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+};
+
+const TOAST_LIMIT = 5;
+const TOAST_REMOVE_DELAY = 1000000;
+
+type ToasterToastActionType = (toast: ToasterToast) => void;
+
+const ToastContext = createContext<{
+  toasts: ToasterToast[];
+  addToast: ToasterToastActionType;
+  updateToast: ToasterToastActionType;
+  dismissToast: (toastId: string) => void;
+  removeToast: (toastId: string) => void;
+} | null>(null);
+
+function useToast() {
+  const context = useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+  return {
+    toast: (props: Omit<ToasterToast, "id">) => {
+      context.addToast({ id: Math.random().toString(), ...props });
+    },
+    dismiss: (toastId: string) => context.dismissToast(toastId),
+    toasts: context.toasts,
+  };
+}
+
+export { 
   type ToastProps,
   type ToastActionElement,
   ToastProvider,
@@ -124,4 +162,5 @@ export {
   ToastDescription,
   ToastClose,
   ToastAction,
+  useToast
 }

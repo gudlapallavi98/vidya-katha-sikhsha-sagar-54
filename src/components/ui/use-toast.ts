@@ -1,8 +1,6 @@
 
-// Import directly from sonner
-import { toast } from "sonner";
-
-// Import from the correct path to avoid circular dependency
+// Re-export from the ui component for consistency
 import { useToast } from "@/components/ui/toast";
+import { toast } from "sonner";
 
 export { useToast, toast };
