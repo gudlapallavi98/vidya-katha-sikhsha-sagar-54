@@ -1,14 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeacherSearch } from "@/hooks/useTeacherSearch";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,11 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -45,23 +38,15 @@ interface TeacherAvailability {
   };
 }
 
-interface Course {
-  id: string;
-  title: string;
-  teacher_id: string;
-}
-
 export function SessionRequestForm() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [courseId, setCourseId] = useState("");
   const [availabilityId, setAvailabilityId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const { teachers: availableTeachers, isLoading: teachersLoading } = useTeacherSearch(searchQuery);
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
 
   // Check if profile is complete
@@ -86,40 +71,9 @@ export function SessionRequestForm() {
     checkProfile();
   }, [user]);
 
-  // Fetch enrolled courses
-  useEffect(() => {
-    const fetchEnrolledCourses = async () => {
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("enrollments")
-        .select(`
-          course_id,
-          course:courses(
-            id,
-            title,
-            teacher_id
-          )
-        `)
-        .eq("student_id", user.id);
-
-      if (error) {
-        console.error("Error fetching courses:", error);
-        return;
-      }
-
-      if (data) {
-        const courses = data.map((enrollment) => enrollment.course as Course);
-        setEnrolledCourses(courses);
-      }
-    };
-
-    fetchEnrolledCourses();
-  }, [user]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !courseId || !availabilityId || !title) {
+    if (!user || !availabilityId || !title) {
       toast({
         variant: "destructive",
         title: "Missing information",
@@ -150,7 +104,7 @@ export function SessionRequestForm() {
         {
           student_id: user.id,
           teacher_id: selectedAvailability.teacher_id,
-          course_id: courseId,
+          course_id: null, // No course selection anymore
           proposed_title: title,
           proposed_date: `${selectedAvailability.available_date}T${selectedAvailability.start_time}`,
           proposed_duration: calculateDuration(
@@ -179,7 +133,6 @@ export function SessionRequestForm() {
       // Reset form
       setTitle("");
       setMessage("");
-      setCourseId("");
       setAvailabilityId("");
       setSearchQuery("");
     } catch (error) {
@@ -233,26 +186,10 @@ export function SessionRequestForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Request a Session with Teacher</CardTitle>
+        <CardTitle>Request a Session</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Course</label>
-            <Select value={courseId} onValueChange={setCourseId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a course" />
-              </SelectTrigger>
-              <SelectContent>
-                {enrolledCourses.map((course) => (
-                  <SelectItem key={course.id} value={course.id}>
-                    {course.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="space-y-2">
             <label className="text-sm font-medium">Search for Teachers or Subjects</label>
             <div className="relative">
@@ -313,7 +250,7 @@ export function SessionRequestForm() {
           <Button
             type="submit"
             className="w-full"
-            disabled={isSubmitting || !courseId || !availabilityId || !title}
+            disabled={isSubmitting || !availabilityId || !title}
           >
             {isSubmitting ? "Sending Request..." : "Send Session Request"}
           </Button>
