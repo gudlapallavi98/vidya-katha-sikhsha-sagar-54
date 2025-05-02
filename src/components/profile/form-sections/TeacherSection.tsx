@@ -14,6 +14,7 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface TeacherSectionProps {
   form: UseFormReturn<any>;
@@ -32,7 +33,8 @@ const experienceOptions = [
 ];
 
 const TeacherSection = ({ form, certificates, setCertificates }: TeacherSectionProps) => {
-  const [uploadingCertificate, setUploadingCertificate] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
 
   const handleCertificateUpload = (url: string) => {
     setCertificates((prev) => [...prev, url]);
@@ -139,17 +141,22 @@ const TeacherSection = ({ form, certificates, setCertificates }: TeacherSectionP
             </div>
           )}
 
-          <FileUpload
-            onUploadStart={() => setUploadingCertificate(true)}
-            onUploadComplete={(url) => {
-              setUploadingCertificate(false);
-              handleCertificateUpload(url);
-            }}
-            onError={() => setUploadingCertificate(false)}
-            buttonText={uploadingCertificate ? "Uploading..." : "Upload Certificate"}
-            acceptedFileTypes="image/*"
-            maxSizeMB={5}
-          />
+          <div className="mt-4">
+            {isUploading ? (
+              <div className="flex items-center">
+                <span className="mr-2">Uploading certificate...</span>
+              </div>
+            ) : (
+              <FileUpload
+                onUploadComplete={(url) => {
+                  handleCertificateUpload(url);
+                  setIsUploading(false);
+                }}
+                currentImageUrl={null}
+                userId={form.getValues("id") || "temp-id"}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

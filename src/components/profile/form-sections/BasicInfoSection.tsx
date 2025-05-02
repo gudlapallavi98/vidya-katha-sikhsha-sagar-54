@@ -215,7 +215,12 @@ const BasicInfoSection = ({ form }: BasicInfoSectionProps) => {
             </Select>
           </FormItem>
         </div>
-        <FormMessage>{form.formState.errors.date_of_birth?.message}</FormMessage>
+        {/* Fix for the error - Convert form error to string */}
+        {form.formState.errors.date_of_birth && (
+          <p className="text-sm font-medium text-destructive mt-2">
+            {form.formState.errors.date_of_birth.message?.toString()}
+          </p>
+        )}
       </div>
     </div>
   );
