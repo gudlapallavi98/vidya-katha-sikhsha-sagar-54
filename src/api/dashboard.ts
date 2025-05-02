@@ -14,17 +14,17 @@ export const acceptSessionRequest = async (requestId: string) => {
     if (fetchError) throw fetchError;
     
     // Create a session based on the request
-    // Note: We're creating the session with the correct teacher_id which is critical for RLS
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .insert({
         course_id: request.course_id,
-        teacher_id: request.teacher_id,  // This needs to match the current user's ID for RLS
+        teacher_id: request.teacher_id,
         title: request.proposed_title,
         description: request.request_message,
         start_time: request.proposed_date,
         end_time: new Date(new Date(request.proposed_date).getTime() + request.proposed_duration * 60000).toISOString(),
-        status: 'scheduled'
+        status: 'scheduled',
+        meeting_link: `https://meet.jit.si/${requestId}-${new Date().getTime()}`
       })
       .select();
     
@@ -83,43 +83,89 @@ export const rejectSessionRequest = async (requestId: string) => {
 
 // Session management
 export const joinSession = async (sessionId: string, userId: string) => {
-  // Update attendee record with join time
-  const { error } = await supabase
-    .from('session_attendees')
-    .update({ 
-      join_time: new Date().toISOString()
-    })
-    .eq('session_id', sessionId)
-    .eq('student_id', userId);
+  try {
+    // Update attendee record with join time
+    const { error } = await supabase
+      .from('session_attendees')
+      .update({ 
+        join_time: new Date().toISOString()
+      })
+      .eq('session_id', sessionId)
+      .eq('student_id', userId);
+      
+    if (error) {
+      console.error("Error updating join time:", error);
+      // Don't throw here, as we still want to get the meeting link
+    }
     
-  if (error) throw error;
-  
-  // Get the meeting link
-  const { data, error: sessionError } = await supabase
-    .from('sessions')
-    .select('meeting_link')
-    .eq('id', sessionId)
-    .single();
+    // Get the meeting link
+    const { data, error: sessionError } = await supabase
+      .from('sessions')
+      .select('meeting_link')
+      .eq('id', sessionId)
+      .single();
+      
+    if (sessionError) throw sessionError;
     
-  if (sessionError) throw sessionError;
-  
-  return data.meeting_link;
+    if (!data || !data.meeting_link) {
+      throw new Error("Meeting link not available");
+    }
+    
+    return data.meeting_link;
+  } catch (error) {
+    console.error("Error joining session:", error);
+    throw error;
+  }
 };
 
 export const startSession = async (sessionId: string) => {
-  // Generate a meeting link (in real app, integrate with video service)
-  const meetingLink = `https://meet.jit.si/${sessionId}`;
-  
-  // Update the session with meeting link and status
-  const { error } = await supabase
-    .from('sessions')
-    .update({ 
-      meeting_link: meetingLink,
-      status: 'in_progress' 
-    })
-    .eq('id', sessionId);
+  try {
+    // Generate a meeting link if not already set
+    const { data: existingSession } = await supabase
+      .from('sessions')
+      .select('meeting_link')
+      .eq('id', sessionId)
+      .single();
+      
+    const meetingLink = existingSession?.meeting_link || `https://meet.jit.si/${sessionId}-${new Date().getTime()}`;
+    
+    // Update the session with meeting link and status
+    const { error } = await supabase
+      .from('sessions')
+      .update({ 
+        meeting_link: meetingLink,
+        status: 'in_progress' 
+      })
+      .eq('id', sessionId);
+      
+    if (error) throw error;
+    
+    return meetingLink;
+  } catch (error) {
+    console.error("Error starting session:", error);
+    throw error;
+  }
+};
+
+// New function to get teacher profiles
+export const getTeacherProfiles = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'teacher');
     
   if (error) throw error;
-  
-  return meetingLink;
+  return data;
+};
+
+// Function to get a teacher's profile by ID
+export const getTeacherProfile = async (teacherId: string) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', teacherId)
+    .single();
+    
+  if (error) throw error;
+  return data;
 };
