@@ -14,20 +14,24 @@ export const acceptSessionRequest = async (requestId: string) => {
     if (fetchError) throw fetchError;
     
     // Create a session based on the request
+    // Note: We're creating the session with the correct teacher_id which is critical for RLS
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .insert([{
+      .insert({
         course_id: request.course_id,
-        teacher_id: request.teacher_id,
+        teacher_id: request.teacher_id,  // This needs to match the current user's ID for RLS
         title: request.proposed_title,
         description: request.request_message,
         start_time: request.proposed_date,
         end_time: new Date(new Date(request.proposed_date).getTime() + request.proposed_duration * 60000).toISOString(),
         status: 'scheduled'
-      }])
+      })
       .select();
     
-    if (sessionError) throw sessionError;
+    if (sessionError) {
+      console.error("Session creation error:", sessionError);
+      throw sessionError;
+    }
     
     if (!session || session.length === 0) {
       throw new Error("Failed to create session");
@@ -41,17 +45,23 @@ export const acceptSessionRequest = async (requestId: string) => {
       .update({ status: 'approved' })
       .eq('id', requestId);
       
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error("Request update error:", updateError);
+      throw updateError;
+    }
     
     // Create session attendance entry for the student
     const { error: attendeeError } = await supabase
       .from('session_attendees')
-      .insert([{
+      .insert({
         session_id: newSession.id,
         student_id: request.student_id
-      }]);
+      });
       
-    if (attendeeError) throw attendeeError;
+    if (attendeeError) {
+      console.error("Attendee creation error:", attendeeError);
+      throw attendeeError;
+    }
     
     return newSession;
   } catch (error) {
