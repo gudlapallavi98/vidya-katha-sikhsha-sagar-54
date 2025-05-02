@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Video, Calendar, BookOpen, User, Check, X } from "lucide-react";
+import { Video, Calendar, BookOpen, User, Check, X, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   useTeacherCourses, 
@@ -13,6 +14,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
+import AvailabilityScheduler from "@/components/teacher/AvailabilityScheduler";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -27,13 +30,26 @@ const TeacherDashboardWithQueryClient = () => {
 };
 
 const TeacherDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const { user } = useAuth();
   const { toast } = useToast();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests();
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
+  
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  useEffect(() => {
+    // Update URL when tab changes
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
   
   // Calculate metrics from sessions data
   const upcomingSessions = teacherSessions.filter(s => 
@@ -152,10 +168,19 @@ const TeacherDashboard = () => {
                   My Schedule
                 </Button>
                 <Button 
+                  variant={activeTab === "availability" ? "default" : "ghost"} 
+                  className={activeTab === "availability" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
+                  onClick={() => setActiveTab("availability")}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Set Availability
+                </Button>
+                <Button 
                   variant={activeTab === "profile" ? "default" : "ghost"} 
                   className={activeTab === "profile" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
                   onClick={() => setActiveTab("profile")}
                 >
+                  <Settings className="h-4 w-4 mr-2" />
                   Profile Settings
                 </Button>
               </nav>
@@ -542,14 +567,17 @@ const TeacherDashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="availability">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">Set Your Availability</h1>
+              <AvailabilityScheduler />
+            </TabsContent>
             
             <TabsContent value="profile">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
-              <Card>
+              <Card className="mb-8">
                 <CardContent className="p-6">
-                  <p className="text-center py-12 text-muted-foreground">
-                    Profile settings will be implemented with Supabase integration.
-                  </p>
+                  <ProfileSettingsForm role="teacher" />
                 </CardContent>
               </Card>
             </TabsContent>

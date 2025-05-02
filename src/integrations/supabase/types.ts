@@ -209,34 +209,64 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          certificates: string[] | null
+          city: string | null
+          country: string | null
           created_at: string | null
+          date_of_birth: string | null
           display_name: string | null
+          experience: string | null
           first_name: string
+          gender: string | null
           id: string
+          intro_video_url: string | null
           last_name: string
+          profile_completed: boolean | null
           role: string
+          state: string | null
+          subjects_interested: string[] | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          certificates?: string[] | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           display_name?: string | null
+          experience?: string | null
           first_name: string
+          gender?: string | null
           id: string
+          intro_video_url?: string | null
           last_name: string
+          profile_completed?: boolean | null
           role: string
+          state?: string | null
+          subjects_interested?: string[] | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          certificates?: string[] | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           display_name?: string | null
+          experience?: string | null
           first_name?: string
+          gender?: string | null
           id?: string
+          intro_video_url?: string | null
           last_name?: string
+          profile_completed?: boolean | null
           role?: string
+          state?: string | null
+          subjects_interested?: string[] | null
           updated_at?: string | null
         }
         Relationships: []
@@ -340,6 +370,7 @@ export type Database = {
       }
       session_requests: {
         Row: {
+          availability_id: string | null
           course_id: string | null
           created_at: string | null
           id: string
@@ -353,6 +384,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          availability_id?: string | null
           course_id?: string | null
           created_at?: string | null
           id?: string
@@ -366,6 +398,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          availability_id?: string | null
           course_id?: string | null
           created_at?: string | null
           id?: string
@@ -379,6 +412,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "session_requests_availability_id_fkey"
+            columns: ["availability_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_availability"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "session_requests_course_id_fkey"
             columns: ["course_id"]
@@ -489,6 +529,75 @@ export type Database = {
           {
             foreignKeyName: "student_achievements_student_id_fkey"
             columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      teacher_availability: {
+        Row: {
+          available_date: string
+          created_at: string | null
+          end_time: string
+          id: string
+          start_time: string
+          status: string | null
+          subject_id: string
+          teacher_id: string
+        }
+        Insert: {
+          available_date: string
+          created_at?: string | null
+          end_time: string
+          id?: string
+          start_time: string
+          status?: string | null
+          subject_id: string
+          teacher_id: string
+        }
+        Update: {
+          available_date?: string
+          created_at?: string | null
+          end_time?: string
+          id?: string
+          start_time?: string
+          status?: string | null
+          subject_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_availability_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_availability_teacher_id_fkey"
+            columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

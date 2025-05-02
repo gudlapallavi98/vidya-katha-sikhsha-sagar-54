@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Video, Calendar, BookOpen, User } from "lucide-react";
+import { Video, Calendar, BookOpen, User, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   useStudentEnrollments, 
@@ -14,6 +15,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
+import SessionRequestForm from "@/components/student/SessionRequestForm";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -28,14 +31,28 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrollments();
   const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
   const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
   const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
+
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  useEffect(() => {
+    // Update URL when tab changes
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
 
   // Calculate completed sessions from progress data
   const completedSessions = progress.filter(p => p.completed).length;
@@ -105,10 +122,18 @@ const StudentDashboard = () => {
                   Upcoming Sessions
                 </Button>
                 <Button 
+                  variant={activeTab === "request-session" ? "default" : "ghost"} 
+                  className={activeTab === "request-session" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
+                  onClick={() => setActiveTab("request-session")}
+                >
+                  Request Session
+                </Button>
+                <Button 
                   variant={activeTab === "profile" ? "default" : "ghost"} 
                   className={activeTab === "profile" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
                   onClick={() => setActiveTab("profile")}
                 >
+                  <Settings className="h-4 w-4 mr-2" />
                   Profile Settings
                 </Button>
               </nav>
@@ -419,13 +444,16 @@ const StudentDashboard = () => {
               </Card>
             </TabsContent>
             
+            <TabsContent value="request-session">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">Request a Session</h1>
+              <SessionRequestForm />
+            </TabsContent>
+            
             <TabsContent value="profile">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
-              <Card>
+              <Card className="mb-8">
                 <CardContent className="p-6">
-                  <p className="text-center py-12 text-muted-foreground">
-                    Profile settings will be implemented with Supabase integration.
-                  </p>
+                  <ProfileSettingsForm role="student" />
                 </CardContent>
               </Card>
             </TabsContent>

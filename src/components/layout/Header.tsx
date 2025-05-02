@@ -57,8 +57,8 @@ const Header = () => {
           <Link to="/" className="flex items-center gap-2">
             <GraduationCap className="h-8 w-8 text-indian-saffron" />
             <span className="font-sanskrit text-2xl font-bold">
-              <span className="text-indian-saffron">Vidya</span>{" "}
-              <span className="text-indian-blue">Katha</span>
+              <span className="text-indian-saffron">e</span>{" "}
+              <span className="text-indian-blue">Guru</span>
             </span>
           </Link>
           
@@ -118,7 +118,7 @@ const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem>
-                    <Link to="/profile" className="w-full">Profile</Link>
+                    <Link to={userRole === 'student' ? "/student-dashboard?tab=profile" : "/teacher-dashboard?tab=profile"} className="w-full">Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" /> Sign Out
