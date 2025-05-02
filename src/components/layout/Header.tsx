@@ -11,34 +11,38 @@ import {
 import { Menu, ChevronDown, GraduationCap, User, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Fetch the user's role from the profile
+  // Fetch the user's role and name from the profile
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserData = async () => {
       if (user) {
         try {
           const { data } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, display_name, first_name')
             .eq('id', user.id)
             .single();
             
           if (data) {
             setUserRole(data.role);
+            // Use display_name if available, otherwise use first_name
+            setUserName(data.display_name || data.first_name || null);
           }
         } catch (error) {
-          console.error("Error fetching user role:", error);
+          console.error("Error fetching user data:", error);
         }
       }
     };
     
-    fetchUserRole();
+    fetchUserData();
   }, [user]);
 
   const toggleMenu = () => {
@@ -48,6 +52,14 @@ const Header = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/login');
+  };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (userName) {
+      return userName.charAt(0).toUpperCase();
+    } 
+    return user?.email?.charAt(0).toUpperCase() || 'U';
   };
 
   return (
@@ -112,8 +124,10 @@ const Header = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span>Account</span>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{getUserInitials()}</AvatarFallback>
+                    </Avatar>
+                    <span>{userName || 'Account'}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

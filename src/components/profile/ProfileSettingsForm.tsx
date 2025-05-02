@@ -115,6 +115,11 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
 
       if (error) {
         console.error("Error fetching subjects:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load subjects. Please try again later.",
+        });
         return;
       }
 
@@ -124,7 +129,7 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
     };
 
     fetchSubjects();
-  }, []);
+  }, [toast]);
 
   // Fetch user profile
   useEffect(() => {
@@ -139,6 +144,11 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
 
       if (error) {
         console.error("Error fetching profile:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load your profile. Please try again later.",
+        });
         return;
       }
 
@@ -162,16 +172,20 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
         // Set selected subjects and certificates
         setSelectedSubjects(data.subjects_interested || []);
         setCertificates(data.certificates || []);
+        
+        console.log("Loaded profile data:", data);
       }
     };
 
     fetchUserProfile();
-  }, [user, form]);
+  }, [user, form, toast]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
     
     setIsLoading(true);
+    console.log("Form values before submission:", values);
+    console.log("Selected subjects:", selectedSubjects);
     
     try {
       // Format date_of_birth to ISO string if it exists before sending to Supabase
@@ -192,6 +206,8 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
         profile_completed: true,
         updated_at: new Date().toISOString(),
       };
+
+      console.log("Data being sent to database:", formattedData);
 
       // Update profile with formatted values
       const { error } = await supabase
@@ -235,6 +251,7 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
   };
 
   const handleSubjectToggle = (subjectName: string) => {
+    console.log("Toggle subject:", subjectName);
     setSelectedSubjects((current) =>
       current.includes(subjectName)
         ? current.filter((s) => s !== subjectName)
@@ -296,6 +313,7 @@ export function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormPr
                 <FormLabel>Gender</FormLabel>
                 <Select
                   onValueChange={field.onChange}
+                  value={field.value}
                   defaultValue={field.value}
                 >
                   <FormControl>

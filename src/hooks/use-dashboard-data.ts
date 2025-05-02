@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -111,13 +110,15 @@ export const useStudentEnrollments = () => {
   return useQuery({
     queryKey: ['enrollments', user?.id],
     queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
       const { data, error } = await supabase
         .from('enrollments')
         .select(`
           *,
           course:courses(*)
         `)
-        .eq('student_id', user?.id);
+        .eq('student_id', user.id);
         
       if (error) throw error;
       return data as Enrollment[];
@@ -168,7 +169,6 @@ export const useStudentAchievements = () => {
   });
 };
 
-// Add the missing function for student upcoming sessions
 export const useStudentUpcomingSessions = () => {
   const { user } = useAuth();
 
@@ -266,6 +266,28 @@ export const useSessionRequests = () => {
       
       // Type assertion to ensure compatibility
       return (data as unknown) as SessionRequest[];
+    },
+    enabled: !!user,
+  });
+};
+
+// Add a new hook to fetch user profile data
+export const useUserProfile = () => {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['user_profile', user?.id],
+    queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) throw error;
+      return data;
     },
     enabled: !!user,
   });
