@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -75,7 +75,7 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
   const { data: profile, isLoading: profileLoading } = useUserProfile();
 
   // Update form when profile is loaded
-  useState(() => {
+  useEffect(() => {
     if (profile && !profileLoading) {
       form.reset({
         first_name: profile.first_name || "",
