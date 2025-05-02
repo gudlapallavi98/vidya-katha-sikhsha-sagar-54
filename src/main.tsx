@@ -5,12 +5,15 @@ import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from './components/ui/toaster';
+import { ToastProvider } from '@/hooks/use-toast';
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
-    <AuthProvider>
-      <App />
-      <Toaster />
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <App />
+        <Toaster />
+      </AuthProvider>
+    </ToastProvider>
   </BrowserRouter>
 );
