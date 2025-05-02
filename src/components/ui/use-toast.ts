@@ -1,6 +1,5 @@
 
-// Re-export from the ui component for consistency
-import { useToast } from "@/components/ui/toast";
-import { toast } from "sonner";
+// Re-export from the hooks folder for consistency
+import { useToast, toast } from "@/hooks/use-toast";
 
 export { useToast, toast };
