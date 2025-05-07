@@ -2,6 +2,9 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 type HeroSectionProps = {
   heroImages: string[];
@@ -9,6 +12,8 @@ type HeroSectionProps = {
 
 const HeroSection = ({ heroImages }: HeroSectionProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -17,6 +22,89 @@ const HeroSection = ({ heroImages }: HeroSectionProps) => {
     return () => clearInterval(interval);
   }, [heroImages.length]);
 
+  // Show the new banner if user is logged in
+  if (user) {
+    return (
+      <section className="relative overflow-hidden bg-gradient-to-r from-orange-100 to-green-100 text-gray-700 min-h-[600px]">
+        <div className="container relative z-10 flex h-[600px] flex-col items-start justify-center px-4">
+          <h1 className="font-sanskrit text-5xl md:text-6xl lg:text-7xl font-bold mb-2 max-w-3xl">
+            <span className="text-blue-600">Master Your Future</span><br />
+            <span className="text-orange-500">the Indian Way!</span>
+          </h1>
+          <p className="max-w-2xl text-lg mb-10 text-gray-600">
+            Join thousands of students achieving academic excellence through personalized learning experiences with India's top educators.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <Link to="/courses">
+              <Button
+                size="lg"
+                className="bg-orange-400 hover:bg-orange-500 text-white transition-transform hover:scale-105 shadow-lg px-8 py-6 text-lg"
+              >
+                Start Learning Now
+              </Button>
+            </Link>
+            <Link to="/courses">
+              <Button
+                size="lg"
+                variant="outline"
+                className="bg-white border-green-600 text-green-600 hover:bg-green-50 transition-transform hover:scale-105 px-8 py-6 text-lg"
+              >
+                Explore Courses
+              </Button>
+            </Link>
+          </div>
+
+          <div className="relative w-full max-w-xl">
+            <Input 
+              type="text" 
+              placeholder="Search for subjects, courses, or tutors..." 
+              className="pl-10 py-6 pr-16 rounded-full bg-white/90 backdrop-blur-sm border-none text-gray-700 shadow-lg"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Button 
+              className="absolute right-1 top-1 bottom-1 bg-green-600 hover:bg-green-700 rounded-full px-6"
+              onClick={() => console.log("Search for:", searchQuery)}
+            >
+              Search
+            </Button>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+          </div>
+
+          <div className="flex items-center gap-8 mt-8">
+            <div className="flex items-center gap-2 text-orange-600">
+              <div className="rounded-full bg-orange-100 p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <span className="text-lg">Live Classes</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-orange-600">
+              <div className="rounded-full bg-orange-100 p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <span className="text-lg">Interactive Sessions</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-orange-600">
+              <div className="rounded-full bg-orange-100 p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
+              <span className="text-lg">Expert Tutors</span>
+            </div>
+          </div>
+
+          <img 
+            src="/lovable-uploads/300b0084-0838-45d4-a486-3b1e694093fd.png" 
+            alt="Hero Banner" 
+            className="absolute top-0 left-0 w-full h-full object-cover -z-10" 
+          />
+        </div>
+      </section>
+    );
+  }
+
+  // Original hero section for non-logged in users
   return (
     <section className="relative overflow-hidden bg-indian-blue text-white min-h-[600px]">
       {/* Festoon decorations */}
