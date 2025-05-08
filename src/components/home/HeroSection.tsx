@@ -95,12 +95,6 @@ const HeroSection = ({ heroImages }: HeroSectionProps) => {
                 <span className="text-lg">Expert Tutors</span>
               </div>
             </div>
-
-            <img 
-              src="/lovable-uploads/300b0084-0838-45d4-a486-3b1e694093fd.png" 
-              alt="Hero Banner" 
-              className="absolute top-0 left-0 w-full h-full object-cover -z-10" 
-            />
           </div>
         </section>
       ) : (
