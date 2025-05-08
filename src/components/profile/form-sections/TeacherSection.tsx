@@ -11,7 +11,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import FileUpload from "@/components/FileUpload";
@@ -21,16 +20,6 @@ interface TeacherSectionProps {
   certificates: string[];
   setCertificates: React.Dispatch<React.SetStateAction<string[]>>;
 }
-
-// Generate experience options from 1 to 40+ years
-const experienceOptions = [
-  { value: "< 1", label: "Less than 1 year" },
-  ...Array.from({ length: 40 }, (_, i) => ({
-    value: (i + 1).toString(),
-    label: `${i + 1} ${i + 1 === 1 ? 'year' : 'years'}`
-  })),
-  { value: "40+", label: "40+ years" }
-];
 
 const TeacherSection = ({ form, certificates, setCertificates }: TeacherSectionProps) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -47,35 +36,6 @@ const TeacherSection = ({ form, certificates, setCertificates }: TeacherSectionP
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-medium">Teacher Information</h3>
-
-      <FormField
-        control={form.control}
-        name="years_of_experience"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Years of Experience</FormLabel>
-            <Select
-              onValueChange={field.onChange}
-              value={field.value}
-              defaultValue={field.value}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select years of experience" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {experienceOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
 
       <FormField
         control={form.control}
@@ -157,6 +117,7 @@ const TeacherSection = ({ form, certificates, setCertificates }: TeacherSectionP
                 acceptedFileTypes="image/*"
                 maxFileSizeMB={2}
                 buttonLabel="Upload Certificate"
+                onUploadStart={() => setIsUploading(true)}
               />
             )}
           </div>

@@ -28,7 +28,6 @@ const formSchema = z.object({
   country: z.string().optional(),
   bio: z.string().optional(),
   experience: z.string().optional(),
-  years_of_experience: z.string().optional(),
   intro_video_url: z.string().url().optional().or(z.literal("")),
   subjects_interested: z.array(z.string()).optional(),
   avatar_url: z.string().optional(),
@@ -75,7 +74,6 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
         country: values.country || undefined,
         bio: values.bio || undefined,
         experience: values.experience || undefined,
-        years_of_experience: values.years_of_experience || undefined,
         intro_video_url: values.intro_video_url || undefined,
         subjects_interested: selectedSubjects.length > 0 ? selectedSubjects : undefined,
         certificates: certificates.length > 0 ? certificates : undefined,
@@ -87,21 +85,12 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
       console.log("Formatted data for teacher profile:", formattedData);
       await updateProfile.mutateAsync(formattedData);
       
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated."
-      });
-      
       if (onCompleted) {
         onCompleted();
       }
     } catch (error) {
       console.error("Profile update error:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update profile. Please try again."
-      });
+      // Error toast message is handled in the mutation's onError callback
     } finally {
       setIsLoading(false);
     }

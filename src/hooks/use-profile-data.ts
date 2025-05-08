@@ -38,9 +38,26 @@ export const useUpdateProfile = () => {
       
       console.log("Updating profile with data:", profileData);
       
+      // Map experience fields to match the database schema
+      // The database uses 'experience' column, not 'years_of_experience'
+      let mappedData = { ...profileData };
+      
+      // If years_of_experience is provided, add it to the experience field
+      if (mappedData.years_of_experience) {
+        mappedData.experience = mappedData.experience || '';
+        
+        // If we're just adding a years prefix to empty experience
+        if (!mappedData.experience) {
+          mappedData.experience = `${mappedData.years_of_experience} years of experience`;
+        }
+        
+        // Remove the years_of_experience field since it doesn't exist in the database
+        delete mappedData.years_of_experience;
+      }
+      
       // Filter out any undefined or null fields to prevent overwriting with null
-      const filteredData = Object.entries(profileData)
-        .filter(([_, value]) => value !== undefined && value !== null)
+      const filteredData = Object.entries(mappedData)
+        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
         .reduce((obj: any, [key, value]) => {
           obj[key] = value;
           return obj;
@@ -92,10 +109,18 @@ export const useUpdateProfile = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user_profile', user?.id] });
+      toast({
+        title: "Success",
+        description: "Profile updated successfully!"
+      });
     },
     onError: (error: any) => {
       console.error("Profile update error:", error);
-      throw error; // Re-throw to let the component handle it
+      toast({
+        variant: "destructive",
+        title: "Failed to update profile",
+        description: error.message || "Please try again"
+      });
     }
   });
 };

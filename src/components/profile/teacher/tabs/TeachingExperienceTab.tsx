@@ -35,34 +35,6 @@ export function TeachingExperienceTab({ form }: TeachingExperienceTabProps) {
 
       <FormField
         control={form.control}
-        name="years_of_experience"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Years of Experience</FormLabel>
-            <Select
-              onValueChange={field.onChange}
-              value={field.value || ""}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select years of experience" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {experienceOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
         name="experience"
         render={({ field }) => (
           <FormItem>
