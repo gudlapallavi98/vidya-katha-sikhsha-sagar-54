@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface FileUploadProps {
   onUploadComplete: (url: string) => void;
@@ -44,29 +43,25 @@ export function FileUpload({ onUploadComplete, currentImageUrl, userId }: FileUp
     try {
       setIsUploading(true);
       
-      // Store image directly in the base64 format in the database instead
-      // This avoids the need for storage buckets
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          const base64String = e.target?.result as string;
+      // Store image directly in the base64 format in the database
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64String = e.target?.result as string;
+        
+        if (base64String) {
+          // Set preview URL for immediate feedback
+          setPreviewUrl(base64String);
           
-          if (base64String) {
-            // Set preview URL for immediate feedback
-            setPreviewUrl(base64String);
-            
-            // Pass the base64 string to the parent component
-            onUploadComplete(base64String);
-            
-            toast({
-              title: "Upload successful",
-              description: "Your profile image has been updated.",
-            });
-          }
-          resolve(null);
-        };
-        reader.readAsDataURL(file);
-      });
+          // Pass the base64 string to the parent component
+          onUploadComplete(base64String);
+          
+          toast({
+            title: "Upload successful",
+            description: "Your profile image has been updated.",
+          });
+        }
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
       console.error("Upload error:", error);
       toast({

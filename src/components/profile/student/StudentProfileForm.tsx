@@ -41,6 +41,7 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [studyPreferences, setStudyPreferences] = useState<string[]>([]);
+  const [examHistory, setExamHistory] = useState<{name: string, date: string, score: string}[]>([]);
   
   const {
     form, 
@@ -73,6 +74,8 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         avatar_url: avatarUrl,
         profile_completed: true,
         updated_at: new Date().toISOString(),
+        // Add the exam history
+        exam_history: examHistory
       };
 
       await updateProfile.mutateAsync(formattedData);
@@ -113,7 +116,10 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         </TabsContent>
 
         <TabsContent value="exams">
-          <ExamsTab />
+          <ExamsTab 
+            examHistory={examHistory} 
+            setExamHistory={setExamHistory} 
+          />
         </TabsContent>
 
         <Button type="submit" disabled={isLoading} className="w-full">
