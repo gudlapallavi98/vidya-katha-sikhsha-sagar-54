@@ -10,6 +10,7 @@ interface CourseListProps {
   onEdit: (course: any) => void;
   onDelete: (courseId: string) => void;
   onManage: (courseId: string) => void;
+  onOpenDialog?: () => void;
 }
 
 const CourseList: React.FC<CourseListProps> = ({
@@ -18,6 +19,7 @@ const CourseList: React.FC<CourseListProps> = ({
   onEdit,
   onDelete,
   onManage,
+  onOpenDialog,
 }) => {
   if (isLoading) {
     return <div className="text-center py-8">Loading courses...</div>;
@@ -29,7 +31,7 @@ const CourseList: React.FC<CourseListProps> = ({
         <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-xl font-medium mb-2">No Courses Created</h3>
         <p className="text-muted-foreground mb-6">You haven't created any courses yet.</p>
-        <Button onClick={() => {}}>Create New Course</Button>
+        <Button onClick={onOpenDialog}>Create New Course</Button>
       </div>
     );
   }

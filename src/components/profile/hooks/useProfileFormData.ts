@@ -10,7 +10,7 @@ interface ProfileData {
   id: string;
   first_name: string;
   last_name: string;
-  email?: string;
+  email?: string | undefined;
   role: "student" | "teacher";
   bio?: string;
   profile_picture?: string;
@@ -77,8 +77,11 @@ export function useProfileFormData(formSchema: any) {
         }
 
         if (data) {
-          // Cast the data to ProfileData but make the email optional to match our profile structure
-          const profileData = data as unknown as ProfileData;
+          // Cast data properly with optional email
+          const profileData = { 
+            ...data, 
+            email: user.email || undefined 
+          } as ProfileData;
           
           // Set the form values
           form.reset({
@@ -109,6 +112,8 @@ export function useProfileFormData(formSchema: any) {
           setYearsOfExperience(profileData.years_of_experience || "");
           setEducationLevel(profileData.education_level || "");
           setCertificates(profileData.certificates || []);
+
+          console.log("Profile data loaded successfully");
         }
       } catch (error) {
         console.error("Error fetching profile data:", error);

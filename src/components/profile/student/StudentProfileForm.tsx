@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,6 @@ interface StudentProfileFormProps {
 
 export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFormProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [studyPreferences, setStudyPreferences] = useState<string[]>([]);
   const [examHistory, setExamHistory] = useState<{name: string, date: string, score: string}[]>([]);

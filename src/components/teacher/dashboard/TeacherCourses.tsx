@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -180,6 +179,7 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
             onEdit={handleEditCourse}
             onDelete={(courseId) => setConfirmDelete(courseId)}
             onManage={handleManageCourse}
+            onOpenDialog={handleCreateCourse}
           />
         </CardContent>
       </Card>

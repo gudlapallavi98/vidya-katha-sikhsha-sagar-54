@@ -1,14 +1,24 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -16,207 +26,255 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-interface Subject {
-  id: string;
-  name: string;
-}
+// Define time slots for the select dropdown
+const timeSlots = [
+  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
+  "18:00", "18:30", "19:00", "19:30", "20:00"
+];
+
+// Schema for form validation
+const formSchema = z.object({
+  date: z.date({
+    required_error: "Please select a date",
+  }),
+  startTime: z.string({
+    required_error: "Please select a start time",
+  }),
+  endTime: z.string({
+    required_error: "Please select an end time",
+  }),
+  subject: z.string({
+    required_error: "Please select a subject",
+  }),
+})
+.refine(data => data.startTime < data.endTime, {
+  message: "End time must be after start time",
+  path: ["endTime"],
+});
 
 interface AvailabilityFormProps {
-  subjects: Subject[];
-  onAvailabilityAdded: () => void;
-  isProfileComplete: boolean;
+  subjects: Array<{ id: string; name: string }>;
+  onAvailabilityCreated: () => void;
 }
 
-export function AvailabilityForm({ subjects, onAvailabilityAdded, isProfileComplete }: AvailabilityFormProps) {
-  const { toast } = useToast();
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [selectedSubjectId, setSelectedSubjectId] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !date || !startTime || !endTime || !selectedSubjectId) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please fill all required fields",
-      });
-      return;
-    }
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      date: undefined,
+      startTime: "",
+      endTime: "",
+      subject: "",
+    },
+  });
 
-    if (!isProfileComplete) {
-      toast({
-        variant: "destructive", 
-        title: "Profile incomplete",
-        description: "Please complete your profile before scheduling availability"
-      });
-      return;
-    }
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!user) return;
     
-    setIsSubmitting(true);
-
+    setIsLoading(true);
+    
     try {
-      // Format date for database
+      const { date, startTime, endTime, subject } = values;
+      
+      // Format date to YYYY-MM-DD
       const formattedDate = format(date, "yyyy-MM-dd");
-
-      // Add availability
+      
+      // Create availability object
+      const availabilityData = {
+        teacher_id: user.id,
+        available_date: formattedDate,
+        start_time: startTime,
+        end_time: endTime,
+        subject_id: subject,
+        status: "available",
+      };
+      
       const { error } = await supabase
         .from("teacher_availability")
-        .insert([
-          {
-            teacher_id: user.id,
-            subject_id: selectedSubjectId,
-            available_date: formattedDate,
-            start_time: startTime,
-            end_time: endTime,
-            status: "available",
-          },
-        ]);
-
-      if (error) {
-        throw error;
-      }
-
+        .insert([availabilityData]);
+      
+      if (error) throw error;
+      
       toast({
-        title: "Availability Scheduled",
-        description: "Your availability has been successfully scheduled",
+        title: "Success",
+        description: "Availability slot has been added",
       });
-
+      
       // Reset form
-      setDate(new Date());
-      setStartTime("");
-      setEndTime("");
-      setSelectedSubjectId("");
-
-      // Notify parent component to refresh availabilities
-      onAvailabilityAdded();
+      form.reset({
+        date: undefined,
+        startTime: "",
+        endTime: "",
+        subject: "",
+      });
+      
+      // Call the callback to refresh the availability list
+      onAvailabilityCreated();
+      
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : "Something went wrong",
       });
-      console.error("Error scheduling availability:", error);
+      console.error("Error adding availability:", error);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  if (!isProfileComplete) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-center">Complete Your Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center space-y-4">
-            <p>Please complete your profile before scheduling availability.</p>
-            <Button onClick={() => window.location.href = "/teacher-dashboard?tab=profile"}>
-              Go to Profile Settings
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Schedule Your Availability</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Subject</label>
-            <Select 
-              value={selectedSubjectId} 
-              onValueChange={setSelectedSubjectId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a subject" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.id}>
-                    {subject.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  disabled={(date) =>
-                    date < new Date(new Date().setHours(0, 0, 0, 0))
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Start Time</label>
-              <Input 
-                type="time" 
-                value={startTime} 
-                onChange={(e) => setStartTime(e.target.value)}
-                required
+      <CardContent className="p-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date < new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Time</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select start time" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {timeSlots.map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select end time" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {timeSlots.map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">End Time</label>
-              <Input 
-                type="time" 
-                value={endTime} 
-                onChange={(e) => setEndTime(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isSubmitting || !date || !startTime || !endTime || !selectedSubjectId}
-          >
-            {isSubmitting ? "Scheduling..." : "Schedule Availability"}
-          </Button>
-        </form>
+            <FormField
+              control={form.control}
+              name="subject"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a subject" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? "Saving..." : "Add Availability"}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
-}
+};
+
+export default AvailabilityForm;

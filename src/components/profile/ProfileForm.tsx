@@ -79,6 +79,8 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
         updated_at: new Date().toISOString(),
       };
 
+      console.log("Updating profile with data:", formattedData);
+
       // Update profile with formatted values
       const { error } = await supabase
         .from("profiles")
@@ -87,6 +89,25 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
 
       if (error) {
         throw error;
+      }
+
+      // Also update auth.users metadata to ensure name consistency
+      if (values.first_name || values.last_name) {
+        try {
+          const metadata = { ...user.user_metadata };
+          if (values.first_name) metadata.first_name = values.first_name;
+          if (values.last_name) metadata.last_name = values.last_name;
+
+          const { error: authError } = await supabase.auth.updateUser({
+            data: metadata
+          });
+
+          if (authError) {
+            console.error("Failed to update auth metadata:", authError);
+          }
+        } catch (metadataError) {
+          console.error("Error updating metadata:", metadataError);
+        }
       }
 
       toast({

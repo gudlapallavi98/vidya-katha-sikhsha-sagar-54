@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import CourseFilters from "@/components/courses/filters/CourseFilters";
@@ -51,10 +50,16 @@ const CoursesPage = () => {
   // Get category from URL parameters
   useEffect(() => {
     const category = searchParams.get("category");
+    const searchParam = searchParams.get("search");
+    
     if (category && Object.keys(categories).includes(category)) {
       setActiveCategory(category);
     } else {
       setActiveCategory("all");
+    }
+    
+    if (searchParam) {
+      setSearchQuery(searchParam);
     }
     
     // Simulate loading
@@ -64,9 +69,14 @@ const CoursesPage = () => {
   }, [searchParams]);
 
   const handleCategoryChange = (category: string) => {
+    console.log("Category changed to:", category);
     setActiveCategory(category);
     setSelectedSubcategory(null); // Reset subcategory when changing category
-    setSearchParams({ category });
+    
+    // Update URL params but keep search query if it exists
+    const params: any = { category };
+    if (searchQuery) params.search = searchQuery;
+    setSearchParams(params);
   };
 
   const handleSubcategoryChange = (subcategory: string) => {
@@ -92,9 +102,9 @@ const CoursesPage = () => {
       subjects: selectedSubjects
     });
     
-    // Here we would normally fetch from Supabase with these filters
-    // For now, we'll just update the URL params
-    const params: any = { category: activeCategory };
+    // Update the URL params
+    const params: any = {};
+    if (activeCategory !== "all") params.category = activeCategory;
     if (searchQuery) params.search = searchQuery;
     if (selectedSubcategory) params.subcategory = selectedSubcategory;
     if (selectedSubjects.length > 0) params.subjects = selectedSubjects.join(',');
