@@ -223,11 +223,13 @@ export type Database = {
           experience: string | null
           first_name: string
           gender: string | null
+          grade_level: string | null
           id: string
           intro_video_url: string | null
           last_name: string
           profile_completed: boolean | null
           role: string
+          school_name: string | null
           state: string | null
           study_preferences: string[] | null
           subjects_interested: string[] | null
@@ -247,11 +249,13 @@ export type Database = {
           experience?: string | null
           first_name: string
           gender?: string | null
+          grade_level?: string | null
           id: string
           intro_video_url?: string | null
           last_name: string
           profile_completed?: boolean | null
           role: string
+          school_name?: string | null
           state?: string | null
           study_preferences?: string[] | null
           subjects_interested?: string[] | null
@@ -271,11 +275,13 @@ export type Database = {
           experience?: string | null
           first_name?: string
           gender?: string | null
+          grade_level?: string | null
           id?: string
           intro_video_url?: string | null
           last_name?: string
           profile_completed?: boolean | null
           role?: string
+          school_name?: string | null
           state?: string | null
           study_preferences?: string[] | null
           subjects_interested?: string[] | null

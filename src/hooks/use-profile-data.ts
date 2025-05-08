@@ -45,8 +45,8 @@ export const useUpdateProfile = () => {
         'experience', 'years_of_experience', 'intro_video_url',
         'subjects_interested', 'certificates', 'avatar_url',
         'profile_completed', 'updated_at', 'education_level', 
-        'study_preferences', 'exam_history', 'course_link',
-        'school_name', 'grade_level'
+        'study_preferences', 'exam_history', 'school_name',
+        'grade_level', 'course_link'
       ];
       
       // Filter the profileData to only include valid fields

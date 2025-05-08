@@ -32,6 +32,7 @@ export function ProfileAvatarSection({
         onFileUploaded={onAvatarUpload}
         acceptedFileTypes="image/*"
         buttonLabel="Upload Profile Picture"
+        buttonVariant="outline"
       />
     </div>
   );
