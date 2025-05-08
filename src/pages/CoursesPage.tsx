@@ -180,22 +180,22 @@ const CoursesPage = () => {
                       {categories[activeCategory as keyof typeof categories]} Subcategories
                     </h3>
                     <div className="space-y-2">
-                      {subcategories[activeCategory as keyof typeof subcategories].map((subcat) => (
-                        <div key={subcat} className="flex items-center space-x-2 py-1">
-                          <RadioGroupItem
-                            value={subcat}
-                            id={`subcat-${subcat}`}
-                            checked={selectedSubcategory === subcat}
-                            onClick={() => handleSubcategoryChange(subcat)}
-                          />
-                          <Label 
-                            htmlFor={`subcat-${subcat}`}
-                            className="text-sm cursor-pointer"
-                          >
-                            {subcat}
-                          </Label>
-                        </div>
-                      ))}
+                      <RadioGroup 
+                        value={selectedSubcategory || ""} 
+                        onValueChange={handleSubcategoryChange}
+                      >
+                        {subcategories[activeCategory as keyof typeof subcategories].map((subcat) => (
+                          <div key={subcat} className="flex items-center space-x-2 py-1">
+                            <RadioGroupItem value={subcat} id={`subcat-${subcat}`} />
+                            <Label 
+                              htmlFor={`subcat-${subcat}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {subcat}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
                     </div>
                   </div>
                 )}

@@ -34,6 +34,8 @@ export function PreferencesTab({
   studyPreferences,
   setStudyPreferences
 }: PreferencesTabProps) {
+  const [sessionFormat, setSessionFormat] = useState("both");
+  
   const toggleSubject = (subject: string) => {
     if (selectedSubjects.includes(subject)) {
       setSelectedSubjects(selectedSubjects.filter(s => s !== subject));
@@ -108,7 +110,7 @@ export function PreferencesTab({
           What type of learning sessions do you prefer?
         </p>
         
-        <RadioGroup defaultValue="both">
+        <RadioGroup value={sessionFormat} onValueChange={setSessionFormat}>
           <div className="flex flex-col space-y-3">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="one-on-one" id="one-on-one" />
@@ -128,3 +130,4 @@ export function PreferencesTab({
     </div>
   );
 }
+

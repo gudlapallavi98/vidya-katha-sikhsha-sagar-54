@@ -36,7 +36,7 @@ const GenderSelector = ({ form }: GenderSelectorProps) => {
           <FormLabel>Gender</FormLabel>
           <Select
             onValueChange={field.onChange}
-            value={field.value}
+            value={field.value || ""}
             defaultValue={field.value}
           >
             <FormControl>
