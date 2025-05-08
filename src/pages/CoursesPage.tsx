@@ -9,6 +9,7 @@ import FeaturedCourses from "@/components/courses/FeaturedCourses";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 
 // Mock categories for filtering
 const categories = {
@@ -52,6 +53,7 @@ const CoursesPage = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Get category from URL parameters
@@ -89,8 +91,32 @@ const CoursesPage = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement search functionality when connected to Supabase
-    console.log("Searching for:", searchQuery);
+    
+    // Log search parameters
+    console.log("Searching for:", {
+      query: searchQuery,
+      category: activeCategory,
+      subcategory: selectedSubcategory,
+      subjects: selectedSubjects
+    });
+    
+    // Here we would normally fetch from Supabase with these filters
+    // For now, we'll just update the URL params
+    const params: any = { category: activeCategory };
+    if (searchQuery) params.search = searchQuery;
+    if (selectedSubcategory) params.subcategory = selectedSubcategory;
+    if (selectedSubjects.length > 0) params.subjects = selectedSubjects.join(',');
+    
+    setSearchParams(params);
+  };
+
+  // Reset filter button
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setActiveCategory("all");
+    setSelectedSubcategory(null);
+    setSelectedSubjects([]);
+    setSearchParams({});
   };
 
   return (
@@ -123,6 +149,9 @@ const CoursesPage = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                    <div className="mt-2 flex justify-end">
+                      <Button type="submit" size="sm">Search</Button>
+                    </div>
                   </form>
                 </div>
                 
@@ -150,13 +179,15 @@ const CoursesPage = () => {
                     <h3 className="font-medium mb-4">
                       {categories[activeCategory as keyof typeof categories]} Subcategories
                     </h3>
-                    <RadioGroup 
-                      value={selectedSubcategory || ""} 
-                      onValueChange={handleSubcategoryChange}
-                    >
+                    <div className="space-y-2">
                       {subcategories[activeCategory as keyof typeof subcategories].map((subcat) => (
                         <div key={subcat} className="flex items-center space-x-2 py-1">
-                          <RadioGroupItem value={subcat} id={`subcat-${subcat}`} />
+                          <RadioGroupItem
+                            value={subcat}
+                            id={`subcat-${subcat}`}
+                            checked={selectedSubcategory === subcat}
+                            onClick={() => handleSubcategoryChange(subcat)}
+                          />
                           <Label 
                             htmlFor={`subcat-${subcat}`}
                             className="text-sm cursor-pointer"
@@ -165,7 +196,7 @@ const CoursesPage = () => {
                           </Label>
                         </div>
                       ))}
-                    </RadioGroup>
+                    </div>
                   </div>
                 )}
 
@@ -189,6 +220,13 @@ const CoursesPage = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Reset filters */}
+                <div className="pt-2">
+                  <Button variant="outline" onClick={handleResetFilters} className="w-full">
+                    Reset Filters
+                  </Button>
                 </div>
               </CardContent>
             </Card>

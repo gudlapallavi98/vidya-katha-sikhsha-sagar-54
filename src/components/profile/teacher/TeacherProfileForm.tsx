@@ -85,21 +85,11 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
       };
 
       await updateProfile.mutateAsync(formattedData);
-
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
-      });
       
       if (onCompleted) {
         onCompleted();
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
       console.error("Profile update error:", error);
     } finally {
       setIsLoading(false);

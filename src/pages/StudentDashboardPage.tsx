@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,6 +78,10 @@ const StudentDashboard = () => {
         description: error instanceof Error ? error.message : "Something went wrong",
       });
     }
+  };
+
+  const handleNavigateToCourses = () => {
+    navigate('/courses');
   };
 
   return (
@@ -298,9 +301,10 @@ const StudentDashboard = () => {
                         })}
                       </div>
                     ) : (
-                      <p className="text-center py-8 text-muted-foreground">
-                        You are not enrolled in any courses yet.
-                      </p>
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="mb-4">You are not enrolled in any courses yet.</p>
+                        <Button onClick={handleNavigateToCourses}>Browse Courses</Button>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -366,7 +370,7 @@ const StudentDashboard = () => {
                       <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-xl font-medium mb-2">No Courses Enrolled</h3>
                       <p className="text-muted-foreground mb-6">You haven't enrolled in any courses yet.</p>
-                      <Button>Browse Courses</Button>
+                      <Button onClick={handleNavigateToCourses}>Browse Courses</Button>
                     </div>
                   )}
                 </CardContent>

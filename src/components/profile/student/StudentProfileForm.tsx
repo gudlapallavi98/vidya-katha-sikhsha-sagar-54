@@ -28,16 +28,6 @@ const formSchema = z.object({
   state: z.string().optional(),
   country: z.string().optional(),
   bio: z.string().optional(),
-  education_level: z.string().optional(),
-  school_name: z.string().optional(),
-  grade_level: z.string().optional(),
-  study_preferences: z.array(z.string()).optional(),
-  subjects_interested: z.array(z.string()).optional(),
-  exam_history: z.array(z.object({
-    name: z.string(),
-    date: z.string(),
-    score: z.string()
-  })).optional(),
   avatar_url: z.string().optional(),
 });
 
@@ -50,7 +40,6 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [examHistory, setExamHistory] = useState<{name: string, date: string, score: string}[]>([]);
   const [studyPreferences, setStudyPreferences] = useState<string[]>([]);
   
   const {
@@ -80,33 +69,18 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         state: values.state,
         country: values.country,
         bio: values.bio,
-        education_level: values.education_level,
-        school_name: values.school_name,
-        grade_level: values.grade_level,
-        study_preferences: studyPreferences,
         subjects_interested: selectedSubjects,
-        exam_history: examHistory,
         avatar_url: avatarUrl,
         profile_completed: true,
         updated_at: new Date().toISOString(),
       };
 
       await updateProfile.mutateAsync(formattedData);
-
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
-      });
       
       if (onCompleted) {
         onCompleted();
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
       console.error("Profile update error:", error);
     } finally {
       setIsLoading(false);
@@ -139,10 +113,7 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         </TabsContent>
 
         <TabsContent value="exams">
-          <ExamsTab 
-            examHistory={examHistory} 
-            setExamHistory={setExamHistory} 
-          />
+          <ExamsTab />
         </TabsContent>
 
         <Button type="submit" disabled={isLoading} className="w-full">
