@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useProfileFormData } from "../hooks/useProfileFormData";
 import { useUpdateProfile } from "@/hooks/use-profile-data";
+import { useToast } from "@/hooks/use-toast";
 
 // Tab contents
 import { PersonalInfoTab } from "./tabs/PersonalInfoTab";
@@ -28,6 +29,8 @@ const formSchema = z.object({
   bio: z.string().optional(),
   avatar_url: z.string().optional(),
   education_level: z.string().optional(),
+  school_name: z.string().optional(),
+  grade_level: z.string().optional(),
 });
 
 interface StudentProfileFormProps {
@@ -37,6 +40,7 @@ interface StudentProfileFormProps {
 
 export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFormProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [studyPreferences, setStudyPreferences] = useState<string[]>([]);
   const [examHistory, setExamHistory] = useState<{name: string, date: string, score: string}[]>([]);
@@ -75,17 +79,29 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         updated_at: new Date().toISOString(),
         education_level: values.education_level,
         study_preferences: studyPreferences,
-        exam_history: examHistory
+        exam_history: examHistory.length > 0 ? examHistory : undefined,
+        school_name: values.school_name,
+        grade_level: values.grade_level
       };
 
       console.log("Formatted data for student profile:", formattedData);
       await updateProfile.mutateAsync(formattedData);
+      
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated."
+      });
       
       if (onCompleted) {
         onCompleted();
       }
     } catch (error) {
       console.error("Profile update error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update profile. Please try again."
+      });
     } finally {
       setIsLoading(false);
     }

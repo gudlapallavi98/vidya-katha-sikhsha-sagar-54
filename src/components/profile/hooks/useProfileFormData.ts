@@ -27,6 +27,10 @@ interface ProfileData {
   country?: string;
   experience?: string;
   intro_video_url?: string;
+  study_preferences?: string[];
+  exam_history?: any;
+  school_name?: string;
+  grade_level?: string;
 }
 
 export function useProfileFormData(formSchema: any) {
@@ -40,6 +44,8 @@ export function useProfileFormData(formSchema: any) {
   const [educationLevel, setEducationLevel] = useState("");
   const [certificates, setCertificates] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [studyPreferences, setStudyPreferences] = useState<string[]>([]);
+  const [examHistory, setExamHistory] = useState<{name: string, date: string, score: string}[]>([]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -57,6 +63,8 @@ export function useProfileFormData(formSchema: any) {
       years_of_experience: "",
       intro_video_url: "",
       education_level: "",
+      school_name: "",
+      grade_level: "",
     },
   });
 
@@ -98,6 +106,8 @@ export function useProfileFormData(formSchema: any) {
             years_of_experience: profileData.years_of_experience || "",
             intro_video_url: profileData.intro_video_url || "",
             education_level: profileData.education_level || "",
+            school_name: profileData.school_name || "",
+            grade_level: profileData.grade_level || "",
           });
           
           // Set state values
@@ -106,6 +116,12 @@ export function useProfileFormData(formSchema: any) {
           if (profileData.email) setEmail(profileData.email);
           setAvatarUrl(profileData.avatar_url || null);
           setSelectedSubjects(profileData.subjects_interested || []);
+          setStudyPreferences(profileData.study_preferences || []);
+          
+          // Handle exam history
+          if (profileData.exam_history && Array.isArray(profileData.exam_history)) {
+            setExamHistory(profileData.exam_history);
+          }
           
           // Set teacher-specific fields
           setTeacherBio(profileData.bio || "");
@@ -145,5 +161,9 @@ export function useProfileFormData(formSchema: any) {
     setCertificates,
     selectedSubjects,
     setSelectedSubjects,
+    studyPreferences,
+    setStudyPreferences,
+    examHistory,
+    setExamHistory,
   };
 }

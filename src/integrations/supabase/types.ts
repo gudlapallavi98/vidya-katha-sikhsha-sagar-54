@@ -218,6 +218,8 @@ export type Database = {
           created_at: string | null
           date_of_birth: string | null
           display_name: string | null
+          education_level: string | null
+          exam_history: Json | null
           experience: string | null
           first_name: string
           gender: string | null
@@ -227,6 +229,7 @@ export type Database = {
           profile_completed: boolean | null
           role: string
           state: string | null
+          study_preferences: string[] | null
           subjects_interested: string[] | null
           updated_at: string | null
         }
@@ -239,6 +242,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           display_name?: string | null
+          education_level?: string | null
+          exam_history?: Json | null
           experience?: string | null
           first_name: string
           gender?: string | null
@@ -248,6 +253,7 @@ export type Database = {
           profile_completed?: boolean | null
           role: string
           state?: string | null
+          study_preferences?: string[] | null
           subjects_interested?: string[] | null
           updated_at?: string | null
         }
@@ -260,6 +266,8 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           display_name?: string | null
+          education_level?: string | null
+          exam_history?: Json | null
           experience?: string | null
           first_name?: string
           gender?: string | null
@@ -269,6 +277,7 @@ export type Database = {
           profile_completed?: boolean | null
           role?: string
           state?: string | null
+          study_preferences?: string[] | null
           subjects_interested?: string[] | null
           updated_at?: string | null
         }
