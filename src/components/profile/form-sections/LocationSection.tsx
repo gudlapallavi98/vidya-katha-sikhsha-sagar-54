@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import {
   FormControl,
@@ -72,12 +73,17 @@ const defaultCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "
 
 const LocationSection = ({ form }: LocationSectionProps) => {
   // Get the current state value
+  const [availableCities, setAvailableCities] = useState<string[]>(defaultCities);
   const selectedState = form.watch("state");
   
-  // Get cities based on selected state or use default list
-  const availableCities = selectedState && indianCities[selectedState] 
-    ? indianCities[selectedState] 
-    : defaultCities;
+  // Update available cities when state changes
+  useEffect(() => {
+    if (selectedState && indianCities[selectedState]) {
+      setAvailableCities(indianCities[selectedState]);
+    } else {
+      setAvailableCities(defaultCities);
+    }
+  }, [selectedState]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -89,7 +95,7 @@ const LocationSection = ({ form }: LocationSectionProps) => {
             <FormLabel>City</FormLabel>
             <Select
               onValueChange={field.onChange}
-              value={field.value}
+              value={field.value || ""}
               defaultValue={field.value}
             >
               <FormControl>
@@ -122,7 +128,7 @@ const LocationSection = ({ form }: LocationSectionProps) => {
                 // Reset city when state changes
                 form.setValue("city", "");
               }}
-              value={field.value}
+              value={field.value || ""}
               defaultValue={field.value}
             >
               <FormControl>
@@ -150,7 +156,7 @@ const LocationSection = ({ form }: LocationSectionProps) => {
           <FormItem>
             <FormLabel>Country</FormLabel>
             <FormControl>
-              <Input placeholder="India" value="India" readOnly {...field} onChange={(e) => field.onChange("India")} />
+              <Input placeholder="India" value={field.value || "India"} readOnly {...field} onChange={(e) => field.onChange("India")} />
             </FormControl>
             <FormMessage />
           </FormItem>

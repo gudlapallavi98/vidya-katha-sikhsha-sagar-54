@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { format, parse } from "date-fns";
 import { UseFormReturn } from "react-hook-form";
 import { cn } from "@/lib/utils";
@@ -41,19 +41,27 @@ interface DateOfBirthSelectorProps {
 }
 
 const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
-  const dateOfBirth = form.watch("date_of_birth");
+  const [birthDay, setBirthDay] = useState<string>("");
+  const [birthMonth, setBirthMonth] = useState<string>("");
+  const [birthYear, setBirthYear] = useState<string>("");
   
-  // Extract day, month, and year from the date_of_birth
-  let birthDay = "";
-  let birthMonth = "";
-  let birthYear = "";
-  
-  if (dateOfBirth) {
-    const date = new Date(dateOfBirth);
-    birthDay = date.getDate().toString().padStart(2, '0');
-    birthMonth = (date.getMonth() + 1).toString().padStart(2, '0');
-    birthYear = date.getFullYear().toString();
-  }
+  // Extract day, month, and year from the date_of_birth when component mounts or when the value changes
+  useEffect(() => {
+    const dateOfBirth = form.watch("date_of_birth");
+    
+    if (dateOfBirth) {
+      try {
+        const date = new Date(dateOfBirth);
+        if (!isNaN(date.getTime())) {
+          setBirthDay(date.getDate().toString().padStart(2, '0'));
+          setBirthMonth((date.getMonth() + 1).toString().padStart(2, '0'));
+          setBirthYear(date.getFullYear().toString());
+        }
+      } catch (error) {
+        console.error("Error parsing date:", error);
+      }
+    }
+  }, [form.watch("date_of_birth")]);
   
   // Update the date_of_birth field when day, month, or year changes
   const updateDateOfBirth = (day: string, month: string, year: string) => {
@@ -79,7 +87,10 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
         <FormItem>
           <Select 
             value={birthDay}
-            onValueChange={(value) => updateDateOfBirth(value, birthMonth, birthYear)}
+            onValueChange={(value) => {
+              setBirthDay(value);
+              updateDateOfBirth(value, birthMonth, birthYear);
+            }}
           >
             <SelectTrigger className={cn(!birthDay && "text-muted-foreground")}>
               <SelectValue placeholder="Day" />
@@ -97,7 +108,10 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
         <FormItem>
           <Select 
             value={birthMonth}
-            onValueChange={(value) => updateDateOfBirth(birthDay, value, birthYear)}
+            onValueChange={(value) => {
+              setBirthMonth(value);
+              updateDateOfBirth(birthDay, value, birthYear);
+            }}
           >
             <SelectTrigger className={cn(!birthMonth && "text-muted-foreground")}>
               <SelectValue placeholder="Month" />
@@ -115,7 +129,10 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
         <FormItem>
           <Select 
             value={birthYear}
-            onValueChange={(value) => updateDateOfBirth(birthDay, birthMonth, value)}
+            onValueChange={(value) => {
+              setBirthYear(value);
+              updateDateOfBirth(birthDay, birthMonth, value);
+            }}
           >
             <SelectTrigger className={cn(!birthYear && "text-muted-foreground")}>
               <SelectValue placeholder="Year" />
