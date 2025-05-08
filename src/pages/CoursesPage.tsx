@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import FeaturedCourses from "@/components/courses/FeaturedCourses";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Mock categories for filtering
 const categories = {
@@ -26,10 +29,29 @@ const subcategories = {
   competitive: ["IIT-JEE", "NEET", "SSC", "Banking", "UPSC", "CAT"]
 };
 
+// Mock subjects for filtering
+const subjects = [
+  "Mathematics",
+  "Science",
+  "English",
+  "History",
+  "Geography",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Computer Science",
+  "Economics",
+  "Political Science",
+  "Sanskrit",
+  "Hindi"
+];
+
 const CoursesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Get category from URL parameters
@@ -49,7 +71,20 @@ const CoursesPage = () => {
 
   const handleCategoryChange = (category: string) => {
     setActiveCategory(category);
+    setSelectedSubcategory(null); // Reset subcategory when changing category
     setSearchParams({ category });
+  };
+
+  const handleSubcategoryChange = (subcategory: string) => {
+    setSelectedSubcategory(subcategory === selectedSubcategory ? null : subcategory);
+  };
+
+  const handleSubjectChange = (subject: string) => {
+    setSelectedSubjects(
+      selectedSubjects.includes(subject)
+        ? selectedSubjects.filter(s => s !== subject)
+        : [...selectedSubjects, subject]
+    );
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -94,21 +129,19 @@ const CoursesPage = () => {
                 {/* Categories */}
                 <div>
                   <h3 className="font-medium mb-4">Categories</h3>
-                  <div className="space-y-2">
+                  <RadioGroup value={activeCategory} onValueChange={handleCategoryChange}>
                     {Object.entries(categories).map(([key, label]) => (
-                      <button
-                        key={key}
-                        onClick={() => handleCategoryChange(key)}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          activeCategory === key
-                            ? "bg-indian-saffron/10 text-indian-saffron font-medium"
-                            : "hover:bg-muted"
-                        }`}
-                      >
-                        {label}
-                      </button>
+                      <div key={key} className="flex items-center space-x-2 py-1">
+                        <RadioGroupItem value={key} id={`category-${key}`} />
+                        <Label 
+                          htmlFor={`category-${key}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {label}
+                        </Label>
+                      </div>
                     ))}
-                  </div>
+                  </RadioGroup>
                 </div>
                 
                 {/* Subcategories - only show if a specific category is selected */}
@@ -117,22 +150,46 @@ const CoursesPage = () => {
                     <h3 className="font-medium mb-4">
                       {categories[activeCategory as keyof typeof categories]} Subcategories
                     </h3>
-                    <div className="space-y-2">
-                      {subcategories[activeCategory as keyof typeof subcategories].map((subcat, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={`subcat-${index}`}
-                            className="rounded border-gray-300 text-indian-saffron focus:ring-indian-saffron"
-                          />
-                          <label htmlFor={`subcat-${index}`} className="text-sm">
+                    <RadioGroup 
+                      value={selectedSubcategory || ""} 
+                      onValueChange={handleSubcategoryChange}
+                    >
+                      {subcategories[activeCategory as keyof typeof subcategories].map((subcat) => (
+                        <div key={subcat} className="flex items-center space-x-2 py-1">
+                          <RadioGroupItem value={subcat} id={`subcat-${subcat}`} />
+                          <Label 
+                            htmlFor={`subcat-${subcat}`}
+                            className="text-sm cursor-pointer"
+                          >
                             {subcat}
-                          </label>
+                          </Label>
                         </div>
                       ))}
-                    </div>
+                    </RadioGroup>
                   </div>
                 )}
+
+                {/* Subjects filter */}
+                <div>
+                  <h3 className="font-medium mb-4">Subjects</h3>
+                  <div className="space-y-2">
+                    {subjects.map((subject) => (
+                      <div key={subject} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`subject-${subject}`} 
+                          checked={selectedSubjects.includes(subject)}
+                          onCheckedChange={() => handleSubjectChange(subject)}
+                        />
+                        <label
+                          htmlFor={`subject-${subject}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {subject}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -144,6 +201,7 @@ const CoursesPage = () => {
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-sanskrit font-bold">
                 {categories[activeCategory as keyof typeof categories]}
+                {selectedSubcategory && ` - ${selectedSubcategory}`}
               </h2>
               <TabsList>
                 <TabsTrigger value="grid">Grid</TabsTrigger>

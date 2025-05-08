@@ -4,13 +4,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserProfile } from "@/hooks/use-profile-data";
 import { TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useProfileFormData } from "../hooks/useProfileFormData";
+import { useUpdateProfile } from "@/hooks/use-profile-data";
 
 // Tab contents
 import { PersonalInfoTab } from "./tabs/PersonalInfoTab";
@@ -55,6 +54,8 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
     avatarUrl, 
     setAvatarUrl
   } = useProfileFormData(formSchema);
+  
+  const updateProfile = useUpdateProfile();
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
@@ -83,15 +84,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
         updated_at: new Date().toISOString(),
       };
 
-      // Update profile with formatted values
-      const { error } = await supabase
-        .from("profiles")
-        .update(formattedData)
-        .eq("id", user.id);
-
-      if (error) {
-        throw error;
-      }
+      await updateProfile.mutateAsync(formattedData);
 
       toast({
         title: "Profile Updated",
