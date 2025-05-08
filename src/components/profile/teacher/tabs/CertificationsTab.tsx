@@ -1,8 +1,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileUpload } from "@/components/ui/file-upload";
 import { X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import FileUpload from "@/components/FileUpload";
 
 interface CertificationsTabProps {
   certificates: string[];
@@ -12,6 +13,7 @@ interface CertificationsTabProps {
 
 export function CertificationsTab({ certificates, setCertificates, userId }: CertificationsTabProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
 
   const handleCertificateUpload = (url: string) => {
     setCertificates([...certificates, url]);
@@ -69,9 +71,12 @@ export function CertificationsTab({ certificates, setCertificates, userId }: Cer
             </div>
           ) : (
             <FileUpload
-              onUploadComplete={handleCertificateUpload}
-              currentImageUrl={null}
-              userId={userId}
+              bucket="avatars"
+              folder={`user-${userId}/certificates`}
+              onFileUploaded={handleCertificateUpload}
+              acceptedFileTypes="image/*"
+              buttonLabel="Upload Certificate"
+              maxFileSizeMB={2}
             />
           )}
         </div>

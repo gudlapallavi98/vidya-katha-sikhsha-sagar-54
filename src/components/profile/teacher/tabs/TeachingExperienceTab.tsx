@@ -35,7 +35,7 @@ export function TeachingExperienceTab({ form }: TeachingExperienceTabProps) {
 
       <FormField
         control={form.control}
-        name="experience_years"
+        name="years_of_experience"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Years of Experience</FormLabel>

@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUpload } from "@/components/ui/file-upload";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import FileUpload from "@/components/FileUpload";
 
 interface TeacherSectionProps {
   form: UseFormReturn<any>;
@@ -148,12 +148,15 @@ const TeacherSection = ({ form, certificates, setCertificates }: TeacherSectionP
               </div>
             ) : (
               <FileUpload
-                onUploadComplete={(url) => {
+                bucket="avatars"
+                folder={`user-${form.getValues("id") || "temp-id"}/certificates`}
+                onFileUploaded={(url) => {
                   handleCertificateUpload(url);
                   setIsUploading(false);
                 }}
-                currentImageUrl={null}
-                userId={form.getValues("id") || "temp-id"}
+                acceptedFileTypes="image/*"
+                maxFileSizeMB={2}
+                buttonLabel="Upload Certificate"
               />
             )}
           </div>
