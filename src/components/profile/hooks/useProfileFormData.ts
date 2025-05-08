@@ -1,95 +1,100 @@
-
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useUserProfile } from "@/hooks/use-profile-data";
-import { ZodSchema, z } from "zod";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-export const useProfileFormData = (formSchema: ZodSchema) => {
-  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+interface ProfileData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: "student" | "teacher";
+  bio?: string;
+  profile_picture?: string;
+  subjects_interested?: string[];
+  years_of_experience?: string;
+  education_level?: string;
+  certificates?: string[];
+}
+
+export function useProfileFormData(role: "student" | "teacher") {
+  const { user } = useAuth();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [teacherBio, setTeacherBio] = useState("");
+  const [yearsOfExperience, setYearsOfExperience] = useState("");
+  const [educationLevel, setEducationLevel] = useState("");
   const [certificates, setCertificates] = useState<string[]>([]);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
 
-  // Initialize form
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      display_name: "",
-      gender: "",
-      date_of_birth: undefined,
-      city: "",
-      state: "",
-      country: "",
-      bio: "",
-      experience: "",
-      years_of_experience: "",
-      intro_video_url: "",
-      education_level: "",
-    },
-  });
-
-  // Fetch user profile
-  const { data: profile, isLoading: profileLoading } = useUserProfile();
-
-  // Log profile data for debugging
   useEffect(() => {
-    if (profile) {
-      console.log("Profile data loaded:", profile);
-    }
-  }, [profile]);
+    const fetchProfileData = async () => {
+      try {
+        if (!user) return;
 
-  // Update form when profile is loaded
-  useEffect(() => {
-    if (profile && !profileLoading) {
-      console.log("Resetting form with profile data");
-      
-      // Handle date conversion for date_of_birth
-      let dob = undefined;
-      if (profile.date_of_birth) {
-        try {
-          dob = new Date(profile.date_of_birth);
-          // Check if date is valid
-          if (isNaN(dob.getTime())) {
-            console.log("Invalid date format:", profile.date_of_birth);
-            dob = undefined;
-          }
-        } catch (error) {
-          console.error("Error converting date:", error);
-          dob = undefined;
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+
+        if (error) {
+          console.error("Error fetching profile:", error);
+          return;
         }
-      }
-      
-      form.reset({
-        first_name: profile.first_name || "",
-        last_name: profile.last_name || "",
-        display_name: profile.display_name || "",
-        gender: profile.gender || "",
-        date_of_birth: dob,
-        city: profile.city || "",
-        state: profile.state || "",
-        country: profile.country || "",
-        bio: profile.bio || "",
-        experience: profile.experience || "",
-        years_of_experience: profile.years_of_experience || "",
-        intro_video_url: profile.intro_video_url || "",
-        education_level: profile.education_level || "",
-      });
 
-      setSelectedSubjects(profile.subjects_interested || []);
-      setCertificates(profile.certificates || []);
-      setAvatarUrl(profile.avatar_url || null);
+        if (data) {
+          const profileData = data as ProfileData;
+          setFirstName(profileData.first_name);
+          setLastName(profileData.last_name);
+          setEmail(profileData.email);
+          setProfilePicture(profileData.profile_picture || null);
+          setSelectedSubjects(profileData.subjects_interested || []);
+
+          // Fix types for teacher-specific fields by checking if they exist in the profile data
+          if (role === "teacher") {
+            if ("years_of_experience" in profileData) {
+              setYearsOfExperience(profileData.years_of_experience as string || "");
+            }
+            
+            if ("education_level" in profileData) {
+              setEducationLevel(profileData.education_level as string || "");
+            }
+            
+            // Continue with existing code
+            setTeacherBio(profileData.bio || "");
+            setCertificates(profileData.certificates || []);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      }
+    };
+
+    if (user) {
+      fetchProfileData();
     }
-  }, [profile, profileLoading, form]);
+  }, [user, role]);
 
   return {
-    form,
-    selectedSubjects,
-    setSelectedSubjects,
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
+    email,
+    setEmail,
+    profilePicture,
+    setProfilePicture,
+    teacherBio,
+    setTeacherBio,
+    yearsOfExperience,
+    setYearsOfExperience,
+    educationLevel,
+    setEducationLevel,
     certificates,
     setCertificates,
-    avatarUrl,
-    setAvatarUrl
+    selectedSubjects,
+    setSelectedSubjects,
   };
-};
+}

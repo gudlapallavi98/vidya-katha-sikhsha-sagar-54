@@ -1,4 +1,3 @@
-
 export interface Course {
   id: string;
   title: string;
@@ -99,4 +98,14 @@ export interface StudentAchievement {
   achievement_id: string;
   earned_at: string;
   achievement?: Achievement;
+}
+
+export interface Teacher {
+  id: string;
+  first_name: string;
+  last_name: string;
+  subjects_interested?: string[];
+  bio?: string;
+  years_of_experience?: string;
+  education_level?: string;
 }

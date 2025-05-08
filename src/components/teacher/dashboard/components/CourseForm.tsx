@@ -1,15 +1,11 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import {
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -18,276 +14,165 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { FileUpload } from "@/components/ui/file-upload";
+import FileUpload from "@/components/FileUpload";
 
-// Schema for course form validation
-const courseSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  category: z.string().min(1, "Category is required"),
-  total_lessons: z.string().min(1, "Number of lessons is required"),
-  course_link: z.string().optional(),
+const formSchema = z.object({
+  title: z.string().min(2, {
+    message: "Title must be at least 2 characters.",
+  }),
+  description: z.string().min(10, {
+    message: "Description must be at least 10 characters.",
+  }),
+  category: z.string().min(2, {
+    message: "Category must be at least 2 characters.",
+  }),
+  total_lessons: z.number().min(1, {
+    message: "Total lessons must be at least 1.",
+  }),
+  course_link: z.string().url({
+    message: "Please enter a valid URL.",
+  }),
 });
 
-interface CourseFormProps {
-  initialData?: any;
-  onSubmit: (data: any) => void;
-  onCancel: () => void;
+export interface CourseFormProps {
+  defaultValues: {
+    title: string;
+    description: string;
+    category: string;
+    total_lessons: number;
+    course_link: string;
+  };
+  onSubmit: (values: {
+    title: string;
+    description: string;
+    category: string;
+    total_lessons: number;
+    course_link: string;
+  }) => Promise<void>;
+  isSubmitting: boolean;
+  isEditMode?: boolean;
 }
 
-const CourseForm: React.FC<CourseFormProps> = ({
-  initialData,
-  onSubmit,
-  onCancel,
+const CourseForm: React.FC<CourseFormProps> = ({ 
+  defaultValues, 
+  onSubmit, 
+  isSubmitting,
+  isEditMode = false
 }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(
-    initialData?.image_url || null
-  );
-  const [isUploading, setIsUploading] = useState(false);
-  const [lessonLinks, setLessonLinks] = useState<string[]>(
-    Array(parseInt(initialData?.total_lessons || "1")).fill("")
-  );
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
 
-  const form = useForm<z.infer<typeof courseSchema>>({
-    resolver: zodResolver(courseSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      title: initialData?.title || "",
-      description: initialData?.description || "",
-      category: initialData?.category || "",
-      total_lessons: initialData?.total_lessons?.toString() || "1",
-      course_link: initialData?.course_link || "",
+      title: defaultValues.title,
+      description: defaultValues.description,
+      category: defaultValues.category,
+      total_lessons: defaultValues.total_lessons,
+      course_link: defaultValues.course_link,
     },
   });
 
-  const handleImageUpload = (url: string) => {
-    setImageUrl(url);
-    setIsUploading(false);
-  };
-
-  const handleLessonLinksChange = (index: number, value: string) => {
-    const newLinks = [...lessonLinks];
-    newLinks[index] = value;
-    setLessonLinks(newLinks);
-  };
-
-  const handleFormSubmit = (values: z.infer<typeof courseSchema>) => {
-    // If total_lessons is 1, use the course_link directly
-    // For multiple lessons, use the array of lessonLinks
-    const finalLessonLinks = parseInt(values.total_lessons) === 1 
-      ? values.course_link
-      : lessonLinks.join(','); // Join multiple links with comma for storage
-    
-    onSubmit({
-      ...values,
-      total_lessons: parseInt(values.total_lessons),
-      image_url: imageUrl,
-      course_link: finalLessonLinks,
-    });
-  };
-
-  const numberOptions = Array.from({ length: 20 }, (_, i) => (i + 1).toString());
-
-  // Watch the total_lessons field to update lessonLinks array when it changes
-  const totalLessons = parseInt(form.watch("total_lessons") || "1");
-  React.useEffect(() => {
-    if (totalLessons !== lessonLinks.length) {
-      // If initialData has course_link with multiple links, split them
-      let initialLinks: string[] = [];
-      if (initialData?.course_link && totalLessons > 1) {
-        initialLinks = initialData.course_link.split(',');
-        // Pad with empty strings if needed
-        while (initialLinks.length < totalLessons) {
-          initialLinks.push("");
-        }
-      } else {
-        initialLinks = Array(totalLessons).fill("");
-        if (initialData?.course_link && totalLessons === 1) {
-          initialLinks[0] = initialData.course_link;
-        }
-      }
-      setLessonLinks(initialLinks);
-    }
-  }, [totalLessons, initialData]);
-
   return (
-    <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{initialData ? "Edit Course" : "Create New Course"}</DialogTitle>
-        <DialogDescription>
-          {initialData
-            ? "Update your course information below."
-            : "Fill in the details to create a new course."}
-        </DialogDescription>
-      </DialogHeader>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            {/* Course Image Upload */}
-            <div>
-              <FormLabel>Course Image</FormLabel>
-              <div className="mt-2">
-                {isUploading ? (
-                  <div className="h-40 bg-muted rounded flex items-center justify-center">
-                    <p>Uploading...</p>
-                  </div>
-                ) : (
-                  <FileUpload
-                    onUploadStart={() => setIsUploading(true)}
-                    onUploadComplete={handleImageUpload}
-                    currentImageUrl={imageUrl}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Course Title */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Course title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Course Description */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Provide a description of your course"
-                      rows={4}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Course Category */}
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Vedic Mathematics">Vedic Mathematics</SelectItem>
-                      <SelectItem value="Sanskrit Language">Sanskrit Language</SelectItem>
-                      <SelectItem value="Yoga">Yoga</SelectItem>
-                      <SelectItem value="Ayurveda">Ayurveda</SelectItem>
-                      <SelectItem value="Vedic Philosophy">Vedic Philosophy</SelectItem>
-                      <SelectItem value="Meditation">Meditation</SelectItem>
-                      <SelectItem value="Music">Music</SelectItem>
-                      <SelectItem value="Dance">Dance</SelectItem>
-                      <SelectItem value="Art">Art</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Number of Lessons */}
-            <FormField
-              control={form.control}
-              name="total_lessons"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number of Lessons</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select number of lessons" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {numberOptions.map(option => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Course Links */}
-            {totalLessons === 1 ? (
-              <FormField
-                control={form.control}
-                name="course_link"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Course Resource Link</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : (
-              <div className="space-y-3">
-                <FormLabel>Course Resource Links</FormLabel>
-                {lessonLinks.map((link, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <span className="text-sm w-[80px] shrink-0">Lesson {index + 1}:</span>
-                    <Input
-                      value={link}
-                      onChange={(e) => handleLessonLinksChange(index, e.target.value)}
-                      placeholder={`Link for lesson ${index + 1}`}
-                    />
-                  </div>
-                ))}
-              </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="mt-6 space-y-6">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="Course title" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
+          />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button type="submit">Save Course</Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </DialogContent>
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Input placeholder="Course description" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <FormControl>
+                  <Input placeholder="Course category" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="total_lessons"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Total Lessons</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="Total lessons"
+                    {...field}
+                    onChange={(e) => {
+                      // Ensure the value is always a number
+                      const value = parseInt(e.target.value);
+                      field.onChange(isNaN(value) ? 0 : value);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="course_link"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Course Resource Link</FormLabel>
+                <FormControl>
+                  <Input placeholder="Course link" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="mt-6 space-y-6">
+          
+          <div className="space-y-2">
+            <Label htmlFor="image">Course Image</Label>
+            <FileUpload 
+              onUpload={(url: string) => {
+                setImageUrl(url);
+              }} 
+              currentImageUrl={imageUrl}
+            />
+          </div>
+          
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Course"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 };
 
