@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import FileUpload from "@/components/FileUpload";
+import { FileUpload } from "@/components/ui/file-upload";
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -160,10 +160,11 @@ const CourseForm: React.FC<CourseFormProps> = ({
           <div className="space-y-2">
             <Label htmlFor="image">Course Image</Label>
             <FileUpload 
-              onUpload={(url: string) => {
+              onUploadComplete={(url: string) => {
                 setImageUrl(url);
               }} 
               currentImageUrl={imageUrl}
+              userId=""
             />
           </div>
           

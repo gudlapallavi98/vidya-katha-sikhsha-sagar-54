@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,6 @@ export function AvailabilityForm({ subjects, onAvailabilityAdded, isProfileCompl
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
-
-  // Import at the top
-  import { useAuth } from "@/contexts/AuthContext";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

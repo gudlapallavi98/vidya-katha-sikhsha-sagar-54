@@ -1,12 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 interface ProfileData {
   id: string;
   first_name: string;
   last_name: string;
-  email: string;
+  email?: string;
   role: "student" | "teacher";
   bio?: string;
   profile_picture?: string;
@@ -14,19 +18,47 @@ interface ProfileData {
   years_of_experience?: string;
   education_level?: string;
   certificates?: string[];
+  avatar_url?: string;
+  display_name?: string;
+  gender?: string;
+  date_of_birth?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  experience?: string;
+  intro_video_url?: string;
 }
 
-export function useProfileFormData(role: "student" | "teacher") {
+export function useProfileFormData(formSchema: any) {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [teacherBio, setTeacherBio] = useState("");
   const [yearsOfExperience, setYearsOfExperience] = useState("");
   const [educationLevel, setEducationLevel] = useState("");
   const [certificates, setCertificates] = useState<string[]>([]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      display_name: "",
+      gender: "",
+      date_of_birth: undefined,
+      city: "",
+      state: "",
+      country: "",
+      bio: "",
+      experience: "",
+      years_of_experience: "",
+      intro_video_url: "",
+      education_level: "",
+    },
+  });
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -45,27 +77,38 @@ export function useProfileFormData(role: "student" | "teacher") {
         }
 
         if (data) {
-          const profileData = data as ProfileData;
+          // Cast the data to ProfileData but make the email optional to match our profile structure
+          const profileData = data as unknown as ProfileData;
+          
+          // Set the form values
+          form.reset({
+            first_name: profileData.first_name || "",
+            last_name: profileData.last_name || "",
+            display_name: profileData.display_name || "",
+            gender: profileData.gender || "",
+            date_of_birth: profileData.date_of_birth ? new Date(profileData.date_of_birth) : undefined,
+            city: profileData.city || "",
+            state: profileData.state || "",
+            country: profileData.country || "",
+            bio: profileData.bio || "",
+            experience: profileData.experience || "",
+            years_of_experience: profileData.years_of_experience || "",
+            intro_video_url: profileData.intro_video_url || "",
+            education_level: profileData.education_level || "",
+          });
+          
+          // Set state values
           setFirstName(profileData.first_name);
           setLastName(profileData.last_name);
-          setEmail(profileData.email);
-          setProfilePicture(profileData.profile_picture || null);
+          if (profileData.email) setEmail(profileData.email);
+          setAvatarUrl(profileData.avatar_url || null);
           setSelectedSubjects(profileData.subjects_interested || []);
-
-          // Fix types for teacher-specific fields by checking if they exist in the profile data
-          if (role === "teacher") {
-            if ("years_of_experience" in profileData) {
-              setYearsOfExperience(profileData.years_of_experience as string || "");
-            }
-            
-            if ("education_level" in profileData) {
-              setEducationLevel(profileData.education_level as string || "");
-            }
-            
-            // Continue with existing code
-            setTeacherBio(profileData.bio || "");
-            setCertificates(profileData.certificates || []);
-          }
+          
+          // Set teacher-specific fields
+          setTeacherBio(profileData.bio || "");
+          setYearsOfExperience(profileData.years_of_experience || "");
+          setEducationLevel(profileData.education_level || "");
+          setCertificates(profileData.certificates || []);
         }
       } catch (error) {
         console.error("Error fetching profile data:", error);
@@ -75,17 +118,18 @@ export function useProfileFormData(role: "student" | "teacher") {
     if (user) {
       fetchProfileData();
     }
-  }, [user, role]);
+  }, [user, form]);
 
   return {
+    form,
     firstName,
     setFirstName,
     lastName,
     setLastName,
     email,
     setEmail,
-    profilePicture,
-    setProfilePicture,
+    avatarUrl,
+    setAvatarUrl,
     teacherBio,
     setTeacherBio,
     yearsOfExperience,

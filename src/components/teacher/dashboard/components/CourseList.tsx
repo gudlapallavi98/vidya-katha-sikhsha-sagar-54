@@ -1,15 +1,12 @@
 
 import React from "react";
 import { BookOpen } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DialogTrigger } from "@/components/ui/dialog";
 import CourseCard from "./CourseCard";
 
 interface CourseListProps {
   courses: any[];
   isLoading: boolean;
-  onOpenDialog: () => void;
   onEdit: (course: any) => void;
   onDelete: (courseId: string) => void;
   onManage: (courseId: string) => void;
@@ -18,7 +15,6 @@ interface CourseListProps {
 const CourseList: React.FC<CourseListProps> = ({
   courses,
   isLoading,
-  onOpenDialog,
   onEdit,
   onDelete,
   onManage,
@@ -33,9 +29,7 @@ const CourseList: React.FC<CourseListProps> = ({
         <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-xl font-medium mb-2">No Courses Created</h3>
         <p className="text-muted-foreground mb-6">You haven't created any courses yet.</p>
-        <DialogTrigger asChild>
-          <Button onClick={onOpenDialog}>Create New Course</Button>
-        </DialogTrigger>
+        <Button onClick={() => {}}>Create New Course</Button>
       </div>
     );
   }

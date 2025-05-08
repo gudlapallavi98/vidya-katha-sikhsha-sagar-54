@@ -1,17 +1,13 @@
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserProfile } from "@/hooks/use-profile-data";
 
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 
-import { FileUpload } from "@/components/ui/file-upload";
 import { useProfileFormData } from "./hooks/useProfileFormData";
 import { ProfileAvatarSection } from "./form-sections/ProfileAvatarSection";
 import { ProfileFormContent } from "./form-sections/ProfileFormContent";
