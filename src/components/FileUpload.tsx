@@ -13,6 +13,7 @@ interface FileUploadProps {
   acceptedFileTypes?: string;
   maxFileSizeMB?: number;
   buttonLabel?: string;
+  buttonVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
 const FileUpload = ({
@@ -22,6 +23,7 @@ const FileUpload = ({
   acceptedFileTypes = "image/*",
   maxFileSizeMB = 5,
   buttonLabel = "Upload File",
+  buttonVariant = "default",
 }: FileUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
@@ -96,7 +98,7 @@ const FileUpload = ({
       <label htmlFor="file-upload">
         <Button
           type="button"
-          variant="outline"
+          variant={buttonVariant}
           className="cursor-pointer w-full"
           disabled={uploading}
           asChild
