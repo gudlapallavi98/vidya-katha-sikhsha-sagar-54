@@ -14,7 +14,7 @@ interface ProfileSettingsFormProps {
 
 function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
   const [activeTab, setActiveTab] = useState("personal");
-  const { profile, isLoading } = useUserProfile();
+  const { data: profile, isLoading } = useUserProfile();
   const [progressPercentage, setProgressPercentage] = useState(0);
 
   // Calculate profile completion percentage
