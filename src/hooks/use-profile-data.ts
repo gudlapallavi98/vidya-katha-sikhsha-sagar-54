@@ -38,22 +38,11 @@ export const useUpdateProfile = () => {
       
       console.log("Updating profile with data:", profileData);
       
-      // Filter out any fields that don't exist in the database
-      const validFields = [
-        'first_name', 'last_name', 'display_name', 'gender', 
-        'date_of_birth', 'city', 'state', 'country', 'bio',
-        'experience', 'years_of_experience', 'intro_video_url',
-        'subjects_interested', 'certificates', 'avatar_url',
-        'profile_completed', 'updated_at', 'education_level', 
-        'study_preferences', 'exam_history', 'school_name',
-        'grade_level', 'course_link'
-      ];
-      
-      // Filter the profileData to only include valid fields
-      const filteredData = Object.keys(profileData)
-        .filter(key => validFields.includes(key) && profileData[key] !== undefined)
-        .reduce((obj: any, key) => {
-          obj[key] = profileData[key];
+      // Filter out any undefined or null fields to prevent overwriting with null
+      const filteredData = Object.entries(profileData)
+        .filter(([_, value]) => value !== undefined && value !== null)
+        .reduce((obj: any, [key, value]) => {
+          obj[key] = value;
           return obj;
         }, {});
       
@@ -80,7 +69,7 @@ export const useUpdateProfile = () => {
       // Also update auth.users metadata to ensure name consistency across the app
       if (filteredData.first_name || filteredData.last_name) {
         try {
-          const metadata = { ...user.user_metadata };
+          const metadata = { ...user.user_metadata } || {};
           if (filteredData.first_name) metadata.first_name = filteredData.first_name;
           if (filteredData.last_name) metadata.last_name = filteredData.last_name;
 
@@ -101,18 +90,10 @@ export const useUpdateProfile = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user_profile', user?.id] });
-      toast({
-        title: "Success",
-        description: "Profile updated successfully"
-      });
     },
     onError: (error: any) => {
       console.error("Profile update error:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
-        variant: "destructive"
-      });
+      throw error; // Re-throw to let the component handle it
     }
   });
 };

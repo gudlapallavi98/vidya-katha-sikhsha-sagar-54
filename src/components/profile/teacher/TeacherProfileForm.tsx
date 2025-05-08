@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
@@ -67,19 +67,19 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
       const formattedData = {
         first_name: values.first_name,
         last_name: values.last_name,
-        display_name: values.display_name,
-        gender: values.gender,
+        display_name: values.display_name || undefined,
+        gender: values.gender || undefined,
         date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : undefined,
-        city: values.city,
-        state: values.state,
-        country: values.country,
-        bio: values.bio,
-        experience: values.experience,
-        years_of_experience: values.years_of_experience,
-        intro_video_url: values.intro_video_url,
-        subjects_interested: selectedSubjects,
-        certificates: certificates,
-        avatar_url: avatarUrl,
+        city: values.city || undefined,
+        state: values.state || undefined,
+        country: values.country || undefined,
+        bio: values.bio || undefined,
+        experience: values.experience || undefined,
+        years_of_experience: values.years_of_experience || undefined,
+        intro_video_url: values.intro_video_url || undefined,
+        subjects_interested: selectedSubjects.length > 0 ? selectedSubjects : undefined,
+        certificates: certificates.length > 0 ? certificates : undefined,
+        avatar_url: avatarUrl || undefined,
         profile_completed: true,
         updated_at: new Date().toISOString(),
       };

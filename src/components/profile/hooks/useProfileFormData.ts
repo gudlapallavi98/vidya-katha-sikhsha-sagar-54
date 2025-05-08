@@ -85,6 +85,8 @@ export function useProfileFormData(formSchema: any) {
         }
 
         if (data) {
+          console.log("Profile data loaded:", data);
+          
           // Cast data properly with optional email
           const profileData = { 
             ...data, 
@@ -118,6 +120,11 @@ export function useProfileFormData(formSchema: any) {
           setSelectedSubjects(profileData.subjects_interested || []);
           setStudyPreferences(profileData.study_preferences || []);
           
+          // Handle certificates
+          if (profileData.certificates && Array.isArray(profileData.certificates)) {
+            setCertificates(profileData.certificates);
+          }
+          
           // Handle exam history
           if (profileData.exam_history && Array.isArray(profileData.exam_history)) {
             setExamHistory(profileData.exam_history);
@@ -127,7 +134,6 @@ export function useProfileFormData(formSchema: any) {
           setTeacherBio(profileData.bio || "");
           setYearsOfExperience(profileData.years_of_experience || "");
           setEducationLevel(profileData.education_level || "");
-          setCertificates(profileData.certificates || []);
 
           console.log("Profile data loaded successfully");
         }

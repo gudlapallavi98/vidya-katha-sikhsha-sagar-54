@@ -18,10 +18,20 @@ export function CertificationsTab({ certificates, setCertificates, userId }: Cer
   const handleCertificateUpload = (url: string) => {
     setCertificates([...certificates, url]);
     setIsUploading(false);
+    
+    toast({
+      title: "Certificate uploaded",
+      description: "Your certificate has been successfully uploaded."
+    });
   };
 
   const handleRemoveCertificate = (urlToRemove: string) => {
     setCertificates(certificates.filter(url => url !== urlToRemove));
+    
+    toast({
+      title: "Certificate removed",
+      description: "Your certificate has been removed."
+    });
   };
 
   return (
@@ -77,6 +87,7 @@ export function CertificationsTab({ certificates, setCertificates, userId }: Cer
               acceptedFileTypes="image/*"
               buttonLabel="Upload Certificate"
               maxFileSizeMB={2}
+              onUploadStart={() => setIsUploading(true)}
             />
           )}
         </div>

@@ -42,7 +42,6 @@ export function TeachingExperienceTab({ form }: TeachingExperienceTabProps) {
             <Select
               onValueChange={field.onChange}
               value={field.value || ""}
-              defaultValue={field.value || ""}
             >
               <FormControl>
                 <SelectTrigger>
@@ -74,6 +73,7 @@ export function TeachingExperienceTab({ form }: TeachingExperienceTabProps) {
                 className="resize-none"
                 rows={5}
                 {...field}
+                value={field.value || ""}
               />
             </FormControl>
             <FormMessage />
