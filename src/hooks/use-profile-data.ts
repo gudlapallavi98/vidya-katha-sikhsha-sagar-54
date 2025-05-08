@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export const useUserProfile = () => {
   const { user } = useAuth();
@@ -28,6 +28,7 @@ export const useUserProfile = () => {
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   return useMutation({
     mutationFn: async (profileData: any) => {
@@ -62,17 +63,19 @@ export const useUpdateProfile = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user_profile', user?.id] });
+      // Fix the toast implementation here
       toast({
         title: "Success",
-        description: "Profile updated successfully",
+        description: "Profile updated successfully"
       });
     },
     onError: (error: any) => {
       console.error("Profile update error:", error);
+      // Fix the toast implementation here
       toast({
-        variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : "Something went wrong",
+        variant: "destructive"
       });
     }
   });
