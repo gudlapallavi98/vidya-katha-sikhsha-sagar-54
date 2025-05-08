@@ -22,6 +22,8 @@ export const useUserProfile = () => {
       return data;
     },
     enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    cacheTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
@@ -35,14 +37,13 @@ export const useUpdateProfile = () => {
       if (!user) throw new Error("User not authenticated");
       
       // Filter out any fields that don't exist in the database
-      // This prevents errors for fields like exam_history or education_level
-      // that might not exist in the profiles table
       const validFields = [
         'first_name', 'last_name', 'display_name', 'gender', 
         'date_of_birth', 'city', 'state', 'country', 'bio',
         'experience', 'years_of_experience', 'intro_video_url',
         'subjects_interested', 'certificates', 'avatar_url',
-        'profile_completed', 'updated_at'
+        'profile_completed', 'updated_at', 'education_level',
+        'study_preferences', 'exam_history'
       ];
       
       // Filter the profileData to only include valid fields
@@ -59,11 +60,26 @@ export const useUpdateProfile = () => {
         .eq('id', user.id);
       
       if (error) throw error;
+
+      // Also update auth.users metadata to ensure name consistency across the app
+      if (filteredData.first_name || filteredData.last_name) {
+        const metadata = { ...user.user_metadata };
+        if (filteredData.first_name) metadata.first_name = filteredData.first_name;
+        if (filteredData.last_name) metadata.last_name = filteredData.last_name;
+
+        const { error: authError } = await supabase.auth.updateUser({
+          data: metadata
+        });
+
+        if (authError) {
+          console.error("Failed to update auth metadata:", authError);
+        }
+      }
+      
       return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user_profile', user?.id] });
-      // Fix the toast implementation here
       toast({
         title: "Success",
         description: "Profile updated successfully"
@@ -71,7 +87,6 @@ export const useUpdateProfile = () => {
     },
     onError: (error: any) => {
       console.error("Profile update error:", error);
-      // Fix the toast implementation here
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Something went wrong",

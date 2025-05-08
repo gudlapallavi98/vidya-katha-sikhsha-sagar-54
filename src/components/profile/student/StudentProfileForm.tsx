@@ -29,6 +29,7 @@ const formSchema = z.object({
   country: z.string().optional(),
   bio: z.string().optional(),
   avatar_url: z.string().optional(),
+  education_level: z.string().optional(),
 });
 
 interface StudentProfileFormProps {
@@ -74,6 +75,10 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         avatar_url: avatarUrl,
         profile_completed: true,
         updated_at: new Date().toISOString(),
+        // Add the education level
+        education_level: values.education_level,
+        // Add the study preferences
+        study_preferences: studyPreferences,
         // Add the exam history
         exam_history: examHistory
       };

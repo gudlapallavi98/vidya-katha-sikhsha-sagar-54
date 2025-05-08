@@ -1,5 +1,5 @@
 
-import { useState, FormEvent } from "react";
+import { FormEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ interface CourseSearchProps {
 }
 
 const CourseSearch = ({ searchQuery, setSearchQuery, onSearch }: CourseSearchProps) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
   return (
     <div>
       <h3 className="font-medium mb-4">Search Courses</h3>
@@ -21,7 +25,7 @@ const CourseSearch = ({ searchQuery, setSearchQuery, onSearch }: CourseSearchPro
           placeholder="Search..."
           className="pl-9"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleInputChange}
         />
         <div className="mt-2 flex justify-end">
           <Button type="submit" size="sm">Search</Button>

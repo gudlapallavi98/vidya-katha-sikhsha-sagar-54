@@ -43,6 +43,7 @@ export const useContactMessages = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabase.auth.getSession()}`
           },
           body: JSON.stringify({ 
             name: formData.name,
