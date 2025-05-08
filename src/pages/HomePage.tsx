@@ -21,7 +21,7 @@ const HomePage = () => {
       <FeaturesSection />
       <CourseSection />
       <TestimonialsSection />
-      <CTASection />
+      {!user && <CTASection />}
     </div>
   );
 };

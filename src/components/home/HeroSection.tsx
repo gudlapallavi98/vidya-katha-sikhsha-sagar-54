@@ -71,7 +71,7 @@ const HeroSection = ({ heroImages }: HeroSectionProps) => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
           </div>
 
-          <div className="flex items-center gap-8 mt-8">
+          <div className="flex flex-wrap items-center gap-4 md:gap-8 mt-8">
             <div className="flex items-center gap-2 text-orange-600">
               <div className="rounded-full bg-orange-100 p-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
