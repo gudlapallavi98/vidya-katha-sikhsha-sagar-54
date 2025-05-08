@@ -42,7 +42,6 @@ export function ProfileAvatarSection({
         onFileUploaded={handleFileUploaded}
         acceptedFileTypes="image/*"
         buttonLabel="Upload Profile Picture"
-        buttonVariant="outline"
         maxFileSizeMB={2}
       />
     </div>

@@ -35,14 +35,14 @@ export function TeachingExperienceTab({ form }: TeachingExperienceTabProps) {
 
       <FormField
         control={form.control}
-        name="years_of_experience"
+        name="experience_years"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Years of Experience</FormLabel>
             <Select
               onValueChange={field.onChange}
-              value={field.value}
-              defaultValue={field.value}
+              value={field.value || ""}
+              defaultValue={field.value || ""}
             >
               <FormControl>
                 <SelectTrigger>
@@ -91,6 +91,7 @@ export function TeachingExperienceTab({ form }: TeachingExperienceTabProps) {
               <Input
                 placeholder="https://youtube.com/..."
                 {...field}
+                value={field.value || ""}
               />
             </FormControl>
             <FormMessage />

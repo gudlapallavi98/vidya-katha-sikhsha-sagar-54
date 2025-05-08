@@ -42,7 +42,7 @@ export const useUpdateProfile = () => {
       const validFields = [
         'first_name', 'last_name', 'display_name', 'gender', 
         'date_of_birth', 'city', 'state', 'country', 'bio',
-        'experience', 'years_of_experience', 'intro_video_url',
+        'experience', 'experience_years', 'intro_video_url',
         'subjects_interested', 'certificates', 'avatar_url',
         'profile_completed', 'updated_at', 'education_level', 
         'study_preferences', 'exam_history', 'school_name',

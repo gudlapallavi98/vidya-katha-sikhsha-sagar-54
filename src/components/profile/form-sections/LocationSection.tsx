@@ -73,7 +73,7 @@ const defaultCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "
 
 const LocationSection = ({ form }: LocationSectionProps) => {
   // Get the current state value
-  const [availableCities, setAvailableCities] = useState<string[]>(defaultCities);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
   const selectedState = form.watch("state");
   
   // Update available cities when state changes
@@ -87,35 +87,6 @@ const LocationSection = ({ form }: LocationSectionProps) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <FormField
-        control={form.control}
-        name="city"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>City</FormLabel>
-            <Select
-              onValueChange={field.onChange}
-              value={field.value || ""}
-              defaultValue={field.value}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select city" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {availableCities.map(city => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      
       <FormField
         control={form.control}
         name="state"
@@ -140,6 +111,35 @@ const LocationSection = ({ form }: LocationSectionProps) => {
                 {indianStates.map(state => (
                   <SelectItem key={state} value={state}>
                     {state}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="city"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>City</FormLabel>
+            <Select
+              onValueChange={field.onChange}
+              value={field.value || ""}
+              defaultValue={field.value}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select city" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {availableCities.map(city => (
+                  <SelectItem key={city} value={city}>
+                    {city}
                   </SelectItem>
                 ))}
               </SelectContent>

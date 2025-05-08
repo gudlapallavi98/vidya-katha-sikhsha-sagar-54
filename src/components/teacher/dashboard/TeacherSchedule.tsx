@@ -19,6 +19,7 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
 }) => {
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   
   // Update current time every minute for accurate session status
   useEffect(() => {
@@ -28,6 +29,25 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
     
     return () => clearInterval(timer);
   }, []);
+  
+  // Filter sessions to only show upcoming and current sessions
+  useEffect(() => {
+    if (!upcomingSessions) return;
+    
+    const now = new Date();
+    // Filter to only include sessions that haven't ended yet
+    const filtered = upcomingSessions.filter(session => {
+      const sessionEndTime = new Date(session.end_time);
+      return sessionEndTime >= now;
+    });
+    
+    // Sort by start time (closest first)
+    filtered.sort((a, b) => {
+      return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    });
+    
+    setFilteredSessions(filtered);
+  }, [upcomingSessions, currentTime]);
   
   const handleJoinClass = async (session: Session) => {
     const sessionStartTime = new Date(session.start_time);
@@ -113,10 +133,10 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
         <CardContent className="p-6">
           {sessionsLoading ? (
             <div className="text-center py-8">Loading schedule...</div>
-          ) : upcomingSessions.length > 0 ? (
+          ) : filteredSessions.length > 0 ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-4">
-                {upcomingSessions.map((session) => {
+                {filteredSessions.map((session) => {
                   const isActive = isSessionActive(session);
                   const isPast = isSessionPast(session);
                   
