@@ -1,9 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SubjectsTabProps {
   selectedSubjects: string[];
@@ -15,12 +17,52 @@ const SUBJECT_SUGGESTIONS = [
   "English Literature", "Hindi", "Sanskrit", "History", 
   "Geography", "Computer Science", "Economics", 
   "Political Science", "Environmental Science", 
-  "Art", "Music", "Physical Education"
+  "Art", "Music", "Physical Education",
+  // Sanskrit and Vedic studies
+  "Sanskrit Grammar", "Vedic Sanskrit", "Rigveda",
+  "Yajurveda", "Upaniṣads", "Vedānta",
+  "Yoga Philosophy", "Ayurvedic Principles"
 ];
 
 export function SubjectsTab({ selectedSubjects, setSelectedSubjects }: SubjectsTabProps) {
   const [subjectInput, setSubjectInput] = useState("");
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [isUpdatingSubjects, setIsUpdatingSubjects] = useState(false);
+  const { toast } = useToast();
+
+  // Function to ensure subjects are in Supabase subjects table
+  const ensureSubjectsInDatabase = async (subjects: string[]) => {
+    if (!subjects.length) return;
+    
+    try {
+      setIsUpdatingSubjects(true);
+      
+      // For each subject, check if it exists and insert if not
+      for (const subjectName of subjects) {
+        // Check if subject exists
+        const { data: existingSubjects } = await supabase
+          .from('subjects')
+          .select('id, name')
+          .eq('name', subjectName);
+          
+        if (!existingSubjects || existingSubjects.length === 0) {
+          // If not exists, insert it
+          await supabase
+            .from('subjects')
+            .insert({ name: subjectName });
+        }
+      }
+    } catch (error) {
+      console.error("Error ensuring subjects in database:", error);
+    } finally {
+      setIsUpdatingSubjects(false);
+    }
+  };
+
+  // When selected subjects change, ensure they exist in the database
+  useEffect(() => {
+    ensureSubjectsInDatabase(selectedSubjects);
+  }, [selectedSubjects]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -39,7 +81,8 @@ export function SubjectsTab({ selectedSubjects, setSelectedSubjects }: SubjectsT
 
   const addSubject = (subject: string) => {
     if (subject.trim() && !selectedSubjects.includes(subject)) {
-      setSelectedSubjects([...selectedSubjects, subject]);
+      const newSubjects = [...selectedSubjects, subject];
+      setSelectedSubjects(newSubjects);
       setSubjectInput("");
       setFilteredSuggestions([]);
     }
@@ -74,6 +117,7 @@ export function SubjectsTab({ selectedSubjects, setSelectedSubjects }: SubjectsT
             <Button 
               type="button" 
               onClick={() => addSubject(subjectInput)}
+              disabled={isUpdatingSubjects}
             >
               Add
             </Button>
@@ -105,6 +149,7 @@ export function SubjectsTab({ selectedSubjects, setSelectedSubjects }: SubjectsT
                   type="button" 
                   onClick={() => removeSubject(subject)} 
                   className="ml-2 text-muted-foreground hover:text-foreground"
+                  disabled={isUpdatingSubjects}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -117,19 +162,18 @@ export function SubjectsTab({ selectedSubjects, setSelectedSubjects }: SubjectsT
       <div className="bg-muted rounded-md p-4 mt-6">
         <h4 className="font-medium mb-2">Popular Subject Categories</h4>
         <div className="flex flex-wrap gap-2">
-          {["Mathematics", "Science", "Languages", "Humanities", "Arts", "Computer Science"].map((category) => (
+          {["Mathematics", "Science", "Languages", "Humanities", "Arts", "Computer Science", "Sanskrit", "Yoga"].map((category) => (
             <Button 
               key={category} 
               variant="outline" 
               size="sm" 
               type="button"
               onClick={() => {
-                // This would ideally open a selection of subjects in this category
-                // For now, we'll just add the category
                 if (!selectedSubjects.includes(category)) {
                   setSelectedSubjects([...selectedSubjects, category]);
                 }
               }}
+              disabled={isUpdatingSubjects || selectedSubjects.includes(category)}
             >
               {category}
             </Button>

@@ -24,37 +24,62 @@ export const useProfileFormData = (formSchema: ZodSchema) => {
       country: "",
       bio: "",
       experience: "",
+      years_of_experience: "",
       intro_video_url: "",
-      subjects_interested: [],
-      avatar_url: "",
+      education_level: "",
     },
   });
 
   // Fetch user profile
   const { data: profile, isLoading: profileLoading } = useUserProfile();
 
+  // Log profile data for debugging
+  useEffect(() => {
+    if (profile) {
+      console.log("Profile data loaded:", profile);
+    }
+  }, [profile]);
+
   // Update form when profile is loaded
   useEffect(() => {
     if (profile && !profileLoading) {
+      console.log("Resetting form with profile data");
+      
+      // Handle date conversion for date_of_birth
+      let dob = undefined;
+      if (profile.date_of_birth) {
+        try {
+          dob = new Date(profile.date_of_birth);
+          // Check if date is valid
+          if (isNaN(dob.getTime())) {
+            console.log("Invalid date format:", profile.date_of_birth);
+            dob = undefined;
+          }
+        } catch (error) {
+          console.error("Error converting date:", error);
+          dob = undefined;
+        }
+      }
+      
       form.reset({
         first_name: profile.first_name || "",
         last_name: profile.last_name || "",
         display_name: profile.display_name || "",
         gender: profile.gender || "",
-        date_of_birth: profile.date_of_birth ? new Date(profile.date_of_birth) : undefined,
+        date_of_birth: dob,
         city: profile.city || "",
         state: profile.state || "",
         country: profile.country || "",
         bio: profile.bio || "",
         experience: profile.experience || "",
+        years_of_experience: profile.years_of_experience || "",
         intro_video_url: profile.intro_video_url || "",
-        subjects_interested: profile.subjects_interested || [],
-        avatar_url: profile.avatar_url || "",
+        education_level: profile.education_level || "",
       });
 
       setSelectedSubjects(profile.subjects_interested || []);
       setCertificates(profile.certificates || []);
-      setAvatarUrl(profile.avatar_url);
+      setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile, profileLoading, form]);
 

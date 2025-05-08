@@ -58,6 +58,7 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
     if (!user) return;
     
     setIsLoading(true);
+    console.log("Submitting student profile form with values:", values);
     
     try {
       // Format date_of_birth to ISO string if it exists
@@ -66,7 +67,7 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         last_name: values.last_name,
         display_name: values.display_name,
         gender: values.gender,
-        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : null,
+        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : undefined,
         city: values.city,
         state: values.state,
         country: values.country,
@@ -75,14 +76,12 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         avatar_url: avatarUrl,
         profile_completed: true,
         updated_at: new Date().toISOString(),
-        // Add the education level
         education_level: values.education_level,
-        // Add the study preferences
         study_preferences: studyPreferences,
-        // Add the exam history
         exam_history: examHistory
       };
 
+      console.log("Formatted data for student profile:", formattedData);
       await updateProfile.mutateAsync(formattedData);
       
       if (onCompleted) {

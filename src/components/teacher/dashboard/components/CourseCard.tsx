@@ -17,7 +17,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   onManage,
 }) => {
   return (
-    <div key={course.id} className="flex flex-col p-6 border rounded-lg">
+    <div className="flex flex-col p-6 border rounded-lg">
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-1/4">
           <div className="aspect-video rounded-md bg-muted flex items-center justify-center">

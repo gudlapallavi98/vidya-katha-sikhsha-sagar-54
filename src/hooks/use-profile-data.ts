@@ -23,7 +23,7 @@ export const useUserProfile = () => {
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes (previously cacheTime)
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
@@ -35,6 +35,8 @@ export const useUpdateProfile = () => {
   return useMutation({
     mutationFn: async (profileData: any) => {
       if (!user) throw new Error("User not authenticated");
+      
+      console.log("Updating profile with data:", profileData);
       
       // Filter out any fields that don't exist in the database
       const validFields = [
@@ -54,17 +56,25 @@ export const useUpdateProfile = () => {
           return obj;
         }, {});
       
+      console.log("Filtered profile data:", filteredData);
+      
       // Check if there's data to update
       if (Object.keys(filteredData).length === 0) {
         throw new Error("No valid fields to update");
       }
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update(filteredData)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
+
+      console.log("Profile updated successfully:", data);
 
       // Also update auth.users metadata to ensure name consistency across the app
       if (filteredData.first_name || filteredData.last_name) {
@@ -86,7 +96,7 @@ export const useUpdateProfile = () => {
         }
       }
       
-      return true;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user_profile', user?.id] });

@@ -61,6 +61,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
     if (!user) return;
     
     setIsLoading(true);
+    console.log("Submitting teacher profile form with values:", values);
     
     try {
       // Format date_of_birth to ISO string if it exists
@@ -69,7 +70,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
         last_name: values.last_name,
         display_name: values.display_name,
         gender: values.gender,
-        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : null,
+        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : undefined,
         city: values.city,
         state: values.state,
         country: values.country,
@@ -84,6 +85,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
         updated_at: new Date().toISOString(),
       };
 
+      console.log("Formatted data for teacher profile:", formattedData);
       await updateProfile.mutateAsync(formattedData);
       
       if (onCompleted) {
