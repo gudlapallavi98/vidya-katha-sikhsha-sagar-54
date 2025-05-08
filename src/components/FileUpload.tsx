@@ -14,6 +14,7 @@ interface FileUploadProps {
   maxFileSizeMB?: number;
   buttonLabel?: string;
   buttonVariant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  onUploadStart?: () => void;
 }
 
 const FileUpload = ({
@@ -24,6 +25,7 @@ const FileUpload = ({
   maxFileSizeMB = 5,
   buttonLabel = "Upload File",
   buttonVariant = "default",
+  onUploadStart,
 }: FileUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
@@ -45,6 +47,9 @@ const FileUpload = ({
 
     try {
       setUploading(true);
+      if (onUploadStart) {
+        onUploadStart();
+      }
 
       // Create a unique file name to prevent collisions
       const fileExt = file.name.split(".").pop();

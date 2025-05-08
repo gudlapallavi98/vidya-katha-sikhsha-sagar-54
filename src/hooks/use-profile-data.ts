@@ -69,7 +69,9 @@ export const useUpdateProfile = () => {
       // Also update auth.users metadata to ensure name consistency across the app
       if (filteredData.first_name || filteredData.last_name) {
         try {
-          const metadata = { ...user.user_metadata } || {};
+          const userMetadata = user.user_metadata || {};
+          const metadata = { ...userMetadata };
+          
           if (filteredData.first_name) metadata.first_name = filteredData.first_name;
           if (filteredData.last_name) metadata.last_name = filteredData.last_name;
 
