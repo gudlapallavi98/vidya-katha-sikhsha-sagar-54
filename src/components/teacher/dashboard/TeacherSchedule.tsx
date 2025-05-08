@@ -20,7 +20,7 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
   
-  // Update current time every minute
+  // Update current time every minute for accurate session status
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -65,20 +65,45 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
       await handleStartClass(session.id);
     } catch (error) {
       console.error("Error joining class:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem joining the class. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
+  // Calculate if session is currently active (between start and end times)
   const isSessionActive = (session: Session) => {
-    const now = new Date();
+    const now = currentTime;
     const startTime = new Date(session.start_time);
     const endTime = new Date(session.end_time);
     return now >= startTime && now <= endTime;
   };
   
+  // Check if session has already ended
   const isSessionPast = (session: Session) => {
-    const now = new Date();
+    const now = currentTime;
     const endTime = new Date(session.end_time);
     return now > endTime;
+  };
+  
+  // Format dates for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+  
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -112,26 +137,15 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
                           <div className="flex items-center gap-2 mt-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">
-                              {new Date(session.start_time).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
+                              {formatDate(session.start_time)}
                             </span>
                             <Clock className="h-4 w-4 ml-2 text-muted-foreground" />
                             <span className="text-sm">
-                              {new Date(session.start_time).toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })} - 
-                              {new Date(session.end_time).toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                              {formatTime(session.start_time)} - {formatTime(session.end_time)}
                             </span>
                           </div>
                           <div className="mt-1">
-                            <span className="text-xs text-muted-foreground">
+                            <span className={`text-xs ${isActive ? 'text-green-600 font-medium' : isPast ? 'text-gray-500' : 'text-blue-600'}`}>
                               Status: {isPast ? "Completed" : isActive ? "In Progress" : "Upcoming"}
                             </span>
                           </div>
@@ -139,7 +153,7 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
                         <div className="mt-3 md:mt-0">
                           <Button 
                             size="sm" 
-                            className={`${isActive ? 'bg-green-500 hover:bg-green-600' : isPast ? 'bg-gray-400 hover:bg-gray-500' : 'bg-indian-blue'}`}
+                            className={`${isActive ? 'bg-green-500 hover:bg-green-600' : isPast ? 'bg-gray-400 hover:bg-gray-500 cursor-not-allowed' : 'bg-indian-blue'}`}
                             onClick={() => handleJoinClass(session)}
                             disabled={isPast}
                           >

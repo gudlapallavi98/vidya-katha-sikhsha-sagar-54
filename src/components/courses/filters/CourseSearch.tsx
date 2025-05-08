@@ -13,9 +13,9 @@ interface CourseSearchProps {
 const CourseSearch = ({ searchQuery, setSearchQuery, onSearch }: CourseSearchProps) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    // Trigger search on type for better UX
+    // Debounce search to improve performance
     const event = new Event('submit') as unknown as FormEvent;
-    onSearch(event);
+    setTimeout(() => onSearch(event), 300);
   };
 
   return (
