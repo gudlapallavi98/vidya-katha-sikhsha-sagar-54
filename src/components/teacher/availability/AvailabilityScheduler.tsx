@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { AvailabilityForm } from "./AvailabilityForm";
+import AvailabilityForm from "./AvailabilityForm";
 import { AvailabilityList } from "./AvailabilityList";
 
 interface Subject {
@@ -125,8 +124,7 @@ export function AvailabilityScheduler() {
     <div className="space-y-8">
       <AvailabilityForm 
         subjects={subjects} 
-        onAvailabilityAdded={handleAvailabilityAdded}
-        isProfileComplete={isProfileComplete}
+        onAvailabilityCreated={handleAvailabilityAdded}
       />
       <AvailabilityList 
         availabilities={availabilities} 
