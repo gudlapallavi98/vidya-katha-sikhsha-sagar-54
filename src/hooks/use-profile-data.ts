@@ -42,8 +42,8 @@ export const useUpdateProfile = () => {
         'date_of_birth', 'city', 'state', 'country', 'bio',
         'experience', 'years_of_experience', 'intro_video_url',
         'subjects_interested', 'certificates', 'avatar_url',
-        'profile_completed', 'updated_at', 'education_level',
-        'study_preferences', 'exam_history'
+        'profile_completed', 'updated_at', 'education_level', 
+        'study_preferences', 'exam_history', 'course_link'
       ];
       
       // Filter the profileData to only include valid fields
@@ -54,6 +54,11 @@ export const useUpdateProfile = () => {
           return obj;
         }, {});
       
+      // Check if there's data to update
+      if (Object.keys(filteredData).length === 0) {
+        throw new Error("No valid fields to update");
+      }
+      
       const { error } = await supabase
         .from('profiles')
         .update(filteredData)
@@ -63,16 +68,21 @@ export const useUpdateProfile = () => {
 
       // Also update auth.users metadata to ensure name consistency across the app
       if (filteredData.first_name || filteredData.last_name) {
-        const metadata = { ...user.user_metadata };
-        if (filteredData.first_name) metadata.first_name = filteredData.first_name;
-        if (filteredData.last_name) metadata.last_name = filteredData.last_name;
+        try {
+          const metadata = { ...user.user_metadata };
+          if (filteredData.first_name) metadata.first_name = filteredData.first_name;
+          if (filteredData.last_name) metadata.last_name = filteredData.last_name;
 
-        const { error: authError } = await supabase.auth.updateUser({
-          data: metadata
-        });
+          const { error: authError } = await supabase.auth.updateUser({
+            data: metadata
+          });
 
-        if (authError) {
-          console.error("Failed to update auth metadata:", authError);
+          if (authError) {
+            console.error("Failed to update auth metadata:", authError);
+            // Don't throw error here, we want the profile update to succeed even if the auth update fails
+          }
+        } catch (metadataError) {
+          console.error("Error updating metadata:", metadataError);
         }
       }
       

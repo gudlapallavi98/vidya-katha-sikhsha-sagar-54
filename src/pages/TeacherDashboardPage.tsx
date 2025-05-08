@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { 
   useTeacherCourses, 
   useSessionRequests, 
@@ -12,7 +11,6 @@ import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TeacherSidebar from "@/components/teacher/dashboard/TeacherSidebar";
 import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
-import { Check, Calendar, Settings, X } from "lucide-react";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -49,9 +47,12 @@ const TeacherDashboard = () => {
   }, [activeTab, setSearchParams]);
   
   // Calculate metrics from sessions data
-  const upcomingSessions = teacherSessions.filter(s => 
-    s.status === 'scheduled' || s.status === 'in_progress'
-  );
+  const upcomingSessions = teacherSessions.filter(s => {
+    const sessionEndTime = new Date(s.end_time);
+    const now = new Date();
+    // Include sessions that haven't ended yet
+    return s.status === 'scheduled' || s.status === 'in_progress' || sessionEndTime >= now;
+  });
   
   const totalSessions = {
     completed: teacherSessions.filter(s => s.status === 'completed').length,
@@ -106,7 +107,7 @@ const TeacherDashboard = () => {
         window.open(meetingLink, '_blank');
         
         // Invalidate the query to refresh data
-        queryClient.invalidateQueries({ queryKey: ['teacher_upcoming_sessions'] });
+        queryClient.invalidateQueries({ queryKey: ['teacher_sessions'] });
       }
     } catch (error) {
       toast({

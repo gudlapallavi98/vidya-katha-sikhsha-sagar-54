@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Plus, Edit, Trash2, Link } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface TeacherCoursesProps {
   teacherCourses: any[];
@@ -38,7 +39,8 @@ const courseSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   category: z.string().min(1, "Please select a category"),
-  total_lessons: z.number().int().min(1, "Course must have at least 1 lesson")
+  total_lessons: z.number().int().min(1, "Course must have at least 1 lesson"),
+  course_link: z.string().url("Please enter a valid URL").optional().or(z.literal(''))
 });
 
 const TeacherCourses: React.FC<TeacherCoursesProps> = ({
@@ -46,7 +48,11 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
   coursesLoading,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentCourseId, setCurrentCourseId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -57,16 +63,17 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
       title: "",
       description: "",
       category: "",
-      total_lessons: 1
+      total_lessons: 1,
+      course_link: ""
     }
   });
   
-  const handleCreateCourse = async (values: z.infer<typeof courseSchema>) => {
+  const handleCreateOrUpdateCourse = async (values: z.infer<typeof courseSchema>) => {
     if (!user) {
       toast({
         variant: "destructive",
         title: "Authentication Error",
-        description: "You must be logged in to create a course",
+        description: "You must be logged in to manage courses",
       });
       return;
     }
@@ -74,31 +81,54 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
     setIsSubmitting(true);
     
     try {
-      const { data, error } = await supabase
-        .from('courses')
-        .insert({
-          title: values.title,
-          description: values.description,
-          category: values.category,
-          total_lessons: values.total_lessons,
-          teacher_id: user.id
-        })
-        .select();
+      if (isEditMode && currentCourseId) {
+        // Update existing course
+        const { error } = await supabase
+          .from('courses')
+          .update({
+            title: values.title,
+            description: values.description,
+            category: values.category,
+            total_lessons: values.total_lessons,
+            course_link: values.course_link || null
+          })
+          .eq('id', currentCourseId)
+          .eq('teacher_id', user.id);
+          
+        if (error) throw error;
         
-      if (error) throw error;
-      
-      toast({
-        title: "Course Created",
-        description: "Your course has been created successfully",
-      });
+        toast({
+          title: "Course Updated",
+          description: "Your course has been updated successfully",
+        });
+      } else {
+        // Create new course
+        const { error } = await supabase
+          .from('courses')
+          .insert({
+            title: values.title,
+            description: values.description,
+            category: values.category,
+            total_lessons: values.total_lessons,
+            teacher_id: user.id,
+            course_link: values.course_link || null
+          });
+          
+        if (error) throw error;
+        
+        toast({
+          title: "Course Created",
+          description: "Your course has been created successfully",
+        });
+      }
       
       // Close the dialog and reset form
       setIsOpen(false);
+      setIsEditMode(false);
+      setCurrentCourseId(null);
       form.reset();
       
-      // Navigate to the course management page or refresh the list
-      // This would require setting up additional routes and components
-      // For now, we'll just force a page reload to show the new course
+      // Refresh the list or navigate
       window.location.reload();
       
     } catch (error) {
@@ -107,10 +137,61 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
         title: "Error",
         description: error instanceof Error ? error.message : "Something went wrong",
       });
-      console.error("Error creating course:", error);
+      console.error("Error managing course:", error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const handleEditCourse = (course: any) => {
+    setIsEditMode(true);
+    setCurrentCourseId(course.id);
+    form.reset({
+      title: course.title,
+      description: course.description,
+      category: course.category,
+      total_lessons: course.total_lessons,
+      course_link: course.course_link || ""
+    });
+    setIsOpen(true);
+  };
+  
+  const handleDeleteCourse = async () => {
+    if (!courseToDelete || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('courses')
+        .delete()
+        .eq('id', courseToDelete)
+        .eq('teacher_id', user.id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Course Deleted",
+        description: "Your course has been deleted successfully",
+      });
+      
+      // Refresh the list
+      window.location.reload();
+      
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Something went wrong",
+      });
+      console.error("Error deleting course:", error);
+    } finally {
+      setDeleteDialogOpen(false);
+      setCourseToDelete(null);
+    }
+  };
+  
+  const confirmDeleteCourse = (courseId: string) => {
+    setCourseToDelete(courseId);
+    setDeleteDialogOpen(true);
   };
   
   const handleManageCourse = (courseId: string) => {
@@ -122,7 +203,14 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
       <div className="flex justify-between items-center mb-6">
         <h1 className="font-sanskrit text-3xl font-bold">My Courses</h1>
         
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(value) => {
+          setIsOpen(value);
+          if (!value) {
+            setIsEditMode(false);
+            setCurrentCourseId(null);
+            form.reset();
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus size={18} />
@@ -132,11 +220,11 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
           
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
-              <DialogTitle>Create New Course</DialogTitle>
+              <DialogTitle>{isEditMode ? "Edit Course" : "Create New Course"}</DialogTitle>
             </DialogHeader>
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleCreateCourse)} className="space-y-4 py-4">
+              <form onSubmit={form.handleSubmit(handleCreateOrUpdateCourse)} className="space-y-4 py-4">
                 <FormField
                   control={form.control}
                   name="title"
@@ -159,7 +247,7 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
                       <FormLabel>Category</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -200,6 +288,24 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
                 
                 <FormField
                   control={form.control}
+                  name="course_link"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Course Link (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://example.com/course" 
+                          {...field} 
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem>
@@ -219,7 +325,7 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
                 
                 <DialogFooter>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Creating..." : "Create Course"}
+                    {isSubmitting ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Course" : "Create Course")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -227,6 +333,23 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
           </DialogContent>
         </Dialog>
       </div>
+      
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this course? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCourse} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <Card>
         <CardContent className="p-6">
@@ -263,7 +386,28 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
                           <p className="font-medium">{course.total_lessons}</p>
                         </div>
                       </div>
-                      <div className="mt-6 flex justify-end">
+                      
+                      {course.course_link && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <Link size={16} className="text-indian-blue" />
+                          <a 
+                            href={course.course_link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-indian-blue hover:underline"
+                          >
+                            Course Resource Link
+                          </a>
+                        </div>
+                      )}
+                      
+                      <div className="mt-6 flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditCourse(course)}>
+                          <Edit size={16} className="mr-1" /> Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-red-500" onClick={() => confirmDeleteCourse(course.id)}>
+                          <Trash2 size={16} className="mr-1" /> Delete
+                        </Button>
                         <Button onClick={() => handleManageCourse(course.id)}>Manage Course</Button>
                       </div>
                     </div>
