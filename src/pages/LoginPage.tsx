@@ -76,15 +76,62 @@ const LoginPage = () => {
     setResetLoading(true);
     
     try {
-      // For development/testing purposes, generate a simple OTP locally
-      // In production, this should be handled securely on the server
+      // Generate OTP (In production, this would be generated on the server)
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setSentOtp(generatedOtp);
-
-      toast({
-        title: "OTP Generated",
-        description: `For testing purposes, use this OTP: ${generatedOtp}`,
-      });
+      
+      try {
+        // Use the Supabase Edge Function to send a real email with OTP
+        const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            to: resetEmail,
+            subject: "Reset your etutorss password",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #FF9933;">Password Reset Request</h2>
+                <p>Hello,</p>
+                <p>We received a request to reset your password. Please use the following OTP code to proceed with the password reset:</p>
+                <h3 style="background-color: #f3f4f6; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px;">${generatedOtp}</h3>
+                <p>This code will expire in 10 minutes.</p>
+                <p>If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
+                <p>Best regards,<br>The etutorss Team</p>
+              </div>
+            `
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.error("Email sending error:", errorData);
+          throw new Error("Failed to send password reset email");
+        }
+        
+        toast({
+          title: "Password Reset Code Sent",
+          description: "Please check your email for the verification code",
+        });
+      } catch (error) {
+        console.error("Email sending failed:", error);
+        
+        // Fallback to local OTP generation for development/testing
+        toast({
+          variant: "destructive",
+          title: "Email Sending Failed",
+          description: "Using local OTP as fallback. In production, this would be sent via email.",
+        });
+      }
+      
+      // Show the OTP in toast for development environment only
+      if (process.env.NODE_ENV !== "production") {
+        toast({
+          title: "Development OTP",
+          description: `For testing purposes, use this OTP: ${generatedOtp}`,
+        });
+      }
       
       setResetPasswordStep("otp");
     } catch (error) {
