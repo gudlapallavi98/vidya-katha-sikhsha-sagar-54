@@ -37,7 +37,7 @@ const TeacherSessionRequests = () => {
 
     const fetchSessionRequests = async () => {
       try {
-        // Modify the query to explicitly select the needed fields from student profile
+        // Fix the query by using a more explicit join with profiles table
         const { data, error } = await supabase
           .from('session_requests')
           .select(`
@@ -48,12 +48,7 @@ const TeacherSessionRequests = () => {
             request_message,
             status,
             created_at,
-            student:student_id (
-              id,
-              first_name,
-              last_name,
-              email
-            ),
+            student_id,
             course:course_id (
               title
             )
@@ -64,14 +59,35 @@ const TeacherSessionRequests = () => {
         if (error) throw error;
         
         if (data) {
-          // Type check and filter out any invalid data before setting state
-          const validRequests = data.filter(item => 
-            item.student && 
-            typeof item.student === 'object' && 
-            'first_name' in item.student &&
-            'last_name' in item.student &&
-            'email' in item.student
-          ) as SessionRequest[];
+          // For each request, fetch the associated student profile separately
+          const requestsWithStudents = await Promise.all(
+            data.map(async (request) => {
+              const { data: studentData, error: studentError } = await supabase
+                .from('profiles')
+                .select('first_name, last_name, email')
+                .eq('id', request.student_id)
+                .single();
+              
+              if (studentError || !studentData) {
+                console.error("Error fetching student data:", studentError);
+                return null;
+              }
+              
+              return {
+                ...request,
+                student: {
+                  first_name: studentData.first_name,
+                  last_name: studentData.last_name,
+                  email: studentData.email
+                }
+              };
+            })
+          );
+          
+          // Filter out any failed requests
+          const validRequests = requestsWithStudents.filter(
+            (request): request is SessionRequest => request !== null
+          );
           
           setSessionRequests(validRequests);
         }
@@ -116,10 +132,10 @@ const TeacherSessionRequests = () => {
       if (fetchError) throw fetchError;
       
       if (requestData && newStatus === 'accepted') {
-        // Fetch teacher and student information with specific columns
+        // Fetch teacher profile information
         const { data: teacherData, error: teacherError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, email')
+          .select('first_name, last_name, email')
           .eq('id', requestData.teacher_id)
           .single();
           
@@ -127,10 +143,11 @@ const TeacherSessionRequests = () => {
           console.error("Error fetching teacher data:", teacherError);
           throw teacherError;
         }
-          
+        
+        // Fetch student profile information
         const { data: studentData, error: studentError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, email')
+          .select('first_name, last_name, email')
           .eq('id', requestData.student_id)
           .single();
         
@@ -144,7 +161,7 @@ const TeacherSessionRequests = () => {
           throw new Error("Could not fetch required user data");
         }
         
-        // Generate a meeting link (in a real app, this would create a real meeting link)
+        // Generate a meeting link
         const meetingLink = `https://etutorss.com/meeting/${requestId}`;
         
         // Create a session record
