@@ -71,7 +71,6 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
         </TabsContent>
         
         <TabsContent value="sessions">
-          {/* Remove the props that are causing issues - TeacherSessionRequests doesn't need them */}
           <TeacherSessionRequests />
         </TabsContent>
         

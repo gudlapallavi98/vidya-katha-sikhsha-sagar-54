@@ -37,6 +37,7 @@ const TeacherSessionRequests = () => {
 
     const fetchSessionRequests = async () => {
       try {
+        // Modify the query to explicitly select the needed fields from student profile
         const { data, error } = await supabase
           .from('session_requests')
           .select(`
@@ -48,6 +49,7 @@ const TeacherSessionRequests = () => {
             status,
             created_at,
             student:student_id (
+              id,
               first_name,
               last_name,
               email
@@ -61,10 +63,17 @@ const TeacherSessionRequests = () => {
 
         if (error) throw error;
         
-        // Ensure the data is properly typed before setting state
         if (data) {
-          const typedData = data as unknown as SessionRequest[];
-          setSessionRequests(typedData);
+          // Type check and filter out any invalid data before setting state
+          const validRequests = data.filter(item => 
+            item.student && 
+            typeof item.student === 'object' && 
+            'first_name' in item.student &&
+            'last_name' in item.student &&
+            'email' in item.student
+          ) as SessionRequest[];
+          
+          setSessionRequests(validRequests);
         }
       } catch (error) {
         console.error("Error fetching session requests:", error);
@@ -107,18 +116,28 @@ const TeacherSessionRequests = () => {
       if (fetchError) throw fetchError;
       
       if (requestData && newStatus === 'accepted') {
-        // Fetch teacher and student information separately to avoid join issues
-        const { data: teacherData } = await supabase
+        // Fetch teacher and student information with specific columns
+        const { data: teacherData, error: teacherError } = await supabase
           .from('profiles')
-          .select('first_name, last_name, email')
+          .select('id, first_name, last_name, email')
           .eq('id', requestData.teacher_id)
           .single();
           
-        const { data: studentData } = await supabase
+        if (teacherError) {
+          console.error("Error fetching teacher data:", teacherError);
+          throw teacherError;
+        }
+          
+        const { data: studentData, error: studentError } = await supabase
           .from('profiles')
-          .select('first_name, last_name, email')
+          .select('id, first_name, last_name, email')
           .eq('id', requestData.student_id)
           .single();
+        
+        if (studentError) {
+          console.error("Error fetching student data:", studentError);
+          throw studentError;
+        }
         
         if (!teacherData || !studentData) {
           console.error("Could not fetch teacher or student data");
