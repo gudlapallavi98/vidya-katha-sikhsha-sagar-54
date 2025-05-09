@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, MapPin, Check, Robot, MessageSquare } from "lucide-react";
+import { Mail, Phone, MapPin, Check, Bot, MessageSquare } from "lucide-react";
 import { useContactMessages, ContactFormData } from "@/hooks/use-contact-messages";
 import { motion } from "framer-motion";
 
@@ -219,7 +218,7 @@ const ContactUsPage = () => {
                   }}
                 >
                   <div className="relative">
-                    <Robot className="h-20 w-20 text-indian-blue" />
+                    <Bot className="h-20 w-20 text-indian-blue" />
                     {/* Speech bubble */}
                     <motion.div 
                       className="absolute -top-12 -right-4 bg-white p-2 rounded-lg shadow-lg"
