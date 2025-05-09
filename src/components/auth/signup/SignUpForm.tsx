@@ -1,3 +1,4 @@
+
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -56,9 +57,6 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
       
       try {
         // Use the Supabase Edge Function to send a real email with OTP
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        setSentOtp(generatedOtp);
-        
         const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
           method: "POST",
           headers: {

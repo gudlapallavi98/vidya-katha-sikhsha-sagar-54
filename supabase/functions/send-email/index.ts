@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -104,8 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         console.log("Email sent:", emailResponse);
         
-        // In production, don't return the OTP to the client
-        // For our implementation, we'll return it for verification
+        // For our implementation, we'll return the OTP for client-side verification
         return new Response(
           JSON.stringify({ 
             success: true, 

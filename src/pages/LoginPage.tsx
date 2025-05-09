@@ -162,22 +162,13 @@ const LoginPage = () => {
     setResetLoading(true);
 
     try {
-      // Get current session first to establish auth context
-      const { data: sessionData } = await supabase.auth.getSession();
+      // We'll use the updateUser function from AuthContext to update the password
+      const { updatePassword } = useAuth();
+      const success = await updatePassword(newPassword);
       
-      // If there's no valid session, request a password reset
-      if (!sessionData?.session) {
-        // Send password reset email via Supabase
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail);
-        if (resetError) throw resetError;
+      if (!success) {
+        throw new Error("Failed to update password");
       }
-      
-      // Update password using Supabase Auth API
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
 
       toast({
         title: "Password Reset Successful",
