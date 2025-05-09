@@ -55,34 +55,14 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
       
       setIsLoading(true);
       
-      // Using the correct full URL for the Supabase Edge Function
-      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          name: formData.name,
-          type: "signup"
-        })
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error(errorText || "Failed to send OTP");
-      }
-      
-      const data = await response.json();
-      
-      // In a real app, don't send OTP back, validate server-side
-      // For demo purposes we're getting the OTP from the response
-      setSentOtp(data.otp);
+      // For development/testing purposes, generate a simple OTP locally
+      // In production, this should be handled securely on the server
+      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOtp(generatedOtp);
       
       toast({
-        title: "OTP Sent",
-        description: "Check your email for the verification code",
+        title: "OTP Generated",
+        description: `For testing purposes, use this OTP: ${generatedOtp}`,
       });
       
       setStep("otp");
