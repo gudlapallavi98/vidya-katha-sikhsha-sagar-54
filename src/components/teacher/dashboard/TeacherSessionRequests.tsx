@@ -37,7 +37,7 @@ const TeacherSessionRequests = () => {
 
     const fetchSessionRequests = async () => {
       try {
-        // Fix the query by using a more explicit join with profiles table
+        // Get basic session request data
         const { data, error } = await supabase
           .from('session_requests')
           .select(`
@@ -62,25 +62,35 @@ const TeacherSessionRequests = () => {
           // For each request, fetch the associated student profile separately
           const requestsWithStudents = await Promise.all(
             data.map(async (request) => {
-              const { data: studentData, error: studentError } = await supabase
-                .from('profiles')
-                .select('first_name, last_name, email')
-                .eq('id', request.student_id)
-                .single();
+              try {
+                const { data: studentData, error: studentError } = await supabase
+                  .from('profiles')
+                  .select('first_name, last_name, email')
+                  .eq('id', request.student_id)
+                  .single();
               
-              if (studentError || !studentData) {
-                console.error("Error fetching student data:", studentError);
+                if (studentError) {
+                  console.error("Error fetching student data:", studentError);
+                  return null;
+                }
+              
+                if (!studentData) {
+                  console.error("No student data found for id:", request.student_id);
+                  return null;
+                }
+                
+                return {
+                  ...request,
+                  student: {
+                    first_name: studentData.first_name,
+                    last_name: studentData.last_name,
+                    email: studentData.email
+                  }
+                };
+              } catch (err) {
+                console.error("Error processing student data:", err);
                 return null;
               }
-              
-              return {
-                ...request,
-                student: {
-                  first_name: studentData.first_name,
-                  last_name: studentData.last_name,
-                  email: studentData.email
-                }
-              };
             })
           );
           
@@ -132,78 +142,86 @@ const TeacherSessionRequests = () => {
       if (fetchError) throw fetchError;
       
       if (requestData && newStatus === 'accepted') {
-        // Fetch teacher profile information
-        const { data: teacherData, error: teacherError } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, email')
-          .eq('id', requestData.teacher_id)
-          .single();
-          
-        if (teacherError) {
-          console.error("Error fetching teacher data:", teacherError);
-          throw teacherError;
-        }
-        
-        // Fetch student profile information
-        const { data: studentData, error: studentError } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, email')
-          .eq('id', requestData.student_id)
-          .single();
-        
-        if (studentError) {
-          console.error("Error fetching student data:", studentError);
-          throw studentError;
-        }
-        
-        if (!teacherData || !studentData) {
-          console.error("Could not fetch teacher or student data");
-          throw new Error("Could not fetch required user data");
-        }
-        
-        // Generate a meeting link
-        const meetingLink = `https://etutorss.com/meeting/${requestId}`;
-        
-        // Create a session record
-        const { data: session, error: sessionError } = await supabase
-          .from('sessions')
-          .insert([
-            {
-              title: requestData.proposed_title,
-              start_time: new Date(requestData.proposed_date).toISOString(),
-              end_time: new Date(new Date(requestData.proposed_date).getTime() + 60*60*1000).toISOString(), // 1 hour session by default
-              teacher_id: user?.id,
-              student_id: requestData.student_id,
-              status: 'scheduled',
-              meeting_link: meetingLink
-            }
-          ])
-          .select();
-          
-        if (sessionError) throw sessionError;
-        
-        // Send email notifications
         try {
-          await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/schedule-notification", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              teacherEmail: teacherData.email,
-              teacherName: `${teacherData.first_name} ${teacherData.last_name}`,
-              studentEmail: studentData.email,
-              studentName: `${studentData.first_name} ${studentData.last_name}`,
-              sessionTitle: requestData.proposed_title,
-              sessionDate: format(new Date(requestData.proposed_date), 'MMMM d, yyyy'),
-              sessionTime: format(new Date(requestData.proposed_date), 'h:mm a'),
-              sessionLink: meetingLink,
-              additionalInfo: "Please join the session 5 minutes before the scheduled time."
-            })
-          });
-        } catch (emailError) {
-          console.error("Failed to send session notification emails:", emailError);
-          // Don't throw error here, we still want to show success even if email fails
+          // Fetch teacher profile information
+          const { data: teacherData, error: teacherError } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, email')
+            .eq('id', requestData.teacher_id)
+            .single();
+            
+          if (teacherError) {
+            console.error("Error fetching teacher data:", teacherError);
+            throw teacherError;
+          }
+          
+          if (!teacherData) {
+            throw new Error("Teacher data not found");
+          }
+          
+          // Fetch student profile information
+          const { data: studentData, error: studentError } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, email')
+            .eq('id', requestData.student_id)
+            .single();
+          
+          if (studentError) {
+            console.error("Error fetching student data:", studentError);
+            throw studentError;
+          }
+          
+          if (!studentData) {
+            throw new Error("Student data not found");
+          }
+          
+          // Generate a meeting link
+          const meetingLink = `https://etutorss.com/meeting/${requestId}`;
+          
+          // Create a session record
+          const { data: session, error: sessionError } = await supabase
+            .from('sessions')
+            .insert([
+              {
+                title: requestData.proposed_title,
+                start_time: new Date(requestData.proposed_date).toISOString(),
+                end_time: new Date(new Date(requestData.proposed_date).getTime() + 60*60*1000).toISOString(), // 1 hour session by default
+                teacher_id: user?.id,
+                student_id: requestData.student_id,
+                status: 'scheduled',
+                meeting_link: meetingLink
+              }
+            ])
+            .select();
+            
+          if (sessionError) throw sessionError;
+          
+          // Send email notifications
+          try {
+            await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/schedule-notification", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                teacherEmail: teacherData.email,
+                teacherName: `${teacherData.first_name} ${teacherData.last_name}`,
+                studentEmail: studentData.email,
+                studentName: `${studentData.first_name} ${studentData.last_name}`,
+                sessionTitle: requestData.proposed_title,
+                sessionDate: format(new Date(requestData.proposed_date), 'MMMM d, yyyy'),
+                sessionTime: format(new Date(requestData.proposed_date), 'h:mm a'),
+                sessionLink: meetingLink,
+                additionalInfo: "Please join the session 5 minutes before the scheduled time."
+              })
+            });
+          } catch (emailError) {
+            console.error("Failed to send session notification emails:", emailError);
+            // Don't throw error here, we still want to show success even if email fails
+          }
+        } catch (error) {
+          console.error("Error processing session acceptance:", error);
+          // Continue with status update even if there's an error with additional processing
         }
       }
 
