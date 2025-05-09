@@ -8,6 +8,7 @@ import BasicInfoFields from "./BasicInfoFields";
 import PasswordFields from "./PasswordFields";
 import RoleSelector from "./RoleSelector";
 import CaptchaField from "./CaptchaField";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface SignUpFormProps {
   captchaValue: { num1: number; num2: number };
@@ -25,6 +26,9 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
     confirmPassword: "",
     role: "student"
   });
+  const [step, setStep] = useState<"info" | "otp">("info");
+  const [otp, setOtp] = useState("");
+  const [sentOtp, setSentOtp] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -43,23 +47,97 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
     }));
   };
 
+  const sendOtp = async () => {
+    try {
+      if (!formData.email) {
+        throw new Error("Email is required");
+      }
+      
+      setIsLoading(true);
+      
+      // Send OTP via email
+      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          name: formData.name,
+          type: "signup"
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send OTP");
+      }
+      
+      // In a real app, don't send OTP back, validate server-side
+      // For demo purposes we're getting the OTP from the response
+      setSentOtp(data.otp);
+      
+      toast({
+        title: "OTP Sent",
+        description: "Check your email for the verification code",
+      });
+      
+      setStep("otp");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send OTP",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    
+    if (step === "info") {
+      try {
+        // Validate form
+        if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+          throw new Error("Please fill in all required fields");
+        }
+        
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error("Passwords do not match");
+        }
+        
+        // Validate captcha
+        if (parseInt(userCaptcha) !== captchaValue.num1 + captchaValue.num2) {
+          throw new Error("Incorrect captcha answer");
+        }
+        
+        await sendOtp();
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: error instanceof Error ? error.message : "Something went wrong",
+        });
+      }
+      return;
+    }
+    
+    // If we're in OTP step
     setIsLoading(true);
     
     try {
-      // Validate form
-      if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-        throw new Error("Please fill in all required fields");
+      // Validate OTP
+      if (otp.length !== 6) {
+        throw new Error("Please enter the complete 6-digit OTP");
       }
       
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error("Passwords do not match");
-      }
-      
-      // Validate captcha
-      if (parseInt(userCaptcha) !== captchaValue.num1 + captchaValue.num2) {
-        throw new Error("Incorrect captcha answer");
+      // In a real app, validate OTP server-side
+      // For demo purposes we're checking against the OTP we got from the server
+      if (otp !== sentOtp) {
+        throw new Error("Incorrect OTP. Please check and try again");
       }
       
       // Sign up with Supabase
@@ -111,7 +189,7 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
         
         toast({
           title: "Registration Successful!",
-          description: "Welcome to Vidya Katha Online. Please check your email for verification.",
+          description: "Welcome to etutorss. Your account has been created.",
         });
         
         // Redirect based on role
@@ -135,32 +213,82 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="space-y-4">
-        <BasicInfoFields 
-          formData={formData} 
-          handleInputChange={handleInputChange} 
-        />
-        
-        <PasswordFields 
-          formData={formData} 
-          handleInputChange={handleInputChange} 
-        />
-        
-        <RoleSelector 
-          role={formData.role} 
-          handleRoleChange={handleRoleChange} 
-        />
-        
-        <CaptchaField 
-          captchaValue={captchaValue} 
-          userCaptcha={userCaptcha}
-          setUserCaptcha={setUserCaptcha}
-        />
-      </div>
-      
-      <Button className="w-full mt-6 bg-indian-saffron hover:bg-indian-saffron/90" type="submit" disabled={isLoading}>
-        {isLoading ? "Creating Account..." : "Sign Up"}
-      </Button>
+      {step === "info" ? (
+        <div className="space-y-4">
+          <BasicInfoFields 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+          />
+          
+          <PasswordFields 
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+          />
+          
+          <RoleSelector 
+            role={formData.role} 
+            handleRoleChange={handleRoleChange} 
+          />
+          
+          <CaptchaField 
+            captchaValue={captchaValue} 
+            userCaptcha={userCaptcha}
+            setUserCaptcha={setUserCaptcha}
+          />
+          
+          <Button className="w-full mt-6 bg-indian-saffron hover:bg-indian-saffron/90" type="submit" disabled={isLoading}>
+            {isLoading ? "Sending Verification..." : "Continue"}
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h3 className="text-lg font-medium">Verify your email</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Enter the 6-digit code sent to {formData.email}
+            </p>
+          </div>
+          
+          <div className="flex justify-center py-4">
+            <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          
+          <div className="flex flex-col space-y-2">
+            <Button className="w-full bg-indian-saffron hover:bg-indian-saffron/90" type="submit" disabled={isLoading}>
+              {isLoading ? "Creating Account..." : "Create Account"}
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="ghost" 
+              className="text-sm" 
+              onClick={() => setStep("info")}
+              disabled={isLoading}
+            >
+              Back
+            </Button>
+            
+            <Button 
+              type="button" 
+              variant="link" 
+              className="text-sm text-indian-blue" 
+              onClick={sendOtp}
+              disabled={isLoading}
+            >
+              Resend OTP
+            </Button>
+          </div>
+        </div>
+      )}
     </form>
   );
 };

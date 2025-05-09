@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updatePassword: (password: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -71,6 +72,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updatePassword = async (password: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password
+      });
+
+      if (error) throw error;
+      
+      toast({
+        title: "Password updated",
+        description: "Your password has been updated successfully."
+      });
+      
+      return true;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Password update failed",
+        description: error instanceof Error ? error.message : "Something went wrong"
+      });
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -79,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         signIn,
         signOut,
+        updatePassword,
       }}
     >
       {children}

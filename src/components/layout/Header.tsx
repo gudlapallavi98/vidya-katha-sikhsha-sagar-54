@@ -1,276 +1,208 @@
 
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Menu, ChevronDown, GraduationCap, User, LogOut } from "lucide-react";
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { motion } from "framer-motion";
+import { Menu, X, GraduationCap } from "lucide-react";
+import { useMobile } from "@/hooks/use-mobile";
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
+  const { isMobile } = useMobile();
+  const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
 
-  // Fetch the user's role and name from the profile
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (user) {
-        try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('role, display_name, first_name')
-            .eq('id', user.id)
-            .single();
-            
-          if (data) {
-            setUserRole(data.role);
-            // Use display_name if available, otherwise use first_name
-            setUserName(data.display_name || data.first_name || null);
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
-      }
-    };
-    
-    fetchUserData();
-  }, [user]);
-
-  // Check if page is scrolled
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsScrolled(scrollPosition > 50);
+      setIsScrolled(window.scrollY > 10);
     };
-
+    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const navItems = [
+    { label: "Home", path: "/" },
+    { label: "Courses", path: "/courses" },
+    { label: "About", path: "/about" },
+    { label: "Contact", path: "/contact" },
+  ];
+
+  const isActive = (path: string) => {
+    return location.pathname === path;
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
-
-  // Get user initials for avatar fallback
-  const getUserInitials = () => {
-    if (userName) {
-      return userName.charAt(0).toUpperCase();
-    } 
-    return user?.email?.charAt(0).toUpperCase() || 'U';
-  };
-
-  // Check if a link is active
-  const isActivePath = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
+  const NavList = ({ className = "", onItemClick = () => {} }: 
+    { className?: string, onItemClick?: () => void }) => (
+    <ul className={`${className}`}>
+      {navItems.map((item) => (
+        <li key={item.path}>
+          <Link
+            to={item.path}
+            className={`text-sm px-4 py-2 rounded transition-colors block hover:bg-muted ${
+              isActive(item.path)
+                ? "font-medium text-primary"
+                : "text-muted-foreground"
+            }`}
+            onClick={onItemClick}
+          >
+            {item.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
-    <header 
-      className={`border-b transition-all duration-300 ease-in-out sticky top-0 z-50 ${
-        isScrolled 
-          ? "border-border/40 bg-background/90 backdrop-blur-md shadow-md" 
-          : "border-transparent bg-gradient-to-b from-background/80 to-background/60"
+    <header
+      className={`sticky top-0 z-50 w-full transition-all duration-200 ${
+        isScrolled
+          ? "bg-white/95 backdrop-blur-sm border-b shadow-sm"
+          : "bg-white border-b"
       }`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2 group">
-            <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-            >
-              <GraduationCap className="h-8 w-8 text-indian-saffron" />
-            </motion.div>
-            <span className="font-sanskrit text-2xl font-bold">
-              <span className="text-indian-saffron group-hover:text-indian-blue transition-colors duration-300">e</span>{" "}
-              <span className="text-indian-blue group-hover:text-indian-saffron transition-colors duration-300">Guru</span>
-            </span>
+        <div className="flex items-center gap-2 mr-4">
+          <Link to="/" className="flex items-center gap-2">
+            <GraduationCap className="h-7 w-7 text-indian-saffron" />
+            <h1 className="font-sanskrit text-xl font-bold flex items-center">
+              <span className="text-indian-saffron">e</span>
+              <span className="text-indian-blue">tutorss</span>
+            </h1>
           </Link>
-          
-          <nav className="hidden md:flex items-center gap-6">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="flex items-center gap-1 group transition-all duration-200 hover:text-indian-saffron"
-                >
-                  Courses 
-                  <ChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                className="w-56 bg-background/90 backdrop-blur-md border border-muted/20 shadow-xl animate-in fade-in-80 zoom-in-95"
-                sideOffset={8}
-              >
-                {[
-                  { path: "/courses?category=school", text: "School Courses" },
-                  { path: "/courses?category=college", text: "College Courses" },
-                  { path: "/courses?category=tech", text: "Tech Courses" },
-                  { path: "/courses?category=language", text: "Language Courses" },
-                  { path: "/courses?category=competitive", text: "Competitive Exams" },
-                ].map((item, index) => (
-                  <DropdownMenuItem key={index} className="focus:bg-accent/10">
-                    <Link 
-                      to={item.path} 
-                      className="w-full py-1 hover:text-indian-saffron transition-colors"
-                    >
-                      {item.text}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <Link 
-              to="/about" 
-              className={`relative px-3 py-2 transition-colors duration-300 ${
-                isActivePath('/about') 
-                  ? "text-indian-saffron" 
-                  : "text-foreground hover:text-indian-saffron"
-              }`}
-            >
-              About Us
-              {isActivePath('/about') && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indian-saffron"></div>
-              )}
-            </Link>
-            
-            <Link 
-              to="/contact" 
-              className={`relative px-3 py-2 transition-colors duration-300 ${
-                isActivePath('/contact') 
-                  ? "text-indian-saffron" 
-                  : "text-foreground hover:text-indian-saffron"
-              }`}
-            >
-              Contact
-              {isActivePath('/contact') && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-indian-saffron"></div>
-              )}
-            </Link>
-          </nav>
         </div>
-        
-        <div className="hidden md:flex items-center gap-4">
-          {user ? (
-            <>
-              {userRole === 'student' && (
-                <Link to="/student-dashboard">
-                  <Button variant="ghost">Dashboard</Button>
-                </Link>
-              )}
-              {userRole === 'teacher' && (
-                <Link to="/teacher-dashboard">
-                  <Button variant="ghost">Dashboard</Button>
-                </Link>
-              )}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-accent/10">
-                    <Avatar className="h-8 w-8 ring-2 ring-background">
-                      <AvatarFallback className="bg-indian-saffron/20 text-indian-saffron">{getUserInitials()}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{userName || 'Account'}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="end" 
-                  className="bg-background/90 backdrop-blur-md border border-muted/20 shadow-xl animate-in fade-in-80 zoom-in-95"
-                >
-                  <DropdownMenuItem className="focus:bg-accent/10">
-                    <Link to={userRole === 'student' ? "/student-dashboard?tab=profile" : "/teacher-dashboard?tab=profile"} className="w-full">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleSignOut} className="focus:bg-accent/10">
-                    <LogOut className="h-4 w-4 mr-2" /> Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          ) : (
-            <>
-              <Link to="/login">
-                <Button 
-                  variant="ghost" 
-                  className="hover:bg-accent/10 hover:text-indian-saffron transition-all duration-200"
-                >
-                  Login
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button 
-                  className="bg-indian-saffron hover:bg-indian-saffron/90 shadow-glow-saffron transition-all duration-300 hover:scale-105"
-                >
-                  Sign Up
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-        
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleMenu}>
-          <Menu className="h-6 w-6" />
-        </Button>
-      </div>
-      
-      {isMenuOpen && (
-        <div className="container md:hidden py-4 space-y-4 border-t animate-in slide-in-from-top-5 duration-200">
-          <div className="flex flex-col gap-2">
-            <Link to="/courses" className="px-2 py-1 hover:bg-muted rounded-md transition-colors hover:text-indian-saffron">
-              Courses
-            </Link>
-            <Link to="/about" className="px-2 py-1 hover:bg-muted rounded-md transition-colors hover:text-indian-saffron">
-              About Us
-            </Link>
-            <Link to="/contact" className="px-2 py-1 hover:bg-muted rounded-md transition-colors hover:text-indian-saffron">
-              Contact
-            </Link>
-            {user && userRole === 'student' && (
-              <Link to="/student-dashboard" className="px-2 py-1 hover:bg-muted rounded-md transition-colors hover:text-indian-saffron">
-                Dashboard
-              </Link>
-            )}
-            {user && userRole === 'teacher' && (
-              <Link to="/teacher-dashboard" className="px-2 py-1 hover:bg-muted rounded-md transition-colors hover:text-indian-saffron">
-                Dashboard
-              </Link>
-            )}
-          </div>
-          <div className="flex gap-4">
-            {user ? (
-              <Button onClick={handleSignOut} variant="outline" className="w-full hover:bg-accent/10 hover:border-indian-saffron transition-all duration-200">
-                <LogOut className="h-4 w-4 mr-2" /> Sign Out
+
+        {isMobile ? (
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="shrink-0">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle menu</span>
               </Button>
-            ) : (
-              <>
-                <Link to="/login" className="flex-1">
-                  <Button variant="outline" className="w-full hover:bg-accent/10 hover:border-indian-saffron transition-all duration-200">Login</Button>
-                </Link>
-                <Link to="/signup" className="flex-1">
-                  <Button className="w-full bg-indian-saffron hover:bg-indian-saffron/90 shadow-glow-saffron transition-all duration-300 hover:scale-105">Sign Up</Button>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[80vw] sm:w-[350px] pr-0">
+              <div className="flex flex-row items-center gap-2 mb-6">
+                <GraduationCap className="h-6 w-6 text-indian-saffron" />
+                <h3 className="font-sanskrit text-lg font-bold">
+                  <span className="text-indian-saffron">e</span>
+                  <span className="text-indian-blue">tutorss</span>
+                </h3>
+                <SheetClose className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </SheetClose>
+              </div>
+              <div className="grid gap-2 py-4">
+                <div className="flex flex-col space-y-3">
+                  {!user ? (
+                    <>
+                      <SheetClose asChild>
+                        <NavList />
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link to="/login" className="w-full">
+                          <Button
+                            className="w-full bg-indian-saffron hover:bg-indian-saffron/90"
+                            size="sm"
+                          >
+                            Sign In
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link to="/signup" className="w-full">
+                          <Button variant="outline" size="sm" className="w-full">
+                            Sign Up
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                    </>
+                  ) : (
+                    <>
+                      <SheetClose asChild>
+                        <NavList />
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Link
+                          to={
+                            user.user_metadata.role === "student"
+                              ? "/student-dashboard"
+                              : "/teacher-dashboard"
+                          }
+                          className="w-full"
+                        >
+                          <Button
+                            size="sm"
+                            className="w-full bg-indian-saffron hover:bg-indian-saffron/90"
+                          >
+                            Dashboard
+                          </Button>
+                        </Link>
+                      </SheetClose>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => signOut()}
+                      >
+                        Sign Out
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <nav className="flex items-center justify-between flex-1">
+            <NavList className="flex" />
+            <div className="flex items-center gap-2">
+              {!user ? (
+                <>
+                  <Link to="/login">
+                    <Button
+                      className="bg-indian-saffron hover:bg-indian-saffron/90"
+                      size="sm"
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button variant="outline" size="sm">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to={
+                      user.user_metadata.role === "student"
+                        ? "/student-dashboard"
+                        : "/teacher-dashboard"
+                    }
+                  >
+                    <Button
+                      size="sm"
+                      className="bg-indian-saffron hover:bg-indian-saffron/90"
+                    >
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => signOut()}
+                  >
+                    Sign Out
+                  </Button>
+                </>
+              )}
+            </div>
+          </nav>
+        )}
+      </div>
     </header>
   );
 };
