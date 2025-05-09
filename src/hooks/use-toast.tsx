@@ -9,6 +9,7 @@ type ToasterToast = {
   description?: React.ReactNode;
   action?: React.ReactNode;
   variant?: "default" | "destructive";
+  duration?: number; // Adding duration property
 };
 
 const TOAST_LIMIT = 5;
