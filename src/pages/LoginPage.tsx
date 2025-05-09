@@ -76,11 +76,12 @@ const LoginPage = () => {
     setResetLoading(true);
     
     try {
-      // Updated URL to use relative path for better compatibility
-      const response = await fetch("/functions/v1/send-email/send-otp", {
+      // Using the correct full URL for the Supabase Edge Function
+      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabase.auth.getSession().then(({ data }) => data.session?.access_token)}`
         },
         body: JSON.stringify({
           email: resetEmail,
@@ -88,11 +89,13 @@ const LoginPage = () => {
         })
       });
       
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send OTP");
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(errorText || "Failed to send OTP");
       }
+      
+      const data = await response.json();
       
       // In a real app, don't send OTP back, validate server-side
       // For demo purposes we're getting the OTP from the response
@@ -105,6 +108,7 @@ const LoginPage = () => {
       
       setResetPasswordStep("otp");
     } catch (error) {
+      console.error("Reset password error:", error);
       toast({
         variant: "destructive",
         title: "Error",
