@@ -62,26 +62,25 @@ export interface Session {
   };
 }
 
+export interface SessionRequestStudent {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 export interface SessionRequest {
   id: string;
   student_id: string;
-  teacher_id: string;
-  course_id: string;
   proposed_title: string;
   proposed_date: string;
   proposed_duration: number;
-  status: 'pending' | 'approved' | 'rejected';
-  request_message: string;
+  request_message: string | null;
+  status: string;
   created_at: string;
-  updated_at: string;
-  student: {
-    id: string;
-    first_name: string;
-    last_name: string;
-  };
+  student: SessionRequestStudent;
   course: {
     title: string;
-  };
+  } | null;
 }
 
 export interface Achievement {

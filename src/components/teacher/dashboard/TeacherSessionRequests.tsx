@@ -3,10 +3,11 @@ import React, { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import SessionRequestsList from "./components/SessionRequestsList";
-import { useSessionRequests, useSessionStatusChange } from "@/hooks/use-session-requests";
+import { useFetchSessionRequests } from "@/hooks/use-fetch-session-requests";
+import { useSessionStatusChange } from "@/hooks/use-session-status";
 
 const TeacherSessionRequests = () => {
-  const { sessionRequests, loading } = useSessionRequests();
+  const { sessionRequests, loading } = useFetchSessionRequests();
   const { handleStatusChange } = useSessionStatusChange();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
