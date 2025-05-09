@@ -55,8 +55,8 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
       
       setIsLoading(true);
       
-      // Send OTP via email
-      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
+      // Updated URL to use relative path for better compatibility
+      const response = await fetch("/functions/v1/send-email/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
