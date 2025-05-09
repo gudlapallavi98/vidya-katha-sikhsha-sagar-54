@@ -3,7 +3,7 @@ import React from "react";
 import { format } from "date-fns";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SessionRequest } from "@/hooks/use-session-requests";
+import { SessionRequest } from "@/hooks/types";
 
 interface SessionRequestCardProps {
   request: SessionRequest;
@@ -21,7 +21,7 @@ const SessionRequestCard: React.FC<SessionRequestCardProps> = ({
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">{request.proposed_title}</CardTitle>
         <CardDescription>
-          {request.student.first_name} {request.student.last_name}
+          {request.student?.first_name} {request.student?.last_name}
           {request.course?.title && ` • ${request.course.title} course`}
         </CardDescription>
       </CardHeader>

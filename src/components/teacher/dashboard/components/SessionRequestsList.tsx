@@ -1,7 +1,7 @@
 
 import React from "react";
 import SessionRequestCard from "./SessionRequestCard";
-import { SessionRequest } from "@/hooks/use-session-requests";
+import { SessionRequest } from "@/hooks/types";
 
 interface SessionRequestsListProps {
   requests: SessionRequest[];
