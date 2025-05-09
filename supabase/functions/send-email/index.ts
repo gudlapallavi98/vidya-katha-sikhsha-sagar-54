@@ -2,7 +2,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Initialize Resend with proper error handling for the API key
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +48,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Check if Resend API key is properly configured
+    if (!resend) {
+      throw new Error("Resend API key is not configured. Please set the RESEND_API_KEY environment variable.");
+    }
+    
     const url = new URL(req.url);
     const path = url.pathname.split("/").pop();
     
@@ -87,26 +94,31 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         `;
       
-      const emailResponse = await resend.emails.send({
-        from: "etutorss <info@etutorss.com>",
-        to: [email],
-        subject: subject,
-        html: html,
-      });
-      
-      console.log("Email sent:", emailResponse);
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "OTP sent successfully", 
-          otp: otp // In production, remove this and validate server-side
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      try {
+        const emailResponse = await resend.emails.send({
+          from: "etutorss <info@etutorss.com>",
+          to: [email],
+          subject: subject,
+          html: html,
+        });
+        
+        console.log("Email sent:", emailResponse);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: "OTP sent successfully", 
+            otp: otp // In production, remove this and validate server-side
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      } catch (emailError) {
+        console.error("Email sending error:", emailError);
+        throw new Error(`Failed to send email: ${emailError.message}`);
+      }
     }
     
     else if (path === "schedule-notification") {
@@ -192,28 +204,38 @@ const handler = async (req: Request): Promise<Response> => {
       // Generic email sending endpoint
       const { to, subject, html, from }: EmailRequest = await req.json();
       
-      const emailResponse = await resend.emails.send({
-        from: from || "etutorss <info@etutorss.com>",
-        to,
-        subject,
-        html,
-      });
-      
-      console.log("Email sent:", emailResponse);
-      
-      return new Response(
-        JSON.stringify({ success: true, message: "Email sent successfully" }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      try {
+        const emailResponse = await resend.emails.send({
+          from: from || "etutorss <info@etutorss.com>",
+          to,
+          subject,
+          html,
+        });
+        
+        console.log("Email sent:", emailResponse);
+        
+        return new Response(
+          JSON.stringify({ success: true, message: "Email sent successfully" }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      } catch (emailError) {
+        console.error("Email sending error:", emailError);
+        throw new Error(`Failed to send email: ${emailError.message}`);
+      }
     }
   } catch (error: any) {
     console.error("Error in send-email function:", error);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false,
+        fallback: true,
+        otp: generateOTP() // Only for development, will provide a fallback OTP
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
