@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -76,62 +75,34 @@ const LoginPage = () => {
     setResetLoading(true);
     
     try {
-      // Generate OTP (In production, this would be generated on the server)
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtp(generatedOtp);
+      // Use the Supabase Edge Function to send an email with OTP
+      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: resetEmail,
+          type: "password-reset"
+        })
+      });
       
-      try {
-        // Use the Supabase Edge Function to send a real email with OTP
-        const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            to: resetEmail,
-            subject: "Reset your etutorss password",
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #FF9933;">Password Reset Request</h2>
-                <p>Hello,</p>
-                <p>We received a request to reset your password. Please use the following OTP code to proceed with the password reset:</p>
-                <h3 style="background-color: #f3f4f6; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px;">${generatedOtp}</h3>
-                <p>This code will expire in 10 minutes.</p>
-                <p>If you did not request a password reset, please ignore this email or contact support if you have concerns.</p>
-                <p>Best regards,<br>The etutorss Team</p>
-              </div>
-            `
-          })
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.text();
-          console.error("Email sending error:", errorData);
-          throw new Error("Failed to send password reset email");
-        }
-        
-        toast({
-          title: "Password Reset Code Sent",
-          description: "Please check your email for the verification code",
-        });
-      } catch (error) {
-        console.error("Email sending failed:", error);
-        
-        // Fallback to local OTP generation for development/testing
-        toast({
-          variant: "destructive",
-          title: "Email Sending Failed",
-          description: "Using local OTP as fallback. In production, this would be sent via email.",
-        });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error("Email sending error:", data);
+        throw new Error(data.error || "Failed to send password reset email");
       }
       
-      // Show the OTP in toast for development environment only
-      if (process.env.NODE_ENV !== "production") {
-        toast({
-          title: "Development OTP",
-          description: `For testing purposes, use this OTP: ${generatedOtp}`,
-        });
+      // Use the OTP from the server response
+      if (data.otp) {
+        setSentOtp(data.otp);
       }
+      
+      toast({
+        title: "Password Reset Code Sent",
+        description: "Please check your email for the verification code",
+      });
       
       setResetPasswordStep("otp");
     } catch (error) {
@@ -157,7 +128,6 @@ const LoginPage = () => {
     }
 
     // In a real app, validate OTP server-side
-    // For demo purposes we're checking against the OTP we got from the server
     if (resetOtp !== sentOtp) {
       toast({
         variant: "destructive",
@@ -192,9 +162,18 @@ const LoginPage = () => {
     setResetLoading(true);
 
     try {
+      // Get current session first to establish auth context
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      // If there's no valid session, request a password reset
+      if (!sessionData?.session) {
+        // Send password reset email via Supabase
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail);
+        if (resetError) throw resetError;
+      }
+      
       // Update password using Supabase Auth API
       const { error } = await supabase.auth.updateUser({
-        email: resetEmail,
         password: newPassword
       });
 

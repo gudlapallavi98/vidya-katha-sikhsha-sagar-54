@@ -1,4 +1,3 @@
-
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -57,62 +56,43 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
       
       try {
         // Use the Supabase Edge Function to send a real email with OTP
-        const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email`, {
+        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        setSentOtp(generatedOtp);
+        
+        const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            to: formData.email,
-            subject: "Verify your etutorss account",
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #FF9933;">Welcome to etutorss!</h2>
-                <p>Hello ${formData.name || "there"},</p>
-                <p>Thank you for signing up. To complete your registration, please verify your account using the following OTP code:</p>
-                <h3 style="background-color: #f3f4f6; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px;">${sentOtp}</h3>
-                <p>This code will expire in 10 minutes.</p>
-                <p>If you did not request this verification, please ignore this email.</p>
-                <p>Best regards,<br>The etutorss Team</p>
-              </div>
-            `
+            email: formData.email,
+            name: formData.name,
+            type: "signup"
           })
         });
         
+        const data = await response.json();
+        
         if (!response.ok) {
-          const errorData = await response.text();
-          console.error("Email sending error:", errorData);
-          throw new Error("Failed to send verification email");
+          console.error("Email sending error:", data);
+          throw new Error(data.error || "Failed to send verification email");
+        }
+        
+        // Use the OTP from the server response
+        if (data.otp) {
+          setSentOtp(data.otp);
         }
         
         toast({
           title: "Verification Code Sent",
           description: "Please check your email for the verification code",
         });
+        
+        setStep("otp");
       } catch (error) {
         console.error("Email sending failed:", error);
-        
-        // Fallback to local OTP generation for development/testing
-        toast({
-          variant: "destructive",
-          title: "Email Sending Failed",
-          description: "Using local OTP as fallback. In production, this would be sent via email.",
-        });
+        throw error;
       }
-      
-      // Generate OTP (In production, this would be generated on the server)
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtp(generatedOtp);
-      
-      // Show the OTP in toast for development environment only
-      if (process.env.NODE_ENV !== "production") {
-        toast({
-          title: "Development OTP",
-          description: `For testing purposes, use this OTP: ${generatedOtp}`,
-        });
-      }
-      
-      setStep("otp");
     } catch (error) {
       console.error("Send OTP error:", error);
       toast({
@@ -165,7 +145,6 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
       }
       
       // In a real app, validate OTP server-side
-      // For demo purposes we're checking against the OTP we got from the server
       if (otp !== sentOtp) {
         throw new Error("Incorrect OTP. Please check and try again");
       }

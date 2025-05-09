@@ -104,11 +104,13 @@ const handler = async (req: Request): Promise<Response> => {
         
         console.log("Email sent:", emailResponse);
         
+        // In production, don't return the OTP to the client
+        // For our implementation, we'll return it for verification
         return new Response(
           JSON.stringify({ 
             success: true, 
             message: "OTP sent successfully", 
-            otp: otp // In production, remove this and validate server-side
+            otp: otp
           }),
           {
             status: 200,
@@ -232,9 +234,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        success: false,
-        fallback: true,
-        otp: generateOTP() // Only for development, will provide a fallback OTP
+        success: false
       }),
       {
         status: 500,
