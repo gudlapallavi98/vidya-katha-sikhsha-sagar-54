@@ -13,6 +13,7 @@ export interface SessionRequestStudent {
 
 export interface SessionRequest {
   id: string;
+  student_id: string; // Adding student_id to the interface
   proposed_title: string;
   proposed_date: string;
   proposed_duration: number;
@@ -62,6 +63,7 @@ export const useSessionRequests = () => {
           const requestsWithStudents = await Promise.all(
             data.map(async (request) => {
               try {
+                // Explicitly select the fields we need
                 const { data: studentData, error: studentError } = await supabase
                   .from('profiles')
                   .select('first_name, last_name, email')
@@ -93,9 +95,13 @@ export const useSessionRequests = () => {
             })
           );
           
-          // Filter out any failed requests
+          // Filter out any failed requests, using type guard to ensure objects match SessionRequest
           const validRequests = requestsWithStudents.filter(
-            (request): request is SessionRequest => request !== null
+            (request): request is SessionRequest => request !== null && 
+              request.student && 
+              typeof request.student.first_name === 'string' &&
+              typeof request.student.last_name === 'string' &&
+              typeof request.student.email === 'string'
           );
           
           setSessionRequests(validRequests);
