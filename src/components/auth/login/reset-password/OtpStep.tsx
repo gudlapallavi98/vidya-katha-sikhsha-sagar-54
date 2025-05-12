@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Loader2 } from "lucide-react";
 
 interface OtpStepProps {
   resetOtp: string;
@@ -22,7 +23,12 @@ const OtpStep = ({
   return (
     <>
       <div className="flex justify-center py-4">
-        <InputOTP maxLength={6} value={resetOtp} onChange={(value) => setResetOtp(value)}>
+        <InputOTP 
+          maxLength={6} 
+          value={resetOtp} 
+          onChange={(value) => setResetOtp(value)}
+          disabled={resetLoading}
+        >
           <InputOTPGroup>
             <InputOTPSlot index={0} />
             <InputOTPSlot index={1} />
@@ -38,8 +44,16 @@ const OtpStep = ({
         <Button 
           className="w-full bg-indian-saffron hover:bg-indian-saffron/90" 
           onClick={onVerifyOtp}
+          disabled={resetLoading || resetOtp.length !== 6}
         >
-          Verify Code
+          {resetLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Verifying...
+            </>
+          ) : (
+            "Verify Code"
+          )}
         </Button>
         
         <div className="flex justify-between">
@@ -48,6 +62,7 @@ const OtpStep = ({
             variant="ghost" 
             size="sm"
             onClick={onBack}
+            disabled={resetLoading}
           >
             Back
           </Button>
@@ -58,8 +73,13 @@ const OtpStep = ({
             size="sm"
             onClick={onResendCode}
             disabled={resetLoading}
+            className="text-indian-blue"
           >
-            {resetLoading ? "Sending..." : "Resend Code"}
+            {resetLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              "Resend Code"
+            )}
           </Button>
         </div>
       </div>

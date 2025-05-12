@@ -80,24 +80,53 @@ export const usePasswordReset = (onClose: () => void) => {
       return;
     }
 
-    if (resetOtp !== sentOtp) {
+    setResetLoading(true);
+    
+    try {
+      if (resetOtp !== sentOtp) {
+        setResetLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Invalid Code",
+          description: "The verification code is incorrect. Please try again",
+        });
+        return;
+      }
+      
+      setResetPasswordStep("newPassword");
+    } catch (error) {
+      console.error("OTP verification error:", error);
       toast({
         variant: "destructive",
-        title: "Invalid Code",
-        description: "The verification code is incorrect. Please try again",
+        title: "Verification Failed",
+        description: error instanceof Error ? error.message : "Something went wrong",
       });
-      return;
+    } finally {
+      setResetLoading(false);
     }
-
-    setResetPasswordStep("newPassword");
   };
 
   const handleResetPassword = async () => {
-    if (newPassword.length < 6) {
+    // Check password strength
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
+    const isLongEnough = newPassword.length >= 8;
+    
+    if (!isLongEnough) {
       toast({
         variant: "destructive",
         title: "Password Too Short",
-        description: "Password must be at least 6 characters long",
+        description: "Password must be at least 8 characters long",
+      });
+      return;
+    }
+    
+    if (!(hasUppercase && hasNumber) && !hasSpecial) {
+      toast({
+        variant: "destructive",
+        title: "Password Too Weak",
+        description: "Password must contain at least an uppercase letter and a number, or a special character",
       });
       return;
     }
