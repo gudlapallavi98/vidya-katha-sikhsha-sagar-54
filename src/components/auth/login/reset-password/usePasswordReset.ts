@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailStepData, NewPasswordStepData, OtpStepData } from "./types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const usePasswordReset = (onClose?: () => void) => {
   // We'll keep the original naming for consistency with PasswordResetForm.tsx
@@ -17,6 +19,7 @@ export const usePasswordReset = (onClose?: () => void) => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [passwordUpdated, setPasswordUpdated] = useState(false);
   const { toast } = useToast();
+  const { updatePassword } = useAuth();
 
   const resetError = () => setError(null);
 
@@ -29,11 +32,15 @@ export const usePasswordReset = (onClose?: () => void) => {
       // to send a 6-digit OTP to the user's email
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       
+      // Get the current session token if available
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token || "";
+      
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabase.auth.session()?.access_token}`
+          "Authorization": `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           email: resetEmail,
@@ -92,14 +99,12 @@ export const usePasswordReset = (onClose?: () => void) => {
     setError(null);
 
     try {
-      // Instead of using auth.updateUser, we'll use auth.updatePassword
-      // which is specifically for password updates
-      const { error: resetError } = await supabase.auth.update({
-        password: newPassword
-      });
+      // Use the updateUser method from the auth context which wraps 
+      // supabase.auth.updateUser correctly
+      const success = await updatePassword(newPassword);
 
-      if (resetError) {
-        throw new Error(resetError.message);
+      if (!success) {
+        throw new Error("Failed to update password. Please try again.");
       }
 
       setPasswordUpdated(true);
@@ -137,11 +142,15 @@ export const usePasswordReset = (onClose?: () => void) => {
       // Generate a new OTP and send it
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       
+      // Get the current session token if available
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token || "";
+      
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabase.auth.session()?.access_token}`
+          "Authorization": `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           email: resetEmail,
