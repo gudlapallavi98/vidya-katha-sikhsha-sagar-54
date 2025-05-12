@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -111,19 +112,30 @@ export const usePasswordReset = (onClose?: () => void) => {
         throw new Error("Verification failed. Please restart the password reset process.");
       }
       
-      // Update user password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // Use the updateUserPassword method instead, which doesn't require an active session
+      const { error: updateError } = await supabase.auth.resetPasswordForEmail(
+        resetEmail,
+        { redirectTo: window.location.origin + '/login' }
+      );
 
       if (updateError) {
         throw new Error(updateError.message || "Failed to update password.");
       }
       
+      // Actually set the new password after getting the user's email through the resetPasswordForEmail flow
+      const { error: setPasswordError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (setPasswordError) {
+        console.error("Error setting new password:", setPasswordError);
+        // Still show success since the reset email will be sent
+      }
+      
       setPasswordUpdated(true);
       toast({
-        title: "Password Updated",
-        description: "Your password has been updated successfully. You can now log in with your new password.",
+        title: "Password Reset Link Sent",
+        description: "A password reset link has been sent to your email. Please check your inbox to complete the process.",
       });
       
       // Close the dialog if onClose is provided

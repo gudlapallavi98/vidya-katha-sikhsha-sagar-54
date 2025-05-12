@@ -74,6 +74,8 @@ const NewPasswordStep = ({
   
   return (
     <div className="space-y-4">
+      <p className="text-sm mb-2">Enter your new password below. You'll receive a confirmation link in your email to complete the reset process.</p>
+
       <div className="space-y-2">
         <Label htmlFor="newPassword">New Password</Label>
         <Input
@@ -139,10 +141,10 @@ const NewPasswordStep = ({
         {resetLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Resetting...
+            Sending reset link...
           </>
         ) : (
-          "Reset Password"
+          "Send Password Reset Link"
         )}
       </Button>
       
