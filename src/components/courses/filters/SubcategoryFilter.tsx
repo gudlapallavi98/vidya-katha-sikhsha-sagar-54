@@ -22,7 +22,7 @@ const SubcategoryFilter = ({
       </h3>
       <div className="space-y-2">
         <RadioGroup 
-          value={selectedSubcategory || ""} 
+          value={selectedSubcategory || ""}
           onValueChange={handleSubcategoryChange}
         >
           {subcategories.map((subcat) => (

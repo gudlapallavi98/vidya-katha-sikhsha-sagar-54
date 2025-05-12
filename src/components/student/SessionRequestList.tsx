@@ -47,7 +47,7 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
 
   // List of subjects - in a real app, you might fetch this from an API
   const subjects = [
-    { id: "", name: "All Subjects" },
+    { id: "all", name: "All Subjects" },
     { id: "math", name: "Mathematics" },
     { id: "sci", name: "Science" },
     { id: "eng", name: "English" },
@@ -142,7 +142,7 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
                 <SelectValue placeholder="Filter by experience" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Any Experience</SelectItem>
+                <SelectItem value="any">Any Experience</SelectItem>
                 <SelectItem value="beginner">Beginner</SelectItem>
                 <SelectItem value="intermediate">Intermediate</SelectItem>
                 <SelectItem value="advanced">Advanced</SelectItem>

@@ -86,7 +86,7 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
       <div className="grid grid-cols-3 gap-2">
         <FormItem>
           <Select 
-            value={birthDay}
+            value={birthDay || ""}
             onValueChange={(value) => {
               setBirthDay(value);
               updateDateOfBirth(value, birthMonth, birthYear);
@@ -107,7 +107,7 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
         
         <FormItem>
           <Select 
-            value={birthMonth}
+            value={birthMonth || ""}
             onValueChange={(value) => {
               setBirthMonth(value);
               updateDateOfBirth(birthDay, value, birthYear);
@@ -128,7 +128,7 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
         
         <FormItem>
           <Select 
-            value={birthYear}
+            value={birthYear || ""}
             onValueChange={(value) => {
               setBirthYear(value);
               updateDateOfBirth(birthDay, birthMonth, value);
