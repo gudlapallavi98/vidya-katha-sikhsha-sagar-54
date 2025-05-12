@@ -76,6 +76,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Failed to parse request data: ${e.message}`);
     }
     
+    // Check if this is a session notification request by examining the URL
+    if (req.url.includes("schedule-notification")) {
+      return handleScheduleNotification(requestData);
+    }
+    
     const { email, name, type, otp: clientOtp } = requestData;
     
     if (!email) {
@@ -157,5 +162,113 @@ const handler = async (req: Request): Promise<Response> => {
     );
   }
 };
+
+// New function to handle session notifications
+async function handleScheduleNotification(data: ScheduleNotificationRequest): Promise<Response> {
+  try {
+    console.log("Processing session notification for teacher:", data.teacherEmail);
+    
+    if (!data.teacherEmail || !data.studentEmail) {
+      throw new Error("Teacher and student email addresses are required");
+    }
+    
+    // Create email content for teacher notification
+    const teacherHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #FF9933;">Upcoming Session Reminder</h2>
+        <p>Hello ${data.teacherName},</p>
+        <p>This is a reminder about your upcoming teaching session:</p>
+        
+        <div style="background-color: #f9f9f9; border-left: 4px solid #FF9933; padding: 15px; margin: 20px 0;">
+          <p><strong>Session:</strong> ${data.sessionTitle}</p>
+          <p><strong>Date:</strong> ${data.sessionDate}</p>
+          <p><strong>Time:</strong> ${data.sessionTime}</p>
+          <p><strong>Student:</strong> ${data.studentName}</p>
+        </div>
+        
+        <p>Please join the session using the link below:</p>
+        <p><a href="${data.sessionLink}" style="background-color: #FF9933; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Join Session</a></p>
+        
+        ${data.additionalInfo ? `<p><strong>Additional information:</strong> ${data.additionalInfo}</p>` : ''}
+        
+        <p>If you need to reschedule, please inform the student as soon as possible.</p>
+        <p>Best regards,<br>The etutorss Team</p>
+      </div>
+    `;
+    
+    // Create email content for student notification
+    const studentHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #FF9933;">Upcoming Session Reminder</h2>
+        <p>Hello ${data.studentName},</p>
+        <p>This is a reminder about your upcoming learning session:</p>
+        
+        <div style="background-color: #f9f9f9; border-left: 4px solid #FF9933; padding: 15px; margin: 20px 0;">
+          <p><strong>Session:</strong> ${data.sessionTitle}</p>
+          <p><strong>Date:</strong> ${data.sessionDate}</p>
+          <p><strong>Time:</strong> ${data.sessionTime}</p>
+          <p><strong>Teacher:</strong> ${data.teacherName}</p>
+        </div>
+        
+        <p>Please join the session using the link below:</p>
+        <p><a href="${data.sessionLink}" style="background-color: #FF9933; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Join Session</a></p>
+        
+        ${data.additionalInfo ? `<p><strong>Additional information:</strong> ${data.additionalInfo}</p>` : ''}
+        
+        <p>If you need to reschedule, please inform the teacher as soon as possible.</p>
+        <p>Best regards,<br>The etutorss Team</p>
+      </div>
+    `;
+    
+    // Send emails to both teacher and student
+    if (resend) {
+      // Send to teacher
+      const teacherEmailResponse = await resend.emails.send({
+        from: "etutorss <info@etutorss.com>",
+        to: [data.teacherEmail],
+        subject: `Reminder: Upcoming Session - ${data.sessionTitle}`,
+        html: teacherHtml,
+      });
+      
+      console.log("Teacher notification email sent:", teacherEmailResponse);
+      
+      // Send to student
+      const studentEmailResponse = await resend.emails.send({
+        from: "etutorss <info@etutorss.com>",
+        to: [data.studentEmail],
+        subject: `Reminder: Upcoming Session - ${data.sessionTitle}`,
+        html: studentHtml,
+      });
+      
+      console.log("Student notification email sent:", studentEmailResponse);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Session notification emails sent successfully"
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    } else {
+      throw new Error("Resend API key is not configured");
+    }
+  } catch (error: any) {
+    console.error("Error sending session notifications:", error);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        success: false
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+}
 
 serve(handler);
