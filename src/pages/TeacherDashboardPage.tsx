@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
@@ -13,7 +12,7 @@ import TeacherSidebar from "@/components/teacher/dashboard/TeacherSidebar";
 import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client"; 
-import { useSessionStatus } from "@/hooks/use-session-status";
+import { useSessionAcceptance } from "@/hooks/use-session-acceptance";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -34,7 +33,7 @@ const TeacherDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
-  const { handleSessionAccepted } = useSessionStatus();
+  const { handleSessionAccepted } = useSessionAcceptance();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
@@ -81,7 +80,7 @@ const TeacherDashboard = () => {
           .eq('id', result.teacher_id)
           .single();
           
-        if (teacherError) {
+        if (teacherError || !teacherData) {
           console.error("Error fetching teacher data:", teacherError);
           return;
         }
@@ -93,7 +92,7 @@ const TeacherDashboard = () => {
           .eq('session_id', result.id)
           .single();
           
-        if (attendeeError) {
+        if (attendeeError || !attendeeData) {
           console.error("Error fetching attendee data:", attendeeError);
           return;
         }
@@ -105,7 +104,7 @@ const TeacherDashboard = () => {
           .eq('id', attendeeData.student_id)
           .single();
           
-        if (studentError) {
+        if (studentError || !studentData) {
           console.error("Error fetching student data:", studentError);
           return;
         }

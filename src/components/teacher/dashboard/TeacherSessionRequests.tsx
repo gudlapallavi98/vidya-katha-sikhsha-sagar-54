@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import SessionRequestsList from "./components/SessionRequestsList";
 import { useFetchSessionRequests } from "@/hooks/use-fetch-session-requests";
-import { useSessionStatusChange } from "@/hooks/use-session-status";
+import { useSessionStatusChange } from "@/hooks/use-session-status-change";
 
 const TeacherSessionRequests = () => {
   const { sessionRequests, loading } = useFetchSessionRequests();
