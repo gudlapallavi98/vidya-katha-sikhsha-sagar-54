@@ -80,7 +80,7 @@ export const useSignupOTP = (): UseSignupOTP => {
         .eq("id", data.id);
       
       // Convert the user_data from Json type to UserData
-      const userData: UserData = typeof data.user_data === 'object' ? data.user_data as UserData : {};
+      const userData: UserData = data.user_data ? (typeof data.user_data === 'object' ? data.user_data as UserData : {}) : {};
         
       return { isValid: true, userData };
     } catch (error) {

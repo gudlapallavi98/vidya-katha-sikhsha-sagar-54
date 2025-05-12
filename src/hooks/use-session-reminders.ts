@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, addHours } from "date-fns";
@@ -85,23 +84,21 @@ export const useSessionReminders = () => {
                 continue;
               }
               
+              // Cast the teacher and student to their proper types to access properties safely
+              const teacher = session.teacher as Teacher;
+              const student = attendee.student as Student;
+              
               // Create safe objects with default values for required properties
               const teacherData = {
-                first_name: session.teacher && typeof session.teacher === 'object' ? 
-                  (session.teacher.first_name as string | null || '') : '',
-                last_name: session.teacher && typeof session.teacher === 'object' ? 
-                  (session.teacher.last_name as string | null || '') : '',
-                email: session.teacher && typeof session.teacher === 'object' ? 
-                  (session.teacher.email as string | null || '') : ''
+                first_name: teacher && teacher.first_name ? teacher.first_name : '',
+                last_name: teacher && teacher.last_name ? teacher.last_name : '',
+                email: teacher && teacher.email ? teacher.email : ''
               };
               
               const studentData = {
-                first_name: attendee.student && typeof attendee.student === 'object' ? 
-                  (attendee.student.first_name as string | null || '') : '',
-                last_name: attendee.student && typeof attendee.student === 'object' ? 
-                  (attendee.student.last_name as string | null || '') : '',
-                email: attendee.student && typeof attendee.student === 'object' ? 
-                  (attendee.student.email as string | null || '') : ''
+                first_name: student && student.first_name ? student.first_name : '',
+                last_name: student && student.last_name ? student.last_name : '',
+                email: student && student.email ? student.email : ''
               };
               
               // Only send notification if we have email addresses
