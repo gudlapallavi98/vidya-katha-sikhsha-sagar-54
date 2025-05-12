@@ -1,42 +1,11 @@
 
-import { useState, FormEvent } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import BasicInfoFields from "./BasicInfoFields";
-import PasswordFields from "./PasswordFields";
-import CaptchaField from "./CaptchaField";
-import RoleSelector from "./RoleSelector";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-
-// Form schema for validation
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-  captcha: z.string(),
-  role: z.enum(["student", "teacher"]),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
-
-type FormData = z.infer<typeof formSchema>;
+import SignUpFormFields, { SignUpFormData } from "./SignUpFormFields";
+import OTPVerification from "./OTPVerification";
 
 interface SignUpFormProps {
   captchaValue: {
@@ -51,36 +20,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
   const [verificationOpen, setVerificationOpen] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationName, setVerificationName] = useState("");
-  const [formValues, setFormValues] = useState<Partial<FormData> | null>(null);
-  const [otp, setOtp] = useState("");
+  const [formValues, setFormValues] = useState<Partial<SignUpFormData> | null>(null);
   const [sentOtp, setSentOtp] = useState("");
   const navigate = useNavigate();
   
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      captcha: "",
-      role: "student",
-    },
-  });
-
-  const onSubmit = async (data: FormData) => {
-    // Validate captcha
-    const captchaAnswer = (captchaValue.num1 + captchaValue.num2).toString();
-    if (data.captcha !== captchaAnswer) {
-      toast({
-        variant: "destructive",
-        title: "Invalid captcha",
-        description: "Please solve the math problem correctly",
-      });
-      return;
-    }
-    
+  const handleFormSubmit = async (data: SignUpFormData) => {
     setFormValues(data);
     setVerificationEmail(data.email);
     setVerificationName(`${data.firstName} ${data.lastName}`);
@@ -121,16 +65,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
     }
   };
   
-  const handleVerify = async () => {
-    if (!otp || otp.length !== 6) {
-      toast({
-        variant: "destructive",
-        title: "Invalid OTP",
-        description: "Please enter the 6-digit verification code",
-      });
-      return;
-    }
-    
+  const handleVerify = async (otp: string) => {
     if (otp !== sentOtp) {
       toast({
         variant: "destructive",
@@ -229,22 +164,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
 
   return (
     <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <BasicInfoFields form={form} />
-          <PasswordFields form={form} />
-          <RoleSelector form={form} />
-          <CaptchaField form={form} captchaValue={captchaValue} />
-          
-          <Button 
-            type="submit" 
-            className="w-full bg-indian-saffron hover:bg-indian-saffron/90"
-            disabled={isLoading}
-          >
-            {isLoading ? "Creating account..." : "Create Account"}
-          </Button>
-        </form>
-      </Form>
+      <SignUpFormFields 
+        captchaValue={captchaValue}
+        isLoading={isLoading}
+        onSubmit={handleFormSubmit}
+      />
       
       {/* OTP Verification Dialog */}
       <Dialog open={verificationOpen} onOpenChange={setVerificationOpen}>
@@ -257,37 +181,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex flex-col items-center space-y-6 py-4">
-            <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
-              <InputOTPGroup>
-                <InputOTPSlot index={0} />
-                <InputOTPSlot index={1} />
-                <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
-                <InputOTPSlot index={4} />
-                <InputOTPSlot index={5} />
-              </InputOTPGroup>
-            </InputOTP>
-            
-            <div className="flex flex-col w-full space-y-2">
-              <Button 
-                onClick={handleVerify}
-                className="w-full bg-indian-saffron hover:bg-indian-saffron/90"
-                disabled={isLoading}
-              >
-                {isLoading ? "Verifying..." : "Verify"}
-              </Button>
-              
-              <Button 
-                variant="outline"
-                onClick={handleResendOtp}
-                className="w-full"
-                type="button"
-              >
-                Resend Code
-              </Button>
-            </div>
-          </div>
+          <OTPVerification
+            email={verificationEmail}
+            name={verificationName}
+            onVerify={handleVerify}
+            onResend={handleResendOtp}
+            isLoading={isLoading}
+          />
         </DialogContent>
       </Dialog>
     </>
