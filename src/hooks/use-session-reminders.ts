@@ -87,15 +87,15 @@ export const useSessionReminders = () => {
               
               // Create safe objects with default values for required properties
               const teacherData = {
-                first_name: session.teacher && typeof session.teacher === 'object' ? (session.teacher.first_name as string | undefined || '') : '',
-                last_name: session.teacher && typeof session.teacher === 'object' ? (session.teacher.last_name as string | undefined || '') : '',
-                email: session.teacher && typeof session.teacher === 'object' ? (session.teacher.email as string | undefined || '') : ''
+                first_name: session.teacher && typeof session.teacher === 'object' && 'first_name' in session.teacher ? (session.teacher.first_name as string | null || '') : '',
+                last_name: session.teacher && typeof session.teacher === 'object' && 'last_name' in session.teacher ? (session.teacher.last_name as string | null || '') : '',
+                email: session.teacher && typeof session.teacher === 'object' && 'email' in session.teacher ? (session.teacher.email as string | null || '') : ''
               };
               
               const studentData = {
-                first_name: attendee.student && typeof attendee.student === 'object' ? (attendee.student.first_name as string | undefined || '') : '',
-                last_name: attendee.student && typeof attendee.student === 'object' ? (attendee.student.last_name as string | undefined || '') : '',
-                email: attendee.student && typeof attendee.student === 'object' ? (attendee.student.email as string | undefined || '') : ''
+                first_name: attendee.student && typeof attendee.student === 'object' && 'first_name' in attendee.student ? (attendee.student.first_name as string | null || '') : '',
+                last_name: attendee.student && typeof attendee.student === 'object' && 'last_name' in attendee.student ? (attendee.student.last_name as string | null || '') : '',
+                email: attendee.student && typeof attendee.student === 'object' && 'email' in attendee.student ? (attendee.student.email as string | null || '') : ''
               };
               
               // Only send notification if we have email addresses

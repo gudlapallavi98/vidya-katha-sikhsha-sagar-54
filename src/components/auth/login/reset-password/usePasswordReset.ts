@@ -28,6 +28,22 @@ export const usePasswordReset = (onClose?: () => void) => {
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       console.log("Generated OTP:", generatedOTP);
       
+      // First store the OTP in the database
+      const { error: storeOtpError } = await supabase
+        .from("password_reset_otps")
+        .insert([
+          { 
+            email: resetEmail, 
+            otp: generatedOTP, 
+            expires_at: new Date(Date.now() + 15 * 60000).toISOString() // 15 minutes expiry
+          }
+        ]);
+        
+      if (storeOtpError) {
+        console.error("Failed to store OTP:", storeOtpError);
+        throw new Error("Failed to initialize password reset. Please try again.");
+      }
+      
       // Call the edge function to send email
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
@@ -49,10 +65,6 @@ export const usePasswordReset = (onClose?: () => void) => {
         console.error("Error response:", responseData);
         throw new Error(responseData.error || "Failed to send OTP. Please try again.");
       }
-
-      // Store the OTP temporarily in localStorage for verification
-      localStorage.setItem("resetPasswordOtp", generatedOTP);
-      localStorage.setItem("resetPasswordEmail", resetEmail);
       
       setOtpSent(true);
       setResetPasswordStep("otp");
@@ -74,13 +86,26 @@ export const usePasswordReset = (onClose?: () => void) => {
     setOtpError(null);
 
     try {
-      // Compare the entered OTP with the one we stored
-      const storedOTP = localStorage.getItem("resetPasswordOtp");
-      console.log("Verifying OTP - Stored:", storedOTP, "Entered:", resetOtp);
-      
-      if (!storedOTP || resetOtp !== storedOTP) {
-        throw new Error("Invalid OTP. Please check and try again.");
+      // Verify OTP from the database
+      const { data: otpData, error: fetchError } = await supabase
+        .from("password_reset_otps")
+        .select("*")
+        .eq("email", resetEmail)
+        .eq("otp", resetOtp)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fetchError || !otpData) {
+        throw new Error("Invalid or expired OTP. Please try again.");
       }
+      
+      // Mark OTP as verified
+      await supabase
+        .from("password_reset_otps")
+        .update({ verified: true })
+        .eq("id", otpData.id);
       
       setOtpVerified(true);
       setResetPasswordStep("newPassword");
@@ -96,30 +121,44 @@ export const usePasswordReset = (onClose?: () => void) => {
     setError(null);
 
     try {
-      const storedEmail = localStorage.getItem("resetPasswordEmail");
-      
-      if (!storedEmail) {
-        throw new Error("Email not found. Please restart the password reset process.");
+      if (newPassword !== confirmPassword) {
+        throw new Error("Passwords do not match.");
       }
       
-      // Simply using the resetPasswordForEmail method
-      const { error: passwordResetError } = await supabase.auth.resetPasswordForEmail(
-        storedEmail
-      );
+      // Verify that the OTP was verified
+      const { data: verifiedOtp, error: verificationError } = await supabase
+        .from("password_reset_otps")
+        .select("*")
+        .eq("email", resetEmail)
+        .eq("verified", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+        
+      if (verificationError || !verifiedOtp) {
+        throw new Error("Verification failed. Please restart the password reset process.");
+      }
+      
+      // Update user password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
 
-      if (passwordResetError) {
-        throw new Error(passwordResetError.message || "Failed to initiate password reset.");
+      if (updateError) {
+        throw new Error(updateError.message || "Failed to update password.");
       }
+      
+      // Mark OTP as used
+      await supabase
+        .from("password_reset_otps")
+        .update({ used: true })
+        .eq("id", verifiedOtp.id);
       
       setPasswordUpdated(true);
       toast({
-        title: "Password Reset Email Sent",
-        description: "Please check your email for a link to reset your password.",
+        title: "Password Updated",
+        description: "Your password has been updated successfully. You can now log in with your new password.",
       });
-      
-      // Clean up
-      localStorage.removeItem("resetPasswordOtp");
-      localStorage.removeItem("resetPasswordEmail");
       
       // Close the dialog if onClose is provided
       if (onClose) {
@@ -144,6 +183,22 @@ export const usePasswordReset = (onClose?: () => void) => {
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       console.log("Resending OTP - Generated:", generatedOTP);
       
+      // Store the new OTP in the database
+      const { error: storeOtpError } = await supabase
+        .from("password_reset_otps")
+        .insert([
+          { 
+            email: resetEmail, 
+            otp: generatedOTP, 
+            expires_at: new Date(Date.now() + 15 * 60000).toISOString() // 15 minutes expiry
+          }
+        ]);
+        
+      if (storeOtpError) {
+        console.error("Failed to store OTP:", storeOtpError);
+        throw new Error("Failed to resend OTP. Please try again.");
+      }
+      
       // Call the edge function to send email
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
@@ -165,10 +220,6 @@ export const usePasswordReset = (onClose?: () => void) => {
         console.error("Error response:", responseData);
         throw new Error(responseData.error || "Failed to resend OTP. Please try again.");
       }
-
-      // Update the stored OTP
-      localStorage.setItem("resetPasswordOtp", generatedOTP);
-      localStorage.setItem("resetPasswordEmail", resetEmail);
 
       setOtpSent(true);
       toast({

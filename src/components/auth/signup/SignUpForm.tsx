@@ -48,6 +48,27 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       console.log("SignUp - Generated OTP:", generatedOTP);
       
+      // Store OTP in the database
+      const { error: storeOtpError } = await supabase
+        .from("signup_otps")
+        .insert([
+          { 
+            email: data.email, 
+            otp: generatedOTP, 
+            expires_at: new Date(Date.now() + 15 * 60000).toISOString(), // 15 minutes expiry
+            user_data: {
+              firstName: data.firstName,
+              lastName: data.lastName,
+              role: data.role
+            }
+          }
+        ]);
+        
+      if (storeOtpError) {
+        console.error("Failed to store signup OTP:", storeOtpError);
+        throw new Error("Failed to initiate signup process. Please try again.");
+      }
+      
       try {
         // Direct call to the send-email edge function
         const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
@@ -99,22 +120,46 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
   };
   
   const handleVerify = async (otp: string) => {
-    console.log("Verifying OTP - Entered:", otp, "Stored:", sentOtp);
-    
-    if (otp !== sentOtp) {
-      toast({
-        variant: "destructive",
-        title: "Invalid OTP",
-        description: "The verification code is incorrect",
-      });
-      return;
-    }
-    
-    if (!formValues) return;
+    console.log("Verifying OTP - Entered:", otp);
     
     setIsLoading(true);
     
     try {
+      // Verify OTP from the database
+      const { data: otpData, error: fetchError } = await supabase
+        .from("signup_otps")
+        .select("*")
+        .eq("email", verificationEmail)
+        .eq("otp", otp)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (fetchError || !otpData) {
+        toast({
+          variant: "destructive",
+          title: "Invalid OTP",
+          description: "The verification code is incorrect or expired",
+        });
+        return;
+      }
+      
+      if (!formValues) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Form data lost. Please try signing up again.",
+        });
+        return;
+      }
+      
+      // Mark OTP as verified
+      await supabase
+        .from("signup_otps")
+        .update({ verified: true })
+        .eq("id", otpData.id);
+      
       // Sign up with Supabase
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formValues.email,
@@ -134,6 +179,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         });
         
         if (profileError) throw profileError;
+        
+        // Mark OTP as used
+        await supabase
+          .from("signup_otps")
+          .update({ used: true })
+          .eq("id", otpData.id);
       }
       
       // Success message
@@ -166,6 +217,27 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
       // Generate a new 6-digit OTP
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       console.log("SignUp Resend - Generated OTP:", generatedOTP);
+      
+      // Store the new OTP in the database
+      const { error: storeOtpError } = await supabase
+        .from("signup_otps")
+        .insert([
+          { 
+            email: verificationEmail, 
+            otp: generatedOTP, 
+            expires_at: new Date(Date.now() + 15 * 60000).toISOString(), // 15 minutes expiry
+            user_data: formValues ? {
+              firstName: formValues.firstName,
+              lastName: formValues.lastName,
+              role: formValues.role
+            } : null
+          }
+        ]);
+        
+      if (storeOtpError) {
+        console.error("Failed to store signup OTP:", storeOtpError);
+        throw new Error("Failed to resend verification code. Please try again.");
+      }
       
       // Direct call to the send-email edge function
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
