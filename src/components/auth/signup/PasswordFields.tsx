@@ -1,43 +1,50 @@
 
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { UseFormReturn } from "react-hook-form";
 
 interface PasswordFieldsProps {
-  formData: {
+  form: UseFormReturn<{
+    firstName: string;
+    lastName: string;
+    email: string;
     password: string;
     confirmPassword: string;
-  };
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    captcha: string;
+    role: "student" | "teacher";
+  }>;
 }
 
-const PasswordFields = ({ formData, handleInputChange }: PasswordFieldsProps) => {
+const PasswordFields = ({ form }: PasswordFieldsProps) => {
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="password">Password <span className="text-red-500">*</span></Label>
-        <Input 
-          id="password"
-          name="password"
-          type="password"
-          placeholder="Create a password"
-          value={formData.password}
-          onChange={handleInputChange}
-          required
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="password"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Password <span className="text-red-500">*</span></FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="Create a password" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password <span className="text-red-500">*</span></Label>
-        <Input 
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          placeholder="Confirm your password"
-          value={formData.confirmPassword}
-          onChange={handleInputChange}
-          required
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="confirmPassword"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Confirm Password <span className="text-red-500">*</span></FormLabel>
+            <FormControl>
+              <Input type="password" placeholder="Confirm your password" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   );
 };

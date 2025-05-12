@@ -1,67 +1,65 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { UseFormReturn } from "react-hook-form";
 
 interface BasicInfoFieldsProps {
-  formData: {
-    name: string;
+  form: UseFormReturn<{
+    firstName: string;
+    lastName: string;
     email: string;
-    phone: string;
-    aadhar: string;
-  };
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    password: string;
+    confirmPassword: string;
+    captcha: string;
+    role: "student" | "teacher";
+  }>;
 }
 
-const BasicInfoFields = ({ formData, handleInputChange }: BasicInfoFieldsProps) => {
+const BasicInfoFields = ({ form }: BasicInfoFieldsProps) => {
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
-        <Input 
-          id="name"
-          name="name"
-          placeholder="Enter your full name"
-          value={formData.name}
-          onChange={handleInputChange}
-          required
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="firstName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>First Name <span className="text-red-500">*</span></FormLabel>
+            <FormControl>
+              <Input placeholder="Enter your first name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       
-      <div className="space-y-2">
-        <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
-        <Input 
-          id="email"
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          value={formData.email}
-          onChange={handleInputChange}
-          required
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="lastName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Last Name <span className="text-red-500">*</span></FormLabel>
+            <FormControl>
+              <Input placeholder="Enter your last name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       
-      <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number</Label>
-        <Input 
-          id="phone"
-          name="phone"
-          placeholder="Your phone number"
-          value={formData.phone}
-          onChange={handleInputChange}
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="aadhar">Aadhar Number (Optional)</Label>
-        <Input 
-          id="aadhar"
-          name="aadhar"
-          placeholder="Your Aadhar number"
-          value={formData.aadhar}
-          onChange={handleInputChange}
-        />
-        <p className="text-xs text-muted-foreground">For verification purposes only</p>
-      </div>
+      <FormField
+        control={form.control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Email <span className="text-red-500">*</span></FormLabel>
+            <FormControl>
+              <Input type="email" placeholder="you@example.com" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   );
 };
