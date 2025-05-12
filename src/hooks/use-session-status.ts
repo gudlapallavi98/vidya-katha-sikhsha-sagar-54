@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -170,10 +171,97 @@ export const useSessionStatus = () => {
       });
     }
   };
+  
+  // Add a new function for session status changes
+  const handleStatusChange = async (requestId: string, status: 'accepted' | 'rejected') => {
+    try {
+      if (status === 'accepted') {
+        // Get request details
+        const { data: request } = await supabase
+          .from('session_requests')
+          .select('*')
+          .eq('id', requestId)
+          .single();
+          
+        if (!request) {
+          throw new Error('Session request not found');
+        }
+        
+        // Create a session
+        const { data: session, error: sessionError } = await supabase
+          .from('sessions')
+          .insert({
+            course_id: request.course_id,
+            teacher_id: request.teacher_id,
+            title: request.proposed_title,
+            description: request.request_message,
+            start_time: request.proposed_date,
+            end_time: new Date(new Date(request.proposed_date).getTime() + request.proposed_duration * 60000).toISOString(),
+            status: 'scheduled',
+            meeting_link: `https://meet.jit.si/${requestId}-${new Date().getTime()}`
+          })
+          .select()
+          .single();
+          
+        if (sessionError) {
+          throw sessionError;
+        }
+        
+        // Update request status
+        const { error: updateError } = await supabase
+          .from('session_requests')
+          .update({ status: 'accepted' })
+          .eq('id', requestId);
+          
+        if (updateError) {
+          throw updateError;
+        }
+        
+        toast({
+          title: "Session Accepted",
+          description: "The session has been scheduled successfully."
+        });
+        
+        return true;
+      } else if (status === 'rejected') {
+        const { error } = await supabase
+          .from('session_requests')
+          .update({ status: 'rejected' })
+          .eq('id', requestId);
+          
+        if (error) {
+          throw error;
+        }
+        
+        toast({
+          title: "Session Rejected",
+          description: "The session request has been rejected."
+        });
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error changing session status:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update session status"
+      });
+      return false;
+    }
+  };
 
   return {
     cancelExpiredAvailabilities,
     checkUpcomingSessionReminders,
-    handleSessionAccepted
+    handleSessionAccepted,
+    handleStatusChange
   };
+};
+
+// Export a named hook that matches what's being imported in TeacherSessionRequests.tsx
+export const useSessionStatusChange = () => {
+  return useSessionStatus();
 };

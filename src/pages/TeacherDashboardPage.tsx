@@ -73,17 +73,17 @@ const TeacherDashboard = () => {
       });
       
       // Get teacher and student data for notification
-      if (result && result.session) {
+      if (result) {
         const { data: teacherData } = await supabase
           .from('profiles')
           .select('first_name, last_name, email')
-          .eq('id', result.session.teacher_id)
+          .eq('id', result.teacher_id)
           .single();
           
         const { data: studentData } = await supabase
           .from('profiles')
           .select('first_name, last_name, email')
-          .eq('id', result.session.student_id)
+          .eq('id', result.student_id)
           .single();
           
         if (teacherData && studentData) {
@@ -92,7 +92,7 @@ const TeacherDashboard = () => {
             sessionId,
             teacherData,
             studentData,
-            result.session
+            result
           );
         }
       }
