@@ -122,20 +122,19 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
     setResetLoading(true);
 
     try {
-      // First, sign in with OTP to create a valid session
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
+      // Create a session with OTP before updating password
+      const { data, error } = await supabase.auth.verifyOtp({
         email: resetEmail,
-        options: {
-          shouldCreateUser: false
-        }
+        token: resetOtp,
+        type: 'email'
       });
 
-      if (signInError) {
-        console.error("Sign in with OTP error:", signInError);
-        throw new Error("Failed to authenticate with the provided code");
+      if (error) {
+        console.error("Verify OTP error:", error);
+        throw error;
       }
 
-      // Now update the password with the established session
+      // Now we have a valid session, update the password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
