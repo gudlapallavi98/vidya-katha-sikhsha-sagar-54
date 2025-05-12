@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 type ResetStep = "email" | "otp" | "newPassword";
@@ -23,7 +22,6 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
   const { toast } = useToast();
-  const { updatePassword } = useAuth();
 
   const handleSendResetOtp = async () => {
     if (!resetEmail || !resetEmail.includes('@')) {
@@ -124,19 +122,25 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
     setResetLoading(true);
 
     try {
-      // First ensure we have a session by requesting a password reset
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: window.location.origin + "/login"
+      // First, sign in with OTP to create a valid session
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithOtp({
+        email: resetEmail,
+        options: {
+          shouldCreateUser: false
+        }
+      });
+
+      if (signInError) {
+        console.error("Sign in with OTP error:", signInError);
+        throw new Error("Failed to authenticate with the provided code");
+      }
+
+      // Now update the password with the established session
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
       });
       
-      if (resetError) throw resetError;
-      
-      // After OTP verification, update the password directly
-      const success = await updatePassword(newPassword);
-      
-      if (!success) {
-        throw new Error("Failed to update password");
-      }
+      if (updateError) throw updateError;
 
       toast({
         title: "Password Reset Successful",
@@ -146,6 +150,7 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
       // Reset all states and close dialog
       onClose();
     } catch (error) {
+      console.error("Password reset error:", error);
       toast({
         variant: "destructive",
         title: "Password Reset Failed",
