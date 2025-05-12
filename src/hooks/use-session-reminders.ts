@@ -4,6 +4,37 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, addHours } from "date-fns";
 import { sendSessionNotification } from "@/utils/email-notification";
 
+// Type definitions to help with type safety
+interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface Teacher {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+}
+
+interface Student {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+}
+
+interface Session {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  meeting_link?: string | null;
+  teacher?: Teacher | null;
+}
+
 export const useSessionReminders = () => {
   const checkUpcomingSessionReminders = async () => {
     try {
@@ -47,23 +78,24 @@ export const useSessionReminders = () => {
           
           if (attendees && attendees.length > 0) {
             for (const attendee of attendees) {
-              // Add proper type checks and guards to ensure we have valid data
-              if (!attendee.student || !session.teacher) {
+              // Ensure both teacher and student objects exist and aren't error objects
+              if (!session.teacher || !attendee.student || 
+                  typeof session.teacher !== 'object' || typeof attendee.student !== 'object') {
                 console.log("Missing student or teacher data for reminder");
                 continue;
               }
               
               // Create safe objects with default values for required properties
               const teacherData = {
-                first_name: session.teacher?.first_name || '',
-                last_name: session.teacher?.last_name || '',
-                email: session.teacher?.email || ''
+                first_name: typeof session.teacher === 'object' && session.teacher?.first_name || '',
+                last_name: typeof session.teacher === 'object' && session.teacher?.last_name || '',
+                email: typeof session.teacher === 'object' && session.teacher?.email || ''
               };
               
               const studentData = {
-                first_name: attendee.student?.first_name || '',
-                last_name: attendee.student?.last_name || '',
-                email: attendee.student?.email || ''
+                first_name: typeof attendee.student === 'object' && attendee.student?.first_name || '',
+                last_name: typeof attendee.student === 'object' && attendee.student?.last_name || '',
+                email: typeof attendee.student === 'object' && attendee.student?.email || ''
               };
               
               // Only send notification if we have email addresses
