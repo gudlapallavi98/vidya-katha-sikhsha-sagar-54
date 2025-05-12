@@ -81,7 +81,16 @@ export const useSessionStatus = () => {
           
           if (attendees && attendees.length > 0) {
             for (const attendee of attendees) {
-              if (!attendee.student?.email || !session.teacher?.email) {
+              // Type guard to ensure we have valid teacher and student data before proceeding
+              if (!attendee.student || !session.teacher) {
+                console.log("Missing student or teacher data");
+                continue;
+              }
+              
+              const teacherEmail = session.teacher.email;
+              const studentEmail = attendee.student.email;
+              
+              if (!teacherEmail || !studentEmail) {
                 console.log("Missing email for student or teacher");
                 continue;
               }
@@ -97,10 +106,10 @@ export const useSessionStatus = () => {
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
-                    teacherEmail: session.teacher.email,
-                    teacherName: `${session.teacher.first_name} ${session.teacher.last_name}`,
-                    studentEmail: attendee.student.email,
-                    studentName: `${attendee.student.first_name} ${attendee.student.last_name}`,
+                    teacherEmail: teacherEmail,
+                    teacherName: `${session.teacher.first_name || 'Teacher'} ${session.teacher.last_name || ''}`,
+                    studentEmail: studentEmail,
+                    studentName: `${attendee.student.first_name || 'Student'} ${attendee.student.last_name || ''}`,
                     sessionTitle: session.title,
                     sessionDate: format(startTime, "MMMM dd, yyyy"),
                     sessionTime: `${format(startTime, "h:mm a")} - ${format(endTime, "h:mm a")}`,
@@ -151,9 +160,9 @@ export const useSessionStatus = () => {
         },
         body: JSON.stringify({
           teacherEmail: teacherData.email,
-          teacherName: `${teacherData.first_name} ${teacherData.last_name}`,
+          teacherName: `${teacherData.first_name || 'Teacher'} ${teacherData.last_name || ''}`,
           studentEmail: studentData.email,
-          studentName: `${studentData.first_name} ${studentData.last_name}`,
+          studentName: `${studentData.first_name || 'Student'} ${studentData.last_name || ''}`,
           sessionTitle: sessionData.title,
           sessionDate: format(parseISO(sessionData.start_time), "MMMM dd, yyyy"),
           sessionTime: `${format(parseISO(sessionData.start_time), "h:mm a")} - ${format(parseISO(sessionData.end_time), "h:mm a")}`,
@@ -236,7 +245,7 @@ export const useSessionStatus = () => {
           .eq('id', session.teacher_id)
           .single();
           
-        if (teacherError) {
+        if (teacherError || !teacherData) {
           console.error("Error fetching teacher data:", teacherError);
           toast({
             title: "Session Accepted",
@@ -245,27 +254,28 @@ export const useSessionStatus = () => {
           return true;
         }
         
-        // Get student id from attendees
-        const { data: attendeeData, error: attendeeError } = await supabase
+        // Create a session attendee record for the student
+        const { error: attendeeCreateError } = await supabase
           .from('session_attendees')
-          .select('student_id')
-          .eq('session_id', session.id)
-          .single();
+          .insert({
+            session_id: session.id,
+            student_id: request.student_id
+          });
           
-        if (attendeeError || !attendeeData) {
-          console.error("Error fetching attendee data:", attendeeError);
+        if (attendeeCreateError) {
+          console.error("Error creating session attendee:", attendeeCreateError);
           toast({
             title: "Session Accepted",
-            description: "The session has been scheduled, but notification emails could not be sent."
+            description: "The session has been scheduled, but student was not added as an attendee."
           });
           return true;
         }
         
-        // Get student profile
+        // Get student profile data directly
         const { data: studentData, error: studentError } = await supabase
           .from('profiles')
           .select('first_name, last_name, email')
-          .eq('id', attendeeData.student_id)
+          .eq('id', request.student_id)
           .single();
           
         if (studentError || !studentData) {
