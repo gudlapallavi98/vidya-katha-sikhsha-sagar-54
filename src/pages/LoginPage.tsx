@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const LoginPage = () => {
   const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { updatePassword } = useAuth();
 
   // Password reset states
   const [resetEmail, setResetEmail] = useState("");
@@ -162,8 +164,14 @@ const LoginPage = () => {
     setResetLoading(true);
 
     try {
-      // We'll use the updateUser function from AuthContext to update the password
-      const { updatePassword } = useAuth();
+      // First ensure we have a session by requesting a password reset
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin + "/login"
+      });
+      
+      if (resetError) throw resetError;
+      
+      // After OTP verification, update the password directly
       const success = await updatePassword(newPassword);
       
       if (!success) {
