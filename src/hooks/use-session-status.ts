@@ -1,161 +1,179 @@
-
-import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO, addHours } from "date-fns";
 
-export const useSessionStatusChange = () => {
+export const useSessionStatus = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
   
-  const handleStatusChange = async (requestId: string, newStatus: string) => {
+  const cancelExpiredAvailabilities = async () => {
     try {
-      // Update the request status
-      const { error } = await supabase
-        .from('session_requests')
-        .update({ status: newStatus })
-        .eq('id', requestId);
+      const today = new Date();
+      const { data: expiredAvailabilities, error: fetchError } = await supabase
+        .from("teacher_availability")
+        .select("*")
+        .eq("status", "available")
+        .lt("available_date", today.toISOString().split("T")[0]);
 
-      if (error) throw error;
-      
-      // Get the request details for the email notification
-      const { data: requestData, error: fetchError } = await supabase
-        .from('session_requests')
-        .select(`
-          id, 
-          proposed_title, 
-          proposed_date,
-          teacher_id,
-          student_id
-        `)
-        .eq('id', requestId)
-        .single();
-        
-      if (fetchError) throw fetchError;
-      
-      if (requestData && newStatus === 'accepted') {
-        try {
-          // Fetch teacher profile information
-          const { data: teacherData, error: teacherError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name')
-            .eq('id', requestData.teacher_id)
-            .single();
-            
-          if (teacherError) {
-            console.error("Error fetching teacher data:", teacherError);
-            throw teacherError;
-          }
-          
-          if (!teacherData) {
-            throw new Error("Teacher data not found");
-          }
-          
-          // Fetch student profile information
-          const { data: studentData, error: studentError } = await supabase
-            .from('profiles')
-            .select('first_name, last_name')
-            .eq('id', requestData.student_id)
-            .single();
-          
-          if (studentError) {
-            console.error("Error fetching student data:", studentError);
-            throw studentError;
-          }
-          
-          if (!studentData) {
-            throw new Error("Student data not found");
-          }
-          
-          // Generate a meeting link
-          const meetingLink = `https://etutorss.com/meeting/${requestId}`;
-          
-          // Create a session record
-          const { data: session, error: sessionError } = await supabase
-            .from('sessions')
-            .insert([
-              {
-                title: requestData.proposed_title,
-                start_time: new Date(requestData.proposed_date).toISOString(),
-                end_time: new Date(new Date(requestData.proposed_date).getTime() + 60*60*1000).toISOString(), // 1 hour session by default
-                teacher_id: user?.id,
-                student_id: requestData.student_id,
-                status: 'scheduled',
-                meeting_link: meetingLink
-              }
-            ])
-            .select();
-            
-          if (sessionError) throw sessionError;
-          
-          // Get emails for both users
-          try {
-            const { data: teacherProfile, error: teacherProfileError } = await supabase
-              .auth.admin.getUserById(requestData.teacher_id);
-            
-            const { data: studentProfile, error: studentProfileError } = await supabase
-              .auth.admin.getUserById(requestData.student_id);
-              
-            if (teacherProfileError || studentProfileError || !teacherProfile || !studentProfile) {
-              console.error("Error getting user profiles");
-              // Continue without throwing - email notifications are secondary
-            } else {
-              const teacherEmail = teacherProfile.user.email;
-              const studentEmail = studentProfile.user.email;
-              
-              // Send email notifications
-              if (teacherEmail && studentEmail) {
-                try {
-                  await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/schedule-notification", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      teacherEmail: teacherEmail,
-                      teacherName: `${teacherData.first_name} ${teacherData.last_name}`,
-                      studentEmail: studentEmail,
-                      studentName: `${studentData.first_name} ${studentData.last_name}`,
-                      sessionTitle: requestData.proposed_title,
-                      sessionDate: format(new Date(requestData.proposed_date), 'MMMM d, yyyy'),
-                      sessionTime: format(new Date(requestData.proposed_date), 'h:mm a'),
-                      sessionLink: meetingLink,
-                      additionalInfo: "Please join the session 5 minutes before the scheduled time."
-                    })
-                  });
-                } catch (emailError) {
-                  console.error("Failed to send session notification emails:", emailError);
-                  // Don't throw error here, we still want to show success even if email fails
-                }
-              }
-            }
-          } catch (authError) {
-            console.error("Error fetching user emails:", authError);
-            // Continue without throwing - email notifications are secondary
-          }
-        } catch (error) {
-          console.error("Error processing session acceptance:", error);
-          // Continue with status update even if there's an error with additional processing
-        }
+      if (fetchError) {
+        console.error("Error fetching expired availabilities:", fetchError);
+        return;
       }
 
-      toast({
-        title: `Session ${newStatus}`,
-        description: `The session request has been ${newStatus}.`,
-      });
-      
-      return true;
+      if (expiredAvailabilities && expiredAvailabilities.length > 0) {
+        // Update all expired availabilities to 'expired'
+        const { error: updateError } = await supabase
+          .from("teacher_availability")
+          .update({ status: "expired" })
+          .in("id", expiredAvailabilities.map(avail => avail.id));
 
+        if (updateError) {
+          console.error("Error updating expired availabilities:", updateError);
+        } else {
+          console.log(`${expiredAvailabilities.length} expired availabilities have been updated`);
+        }
+      }
     } catch (error) {
-      console.error("Error updating session request:", error);
-      toast({
-        variant: "destructive",
-        title: "Failed to update session request",
-        description: "Please try again",
-      });
-      return false;
+      console.error("Error in cancelExpiredAvailabilities:", error);
     }
   };
 
-  return { handleStatusChange };
+  const checkUpcomingSessionReminders = async () => {
+    try {
+      const now = new Date();
+      const threeHoursLater = addHours(now, 3);
+      
+      // Format the date to ISO string but keep just the date part for comparison
+      const today = now.toISOString().split("T")[0];
+      
+      // Get upcoming sessions that start in 3 hours
+      const { data: upcomingSessions, error } = await supabase
+        .from("sessions")
+        .select(`
+          *,
+          teacher:profiles!sessions_teacher_id_fkey(id, first_name, last_name, email)
+        `)
+        .eq("status", "scheduled")
+        .gte("start_time", now.toISOString())
+        .lte("start_time", threeHoursLater.toISOString());
+      
+      if (error) {
+        console.error("Error checking upcoming sessions:", error);
+        return;
+      }
+      
+      // For each upcoming session, send a reminder
+      if (upcomingSessions && upcomingSessions.length > 0) {
+        for (const session of upcomingSessions) {
+          // Get the session attendees (students)
+          const { data: attendees, error: attendeesError } = await supabase
+            .from("session_attendees")
+            .select(`
+              student:profiles!session_attendees_student_id_fkey(id, first_name, last_name, email)
+            `)
+            .eq("session_id", session.id);
+            
+          if (attendeesError) {
+            console.error(`Error fetching attendees for session ${session.id}:`, attendeesError);
+            continue;
+          }
+          
+          if (attendees && attendees.length > 0) {
+            for (const attendee of attendees) {
+              if (!attendee.student?.email || !session.teacher?.email) {
+                console.log("Missing email for student or teacher");
+                continue;
+              }
+              
+              // Send reminder notification
+              try {
+                const startTime = parseISO(session.start_time);
+                const endTime = parseISO(session.end_time);
+                
+                const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/schedule-notification`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    teacherEmail: session.teacher.email,
+                    teacherName: `${session.teacher.first_name} ${session.teacher.last_name}`,
+                    studentEmail: attendee.student.email,
+                    studentName: `${attendee.student.first_name} ${attendee.student.last_name}`,
+                    sessionTitle: session.title,
+                    sessionDate: format(startTime, "MMMM dd, yyyy"),
+                    sessionTime: `${format(startTime, "h:mm a")} - ${format(endTime, "h:mm a")}`,
+                    sessionLink: session.meeting_link || "Link will be available soon",
+                    additionalInfo: "This is a reminder that your session starts in 3 hours. Please make sure you're prepared and ready to join."
+                  }),
+                });
+                
+                if (!response.ok) {
+                  throw new Error(`Failed to send reminder: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log("Reminder sent:", result);
+                
+              } catch (notificationError) {
+                console.error("Error sending session reminder:", notificationError);
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in checkUpcomingSessionReminders:", error);
+    }
+  };
+
+  // Function to be called when a session is accepted
+  const handleSessionAccepted = async (sessionId, teacherData, studentData, sessionData) => {
+    try {
+      // Send notification to both teacher and student
+      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/schedule-notification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          teacherEmail: teacherData.email,
+          teacherName: `${teacherData.first_name} ${teacherData.last_name}`,
+          studentEmail: studentData.email,
+          studentName: `${studentData.first_name} ${studentData.last_name}`,
+          sessionTitle: sessionData.title,
+          sessionDate: format(parseISO(sessionData.start_time), "MMMM dd, yyyy"),
+          sessionTime: `${format(parseISO(sessionData.start_time), "h:mm a")} - ${format(parseISO(sessionData.end_time), "h:mm a")}`,
+          sessionLink: sessionData.meeting_link || "Link will be available soon",
+          additionalInfo: "Your session has been scheduled. We look forward to seeing you then!"
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to send notification: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log("Session acceptance notification sent:", result);
+      
+      toast({
+        title: "Session Notifications Sent",
+        description: "Both teacher and student have been notified about the scheduled session."
+      });
+      
+    } catch (error) {
+      console.error("Error sending session acceptance notification:", error);
+      toast({
+        variant: "destructive",
+        title: "Notification Error",
+        description: "Failed to send session notifications."
+      });
+    }
+  };
+
+  return {
+    cancelExpiredAvailabilities,
+    checkUpcomingSessionReminders,
+    handleSessionAccepted
+  };
 };

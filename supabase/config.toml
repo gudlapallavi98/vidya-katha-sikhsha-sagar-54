@@ -41,3 +41,8 @@ enabled = true
 [functions.send-email]
 verify_jwt = false
 
+[functions.send-contact-confirmation]
+verify_jwt = false
+
+[functions.send-request-acknowledgment]
+verify_jwt = false

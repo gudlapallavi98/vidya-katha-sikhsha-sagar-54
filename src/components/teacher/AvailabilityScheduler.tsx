@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useSessionStatus } from "@/hooks/use-session-status";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ interface Availability {
 export function AvailabilityScheduler() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { cancelExpiredAvailabilities } = useSessionStatus();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -74,6 +76,18 @@ export function AvailabilityScheduler() {
     
     checkProfile();
   }, [user]);
+
+  // Run cancelExpiredAvailabilities when component mounts
+  useEffect(() => {
+    cancelExpiredAvailabilities();
+    
+    // Setup interval to check for expired availabilities every hour
+    const intervalId = setInterval(() => {
+      cancelExpiredAvailabilities();
+    }, 60 * 60 * 1000); // 1 hour
+    
+    return () => clearInterval(intervalId);
+  }, [cancelExpiredAvailabilities]);
 
   // Fetch teacher's subjects
   useEffect(() => {
@@ -153,6 +167,33 @@ export function AvailabilityScheduler() {
         variant: "destructive", 
         title: "Profile incomplete",
         description: "Please complete your profile before scheduling availability"
+      });
+      return;
+    }
+    
+    // Validate the date is at least 24h in future and at most 7 days in future
+    const now = new Date();
+    const selectedDate = new Date(date);
+    const minDate = new Date();
+    minDate.setDate(now.getDate() + 1);
+    
+    const maxDate = new Date();
+    maxDate.setDate(now.getDate() + 7);
+    
+    if (selectedDate < minDate) {
+      toast({
+        variant: "destructive",
+        title: "Invalid date",
+        description: "Availability must be scheduled at least 24 hours in advance"
+      });
+      return;
+    }
+    
+    if (selectedDate > maxDate) {
+      toast({
+        variant: "destructive",
+        title: "Invalid date",
+        description: "Availability can only be scheduled up to 7 days in advance"
       });
       return;
     }
@@ -253,9 +294,9 @@ export function AvailabilityScheduler() {
     today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate date comparison
     
     if (activeTab === "upcoming") {
-      return availableDate >= today;
+      return availableDate >= today && availability.status === 'available';
     } else {
-      return availableDate < today;
+      return availableDate < today || availability.status === 'expired';
     }
   });
 
@@ -324,13 +365,24 @@ export function AvailabilityScheduler() {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    disabled={(date) =>
-                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                    }
+                    disabled={(date) => {
+                      // Disable dates less than 24 hours from now and more than 7 days from now
+                      const now = new Date();
+                      const minDate = new Date();
+                      minDate.setDate(now.getDate() + 1);
+                      
+                      const maxDate = new Date();
+                      maxDate.setDate(now.getDate() + 7);
+                      
+                      return date < minDate || date > maxDate;
+                    }}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
+              <p className="text-xs text-muted-foreground mt-1">
+                You can schedule availability between 24 hours and 7 days in advance.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -390,7 +442,7 @@ export function AvailabilityScheduler() {
                 {filteredAvailabilities.map((availability) => (
                   <div 
                     key={availability.id} 
-                    className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg"
+                    className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-card"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -438,6 +490,11 @@ export function AvailabilityScheduler() {
                       <div className="flex items-center gap-2">
                         <BookOpen className="h-4 w-4 text-gray-500" />
                         <span className="font-medium">{(availability.subject as Subject).name}</span>
+                        {availability.status === 'expired' && (
+                          <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
+                            Expired
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4 text-muted-foreground" />

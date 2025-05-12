@@ -11,6 +11,9 @@ import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TeacherSidebar from "@/components/teacher/dashboard/TeacherSidebar";
 import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client"; 
+import { useSessionStatus } from "@/hooks/use-session-status";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -30,6 +33,8 @@ const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { handleSessionAccepted } = useSessionStatus();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
@@ -61,11 +66,36 @@ const TeacherDashboard = () => {
 
   const handleAcceptSession = async (sessionId: string) => {
     try {
-      await acceptSessionRequest(sessionId);
+      const result = await acceptSessionRequest(sessionId);
       toast({
         title: "Session Accepted",
         description: "The session has been scheduled.",
       });
+      
+      // Get teacher and student data for notification
+      if (result && result.session) {
+        const { data: teacherData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', result.session.teacher_id)
+          .single();
+          
+        const { data: studentData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', result.session.student_id)
+          .single();
+          
+        if (teacherData && studentData) {
+          // Send notifications
+          await handleSessionAccepted(
+            sessionId,
+            teacherData,
+            studentData,
+            result.session
+          );
+        }
+      }
       
       // Invalidate the queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['session_requests'] });
