@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailStepData, NewPasswordStepData, OtpStepData } from "./types";
@@ -28,19 +27,15 @@ export const usePasswordReset = (onClose?: () => void) => {
     setError(null);
     
     try {
-      // Instead of using auth.resetPasswordForEmail, we'll use the send-email edge function
-      // to send a 6-digit OTP to the user's email
+      // Generate a 6-digit OTP
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Get the current session token if available
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token || "";
-      
+      // Instead of relying on auth token which might not exist for password reset,
+      // use a direct call to the function without authentication
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           email: resetEmail,
@@ -51,11 +46,11 @@ export const usePasswordReset = (onClose?: () => void) => {
       });
 
       if (!response.ok) {
+        console.error("Error response:", await response.text());
         throw new Error("Failed to send OTP. Please try again.");
       }
 
       // Store the OTP temporarily in localStorage for verification
-      // In a production app, this should be handled more securely
       localStorage.setItem("resetPasswordOtp", generatedOTP);
       
       setOtpSent(true);
@@ -142,15 +137,11 @@ export const usePasswordReset = (onClose?: () => void) => {
       // Generate a new OTP and send it
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Get the current session token if available
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token || "";
-      
+      // Same direct approach without auth token
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           email: resetEmail,
@@ -161,6 +152,7 @@ export const usePasswordReset = (onClose?: () => void) => {
       });
 
       if (!response.ok) {
+        console.error("Error response:", await response.text());
         throw new Error("Failed to resend OTP. Please try again.");
       }
 

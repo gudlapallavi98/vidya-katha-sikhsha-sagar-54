@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
@@ -22,6 +23,7 @@ interface OTPRequest {
   email: string;
   name?: string;
   type: "signup" | "password-reset";
+  otp?: string; // Allow OTP to be sent from the client
 }
 
 interface ScheduleNotificationRequest {
@@ -56,13 +58,21 @@ const handler = async (req: Request): Promise<Response> => {
     const path = url.pathname.split("/").pop();
     
     if (path === "send-otp") {
-      const { email, name, type }: OTPRequest = await req.json();
+      const body = await req.text();
+      console.log("Request body:", body);
       
-      // Generate a 6-digit OTP
-      const otp = generateOTP();
+      let requestData: OTPRequest;
+      try {
+        requestData = JSON.parse(body);
+      } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        throw new Error(`Failed to parse request data: ${e.message}`);
+      }
       
-      // Store OTP in Supabase or another storage mechanism for verification
-      // Here you would typically store the OTP with an expiration time
+      const { email, name, type, otp: clientOtp } = requestData;
+      
+      // Use provided OTP or generate a new one
+      const otp = clientOtp || generateOTP();
       
       // For demonstration, we'll just send the OTP via email
       const subject = type === "signup" 
@@ -94,6 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
         `;
       
       try {
+        console.log("Sending email to:", email);
         const emailResponse = await resend.emails.send({
           from: "etutorss <info@etutorss.com>",
           to: [email],
@@ -202,9 +213,18 @@ const handler = async (req: Request): Promise<Response> => {
     
     else {
       // Generic email sending endpoint
-      const { to, subject, html, from }: EmailRequest = await req.json();
+      let emailData: EmailRequest;
+      try {
+        emailData = await req.json();
+      } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        throw new Error(`Failed to parse request data: ${e.message}`);
+      }
+      
+      const { to, subject, html, from } = emailData;
       
       try {
+        console.log("Sending email to:", to);
         const emailResponse = await resend.emails.send({
           from: from || "etutorss <info@etutorss.com>",
           to,

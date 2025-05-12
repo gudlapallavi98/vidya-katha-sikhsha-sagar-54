@@ -38,16 +38,14 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
       return;
     }
     
-    // Check if email already exists - simplified approach
     try {
-      // Remove the attempt to use getUserByEmail which doesn't exist
-      // Instead, we'll try to sign up and handle the error if the email exists
+      setIsLoading(true);
       setFormValues(data);
       setVerificationEmail(data.email);
       setVerificationName(`${data.firstName} ${data.lastName}`);
       
       try {
-        // Use the Supabase Edge Function to send a real email with OTP
+        // Modified to not require authentication
         const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
           method: "POST",
           headers: {
@@ -60,11 +58,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
           })
         });
         
-        const responseData = await response.json();
-        
         if (!response.ok) {
-          throw new Error(responseData.error || "Failed to send verification email");
+          const errorData = await response.text();
+          console.error("Send OTP error response:", errorData);
+          throw new Error("Failed to send verification email");
         }
+        
+        const responseData = await response.json();
         
         // Store the OTP from the server response
         if (responseData.otp) {
@@ -74,6 +74,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         // Open verification dialog
         setVerificationOpen(true);
       } catch (error) {
+        console.error("Error sending OTP:", error);
         toast({
           variant: "destructive",
           title: "Error",
@@ -88,6 +89,8 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         description: error instanceof Error ? error.message : "Something went wrong",
       });
       if (onValidationError) onValidationError();
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -152,7 +155,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
     if (!verificationEmail) return;
     
     try {
-      // Use the Supabase Edge Function to send a real email with OTP
+      // Modified to not require authentication
       const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
         method: "POST",
         headers: {
@@ -165,11 +168,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         })
       });
       
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send verification email");
+        const errorData = await response.text();
+        console.error("Resend OTP error response:", errorData);
+        throw new Error("Failed to send verification email");
       }
+      
+      const data = await response.json();
       
       // Store the OTP from the server response
       if (data.otp) {
@@ -181,6 +186,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         description: "A new verification code has been sent to your email",
       });
     } catch (error) {
+      console.error("Error resending OTP:", error);
       toast({
         variant: "destructive",
         title: "Error",
