@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, addHours } from "date-fns";
@@ -52,10 +53,23 @@ export const useSessionReminders = () => {
                 continue;
               }
               
+              // Make sure we're only passing valid objects with the required properties
+              const teacherData = {
+                first_name: session.teacher.first_name || '',
+                last_name: session.teacher.last_name || '',
+                email: session.teacher.email || ''
+              };
+              
+              const studentData = {
+                first_name: attendee.student.first_name || '',
+                last_name: attendee.student.last_name || '',
+                email: attendee.student.email || ''
+              };
+              
               // Send reminder with 3-hour notice
               await sendSessionNotification(
-                session.teacher,
-                attendee.student,
+                teacherData,
+                studentData,
                 session,
                 "This is a reminder that your session starts in 3 hours. Please make sure you're prepared and ready to join."
               );
