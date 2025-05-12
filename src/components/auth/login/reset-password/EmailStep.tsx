@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 interface EmailStepProps {
   resetEmail: string;
@@ -13,9 +13,12 @@ interface EmailStepProps {
 }
 
 const EmailStep = ({ resetEmail, setResetEmail, onSendResetOtp, resetLoading }: EmailStepProps) => {
-  // Basic email validation
+  const [touched, setTouched] = useState(false);
+  
+  // Basic email validation with better regex
   const isValidEmail = () => {
-    return resetEmail.includes('@') && resetEmail.includes('.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(resetEmail);
   };
 
   return (
@@ -26,20 +29,33 @@ const EmailStep = ({ resetEmail, setResetEmail, onSendResetOtp, resetLoading }: 
           id="resetEmail"
           type="email"
           value={resetEmail}
-          onChange={(e) => setResetEmail(e.target.value)}
+          onChange={(e) => {
+            setResetEmail(e.target.value);
+            setTouched(true);
+          }}
           placeholder="you@example.com"
           autoComplete="email"
           disabled={resetLoading}
-          className="focus:ring-2 focus:ring-offset-1 focus:ring-indian-saffron/50"
+          className={`focus:ring-2 focus:ring-offset-1 focus:ring-indian-saffron/50 ${
+            touched && resetEmail && !isValidEmail() ? "border-red-500" : ""
+          }`}
         />
-        {resetEmail && !isValidEmail() && (
-          <p className="text-xs text-red-500 mt-1">Please enter a valid email address</p>
+        {touched && resetEmail && !isValidEmail() && (
+          <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+            <AlertCircle size={12} />
+            Please enter a valid email address
+          </p>
         )}
       </div>
       <Button 
         className="w-full mt-2 bg-indian-saffron hover:bg-indian-saffron/90" 
-        onClick={onSendResetOtp}
-        disabled={resetLoading || !isValidEmail()}
+        onClick={() => {
+          setTouched(true);
+          if (isValidEmail()) {
+            onSendResetOtp();
+          }
+        }}
+        disabled={resetLoading || (touched && !isValidEmail())}
       >
         {resetLoading ? (
           <>

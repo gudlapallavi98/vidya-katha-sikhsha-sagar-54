@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Loader2 } from "lucide-react";
@@ -20,8 +21,36 @@ const OtpStep = ({
   onResendCode, 
   resetLoading 
 }: OtpStepProps) => {
+  const [resendTimer, setResendTimer] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+  
+  // Set up timer for resend functionality
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => {
+        setResendTimer(resendTimer - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setCanResend(true);
+    }
+  }, [resendTimer]);
+
+  // Handle resend click
+  const handleResend = () => {
+    if (canResend && !resetLoading) {
+      setResendTimer(60);
+      setCanResend(false);
+      onResendCode();
+    }
+  };
+
   return (
     <>
+      <p className="text-sm text-center mb-4 text-gray-600">
+        Enter the 6-digit code sent to your email
+      </p>
+
       <div className="flex justify-center py-4">
         <InputOTP 
           maxLength={6} 
@@ -56,7 +85,7 @@ const OtpStep = ({
           )}
         </Button>
         
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center">
           <Button 
             type="button" 
             variant="ghost" 
@@ -69,16 +98,18 @@ const OtpStep = ({
           
           <Button 
             type="button" 
-            variant="link" 
+            variant={canResend ? "link" : "ghost"}
             size="sm"
-            onClick={onResendCode}
-            disabled={resetLoading}
-            className="text-indian-blue"
+            onClick={handleResend}
+            disabled={!canResend || resetLoading}
+            className={canResend ? "text-indian-blue" : "text-gray-400"}
           >
             {resetLoading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
+            ) : canResend ? (
               "Resend Code"
+            ) : (
+              `Resend in ${resendTimer}s`
             )}
           </Button>
         </div>
