@@ -7,12 +7,22 @@ import {
   Send,
   RotateCcw,
   MinusCircle,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  FileText,
+  Check,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
 type Message = {
   id: string;
@@ -20,6 +30,25 @@ type Message = {
   role: "user" | "assistant";
   timestamp: Date;
 };
+
+type FormField = {
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  description: string;
+};
+
+type ChatbotState = "chat" | "form" | "submitting" | "completed";
+
+// Form validation schema
+const formSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().optional(),
+  city: z.string().optional(),
+  description: z.string().min(10, "Please provide more details about your query"),
+});
 
 const initialMessages: Message[] = [
   {
@@ -67,15 +96,37 @@ const Chatbot = () => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [chatbotState, setChatbotState] = useState<ChatbotState>("chat");
+  const [formValues, setFormValues] = useState<FormField>({
+    name: "",
+    email: "",
+    phone: "",
+    city: "",
+    description: "",
+  });
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormField, string>>>({});
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
   
   useEffect(() => {
     // Get current auth state
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
       setUser(data.user);
+      
+      // Pre-fill email if user is logged in
+      if (data.user?.email) {
+        setFormValues(prev => ({
+          ...prev,
+          email: data.user.email || "",
+          name: data.user?.user_metadata?.first_name 
+            ? `${data.user.user_metadata.first_name} ${data.user.user_metadata.last_name || ""}`
+            : prev.name
+        }));
+      }
     };
     
     fetchUser();
@@ -100,6 +151,12 @@ const Chatbot = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (chatbotState === "form") {
+      handleFormSubmit();
+      return;
+    }
+    
     if (!input.trim()) return;
 
     const userMessage: Message = {
@@ -113,7 +170,36 @@ const Chatbot = () => {
     setInput("");
     setIsTyping(true);
 
-    // Simulate typing delay
+    // Check if user is asking for help or contact
+    const inputLower = input.trim().toLowerCase();
+    if (
+      inputLower.includes("speak to someone") || 
+      inputLower.includes("talk to someone") || 
+      inputLower.includes("contact") || 
+      inputLower.includes("help me") || 
+      inputLower.includes("need help") ||
+      inputLower.includes("request") ||
+      inputLower.includes("human") ||
+      inputLower.includes("support")
+    ) {
+      // Simulate typing delay before showing contact form
+      setTimeout(() => {
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          content: "I'll be happy to connect you with our support team. Please fill out this quick form with your details:",
+          role: "assistant",
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+        setIsTyping(false);
+        setChatbotState("form");
+      }, 1000);
+      
+      return;
+    }
+
+    // Regular chatbot response
     setTimeout(() => {
       const response = generateResponse(input.trim().toLowerCase(), user);
       
@@ -127,6 +213,138 @@ const Chatbot = () => {
       setMessages((prev) => [...prev, assistantMessage]);
       setIsTyping(false);
     }, Math.random() * 1000 + 500); // Random delay between 500ms and 1500ms for more natural feel
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormValues((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    
+    // Clear error when user types
+    if (formErrors[name as keyof FormField]) {
+      setFormErrors((prev) => ({
+        ...prev,
+        [name]: undefined,
+      }));
+    }
+  };
+
+  const handleFormSubmit = async () => {
+    try {
+      // Validate form
+      const validationResult = formSchema.safeParse(formValues);
+      
+      if (!validationResult.success) {
+        const errors: Partial<Record<keyof FormField, string>> = {};
+        validationResult.error.errors.forEach(err => {
+          if (err.path[0]) {
+            errors[err.path[0] as keyof FormField] = err.message;
+          }
+        });
+        
+        setFormErrors(errors);
+        return;
+      }
+      
+      // Start submission process
+      setChatbotState("submitting");
+      
+      // Save to database with generated request ID
+      const { data, error } = await supabase
+        .from('chatbot_requests')
+        .insert([
+          { 
+            request_id: await generateRequestId(),
+            ...formValues
+          }
+        ])
+        .select('request_id');
+      
+      if (error) {
+        throw new Error(`Error saving request: ${error.message}`);
+      }
+      
+      if (data && data.length > 0) {
+        const savedRequestId = data[0].request_id;
+        setRequestId(savedRequestId);
+        
+        // Send acknowledgment email
+        const emailResponse = await supabase.functions.invoke('send-request-acknowledgment', {
+          body: JSON.stringify({
+            name: formValues.name,
+            email: formValues.email,
+            requestId: savedRequestId,
+          }),
+        });
+        
+        if (!emailResponse.data.success) {
+          console.warn("Email sending failed, but request was recorded", emailResponse.error);
+        }
+        
+        // Add confirmation message
+        const assistantMessage: Message = {
+          id: `assistant-${Date.now()}`,
+          content: `Thank you, ${formValues.name}! Your request has been submitted successfully. Your request ID is: ${savedRequestId}. We've sent a confirmation email to ${formValues.email} with these details. Our team will get back to you soon!`,
+          role: "assistant",
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+        setChatbotState("completed");
+        
+        // Reset form for future use
+        setFormValues({
+          name: "",
+          email: user?.email || "",
+          phone: "",
+          city: "",
+          description: "",
+        });
+        
+        toast({
+          title: "Request Submitted",
+          description: `Your request ID is: ${savedRequestId}`,
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error("Form submission error:", error);
+      
+      // Add error message
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content: "I'm sorry, there was an error submitting your request. Please try again later or contact support directly at support@etutorss.com.",
+        role: "assistant",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      setChatbotState("chat");
+      
+      toast({
+        variant: "destructive",
+        title: "Request Failed",
+        description: "There was a problem submitting your request. Please try again.",
+        duration: 5000,
+      });
+    }
+  };
+
+  // Generate a unique request ID
+  const generateRequestId = async (): Promise<string> => {
+    // Generate on the server side using our SQL function
+    const { data, error } = await supabase
+      .rpc('generate_request_id');
+    
+    if (error) {
+      console.error("Error generating request ID:", error);
+      // Fallback client-side generation if the RPC fails
+      return `REQ-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    }
+    
+    return data;
   };
 
   const generateResponse = (query: string, user: any): string => {
@@ -196,10 +414,21 @@ const Chatbot = () => {
 
   const resetChat = () => {
     setMessages(initialMessages);
+    setChatbotState("chat");
+    setFormValues({
+      name: "",
+      email: user?.email || "",
+      phone: "",
+      city: "",
+      description: "",
+    });
+    setFormErrors({});
+    setRequestId(null);
+    
     toast({
       title: "Chat Reset",
       description: "The conversation has been reset.",
-      duration: 3000, // Now duration is properly typed
+      duration: 3000,
     });
   };
 
@@ -210,6 +439,127 @@ const Chatbot = () => {
 
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
+  };
+  
+  const renderFormField = (
+    fieldName: keyof FormField, 
+    label: string, 
+    type: string = "text", 
+    placeholder: string,
+    icon: React.ReactNode,
+    required: boolean = false
+  ) => {
+    return (
+      <div className="space-y-1">
+        <Label htmlFor={fieldName} className="flex items-center text-sm gap-2">
+          {icon}
+          {label} {required && <span className="text-red-500">*</span>}
+        </Label>
+        <Input
+          id={fieldName}
+          name={fieldName}
+          type={type}
+          value={formValues[fieldName]}
+          onChange={handleFormChange}
+          placeholder={placeholder}
+          className={formErrors[fieldName] ? "border-red-500" : ""}
+          disabled={chatbotState === "submitting"}
+          required={required}
+        />
+        {formErrors[fieldName] && (
+          <p className="text-xs text-red-500 mt-1">{formErrors[fieldName]}</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderContactForm = () => {
+    return (
+      <form className="space-y-4 p-1" onSubmit={handleSubmit}>
+        {renderFormField(
+          "name", 
+          "Full Name", 
+          "text", 
+          "John Doe", 
+          <User size={16} />, 
+          true
+        )}
+        
+        {renderFormField(
+          "email", 
+          "Email Address", 
+          "email", 
+          "your@email.com", 
+          <Mail size={16} />, 
+          true
+        )}
+        
+        {renderFormField(
+          "phone", 
+          "Phone Number", 
+          "tel", 
+          "+91 98765 43210", 
+          <Phone size={16} />
+        )}
+        
+        {renderFormField(
+          "city", 
+          "City", 
+          "text", 
+          "Mumbai", 
+          <MapPin size={16} />
+        )}
+        
+        <div className="space-y-1">
+          <Label htmlFor="description" className="flex items-center text-sm gap-2">
+            <FileText size={16} />
+            Description <span className="text-red-500">*</span>
+          </Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formValues.description}
+            onChange={handleFormChange}
+            placeholder="Please describe your query or issue in detail..."
+            className={`resize-none min-h-[80px] ${formErrors.description ? "border-red-500" : ""}`}
+            disabled={chatbotState === "submitting"}
+            required
+          />
+          {formErrors.description && (
+            <p className="text-xs text-red-500 mt-1">{formErrors.description}</p>
+          )}
+        </div>
+        
+        <div className="flex justify-between">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => setChatbotState("chat")}
+            disabled={chatbotState === "submitting"}
+          >
+            Back to Chat
+          </Button>
+          <Button 
+            type="submit" 
+            size="sm"
+            disabled={chatbotState === "submitting"}
+          >
+            {chatbotState === "submitting" ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="mr-2 h-4 w-4" />
+                Submit Request
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    );
   };
 
   return (
@@ -241,6 +591,9 @@ const Chatbot = () => {
               </Avatar>
               <div>
                 <h3 className="font-medium">etutorss Assistant</h3>
+                {requestId && (
+                  <p className="text-xs opacity-90">Request ID: {requestId}</p>
+                )}
               </div>
             </div>
             <div className="flex gap-1">
@@ -288,6 +641,7 @@ const Chatbot = () => {
                     </p>
                   </div>
                 ))}
+                
                 {isTyping && (
                   <div className="flex gap-2 items-center text-gray-500 mb-3 p-3 max-w-[85%] bg-white border border-gray-200 mr-auto rounded-lg rounded-bl-none">
                     <div className="flex gap-1">
@@ -298,47 +652,72 @@ const Chatbot = () => {
                     <span className="text-xs">etutorss Assistant is typing</span>
                   </div>
                 )}
+                
+                {chatbotState === "form" && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 my-3 shadow-sm">
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <User size={16} />
+                      Contact Form
+                    </h4>
+                    {renderContactForm()}
+                  </div>
+                )}
+                
+                {chatbotState === "completed" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 my-3">
+                    <h4 className="font-medium mb-1 text-green-700 flex items-center gap-2">
+                      <Check size={16} className="text-green-500" />
+                      Request Submitted Successfully
+                    </h4>
+                    <p className="text-sm text-green-600">
+                      Request ID: <span className="font-mono font-medium">{requestId}</span>
+                    </p>
+                  </div>
+                )}
+                
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Input Area */}
-              <div className="p-3 bg-white border-t border-gray-200">
-                <form onSubmit={handleSubmit} className="flex gap-2">
-                  <Textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type a message..."
-                    className="resize-none min-h-[40px] max-h-[120px]"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
-                  />
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      type="submit"
-                      size="icon"
-                      className="h-9 w-9 bg-blue-500 hover:bg-blue-600"
-                      disabled={!input.trim() || isTyping}
-                      title="Send message"
-                    >
-                      <Send size={16} />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="outline"
-                      className="h-9 w-9"
-                      onClick={resetChat}
-                      title="Reset conversation"
-                    >
-                      <RotateCcw size={16} />
-                    </Button>
-                  </div>
-                </form>
-              </div>
+              {/* Input Area - Only show if not in form or completed state */}
+              {(chatbotState === "chat") && (
+                <div className="p-3 bg-white border-t border-gray-200">
+                  <form onSubmit={handleSubmit} className="flex gap-2">
+                    <Textarea
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Type a message..."
+                      className="resize-none min-h-[40px] max-h-[120px]"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmit(e);
+                        }
+                      }}
+                    />
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        type="submit"
+                        size="icon"
+                        className="h-9 w-9 bg-blue-500 hover:bg-blue-600"
+                        disabled={!input.trim() || isTyping}
+                        title="Send message"
+                      >
+                        <Send size={16} />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className="h-9 w-9"
+                        onClick={resetChat}
+                        title="Reset conversation"
+                      >
+                        <RotateCcw size={16} />
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </>
           )}
         </div>
