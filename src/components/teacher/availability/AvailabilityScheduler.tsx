@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSessionStatus } from "@/hooks/use-session-status";
 import AvailabilityForm from "./AvailabilityForm";
 import { AvailabilityList } from "./AvailabilityList";
+import { ProfileIncompleteMessage } from "./ProfileIncompleteMessage";
 
 interface Subject {
   id: string;

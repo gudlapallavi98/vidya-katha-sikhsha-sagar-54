@@ -47,24 +47,30 @@ export const useSessionReminders = () => {
           
           if (attendees && attendees.length > 0) {
             for (const attendee of attendees) {
-              // Type guard to ensure we have valid teacher and student data
+              // Add proper type checks and guards to ensure we have valid data
               if (!attendee.student || !session.teacher) {
                 console.log("Missing student or teacher data for reminder");
                 continue;
               }
               
-              // Make sure we're only passing valid objects with the required properties
+              // Create safe objects with default values for required properties
               const teacherData = {
-                first_name: session.teacher.first_name || '',
-                last_name: session.teacher.last_name || '',
-                email: session.teacher.email || ''
+                first_name: session.teacher?.first_name || '',
+                last_name: session.teacher?.last_name || '',
+                email: session.teacher?.email || ''
               };
               
               const studentData = {
-                first_name: attendee.student.first_name || '',
-                last_name: attendee.student.last_name || '',
-                email: attendee.student.email || ''
+                first_name: attendee.student?.first_name || '',
+                last_name: attendee.student?.last_name || '',
+                email: attendee.student?.email || ''
               };
+              
+              // Only send notification if we have email addresses
+              if (!teacherData.email || !studentData.email) {
+                console.log("Missing email addresses for notification");
+                continue;
+              }
               
               // Send reminder with 3-hour notice
               await sendSessionNotification(
