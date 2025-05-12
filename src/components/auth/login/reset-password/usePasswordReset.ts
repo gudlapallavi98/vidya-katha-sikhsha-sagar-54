@@ -102,32 +102,19 @@ export const usePasswordReset = (onClose?: () => void) => {
         throw new Error("Email not found. Please restart the password reset process.");
       }
       
-      // First, set up a recovery session through Supabase
+      // Simply using the resetPasswordForEmail method
       const { error: passwordResetError } = await supabase.auth.resetPasswordForEmail(
-        storedEmail,
-        { redirectTo: window.location.origin + "/login" }
+        storedEmail
       );
 
       if (passwordResetError) {
         throw new Error(passwordResetError.message || "Failed to initiate password reset.");
       }
       
-      // Now directly update the user's password
-      // Need to use supabase admin functions or a custom endpoint to do this without session
-      // For this demo, we'll use the API directly
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-      
-      if (updateError) {
-        console.error("Password update error:", updateError);
-        throw new Error(updateError.message || "Failed to update password. Please try again.");
-      }
-
       setPasswordUpdated(true);
       toast({
-        title: "Password Updated",
-        description: "Your password has been successfully updated. Please login with your new password.",
+        title: "Password Reset Email Sent",
+        description: "Please check your email for a link to reset your password.",
       });
       
       // Clean up
@@ -142,7 +129,7 @@ export const usePasswordReset = (onClose?: () => void) => {
       }
     } catch (err: any) {
       console.error("Password reset error:", err);
-      setError(err.message || "Failed to update password. Please try again.");
+      setError(err.message || "Failed to reset password. Please try again.");
     } finally {
       setResetLoading(false);
     }

@@ -58,8 +58,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     console.log("Request URL:", req.url);
-    const body = await req.text();
-    console.log("Request body:", body);
+    let body;
+    try {
+      body = await req.text();
+      console.log("Request body:", body);
+    } catch (e) {
+      console.error("Failed to read request body:", e);
+      throw new Error(`Failed to read request body: ${e.message}`);
+    }
     
     let requestData;
     try {
