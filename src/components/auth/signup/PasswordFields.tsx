@@ -5,13 +5,13 @@ import { UseFormReturn } from "react-hook-form";
 
 interface PasswordFieldsProps {
   form: UseFormReturn<{
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    captcha: string;
-    role: "student" | "teacher";
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    captcha?: string;
+    role?: "student" | "teacher";
   }>;
 }
 

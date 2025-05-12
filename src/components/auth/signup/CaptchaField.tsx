@@ -9,13 +9,13 @@ interface CaptchaFieldProps {
     num2: number; 
   };
   form: UseFormReturn<{
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    captcha: string;
-    role: "student" | "teacher";
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    captcha?: string;
+    role?: "student" | "teacher";
   }>;
 }
 
