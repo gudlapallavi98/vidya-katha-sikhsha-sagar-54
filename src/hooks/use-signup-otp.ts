@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface UserData {
   firstName?: string;
@@ -77,8 +78,11 @@ export const useSignupOTP = (): UseSignupOTP => {
         .from("signup_otps")
         .update({ verified: true })
         .eq("id", data.id);
+      
+      // Convert the user_data from Json type to UserData
+      const userData: UserData = typeof data.user_data === 'object' ? data.user_data as UserData : {};
         
-      return { isValid: true, userData: data.user_data };
+      return { isValid: true, userData };
     } catch (error) {
       console.error("Error verifying signup OTP:", error);
       return { isValid: false, userData: null };
