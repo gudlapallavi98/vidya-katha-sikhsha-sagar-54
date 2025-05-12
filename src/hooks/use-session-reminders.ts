@@ -87,15 +87,15 @@ export const useSessionReminders = () => {
               
               // Create safe objects with default values for required properties
               const teacherData = {
-                first_name: session.teacher && typeof session.teacher === 'object' ? session.teacher.first_name || '' : '',
-                last_name: session.teacher && typeof session.teacher === 'object' ? session.teacher.last_name || '' : '',
-                email: session.teacher && typeof session.teacher === 'object' ? session.teacher.email || '' : ''
+                first_name: session.teacher && typeof session.teacher === 'object' ? (session.teacher.first_name as string | undefined || '') : '',
+                last_name: session.teacher && typeof session.teacher === 'object' ? (session.teacher.last_name as string | undefined || '') : '',
+                email: session.teacher && typeof session.teacher === 'object' ? (session.teacher.email as string | undefined || '') : ''
               };
               
               const studentData = {
-                first_name: attendee.student && typeof attendee.student === 'object' ? attendee.student.first_name || '' : '',
-                last_name: attendee.student && typeof attendee.student === 'object' ? attendee.student.last_name || '' : '',
-                email: attendee.student && typeof attendee.student === 'object' ? attendee.student.email || '' : ''
+                first_name: attendee.student && typeof attendee.student === 'object' ? (attendee.student.first_name as string | undefined || '') : '',
+                last_name: attendee.student && typeof attendee.student === 'object' ? (attendee.student.last_name as string | undefined || '') : '',
+                email: attendee.student && typeof attendee.student === 'object' ? (attendee.student.email as string | undefined || '') : ''
               };
               
               // Only send notification if we have email addresses
