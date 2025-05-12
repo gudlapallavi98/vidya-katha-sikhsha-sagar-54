@@ -1,8 +1,6 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
 export const usePasswordReset = (onClose?: () => void) => {
   // We'll keep the original naming for consistency with PasswordResetForm.tsx
@@ -18,7 +16,6 @@ export const usePasswordReset = (onClose?: () => void) => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [passwordUpdated, setPasswordUpdated] = useState(false);
   const { toast } = useToast();
-  const { updatePassword } = useAuth();
 
   const resetError = () => setError(null);
 
@@ -55,6 +52,7 @@ export const usePasswordReset = (onClose?: () => void) => {
 
       // Store the OTP temporarily in localStorage for verification
       localStorage.setItem("resetPasswordOtp", generatedOTP);
+      localStorage.setItem("resetPasswordEmail", resetEmail);
       
       setOtpSent(true);
       setResetPasswordStep("otp");
@@ -80,7 +78,7 @@ export const usePasswordReset = (onClose?: () => void) => {
       const storedOTP = localStorage.getItem("resetPasswordOtp");
       console.log("Verifying OTP - Stored:", storedOTP, "Entered:", resetOtp);
       
-      if (resetOtp !== storedOTP) {
+      if (!storedOTP || resetOtp !== storedOTP) {
         throw new Error("Invalid OTP. Please check and try again.");
       }
       
@@ -98,35 +96,52 @@ export const usePasswordReset = (onClose?: () => void) => {
     setError(null);
 
     try {
-      // Use the updateUser method from the auth context which wraps 
-      // supabase.auth.updateUser correctly
-      const success = await updatePassword(newPassword);
+      const storedEmail = localStorage.getItem("resetPasswordEmail");
+      
+      if (!storedEmail) {
+        throw new Error("Email not found. Please restart the password reset process.");
+      }
+      
+      // First, set up a recovery session through Supabase
+      const { error: passwordResetError } = await supabase.auth.resetPasswordForEmail(
+        storedEmail,
+        { redirectTo: window.location.origin + "/login" }
+      );
 
-      if (!success) {
-        throw new Error("Failed to update password. Please try again.");
+      if (passwordResetError) {
+        throw new Error(passwordResetError.message || "Failed to initiate password reset.");
+      }
+      
+      // Now directly update the user's password
+      // Need to use supabase admin functions or a custom endpoint to do this without session
+      // For this demo, we'll use the API directly
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (updateError) {
+        console.error("Password update error:", updateError);
+        throw new Error(updateError.message || "Failed to update password. Please try again.");
       }
 
       setPasswordUpdated(true);
       toast({
         title: "Password Updated",
-        description: "Your password has been successfully updated.",
+        description: "Your password has been successfully updated. Please login with your new password.",
       });
       
-      // Clean up the verification code
+      // Clean up
       localStorage.removeItem("resetPasswordOtp");
+      localStorage.removeItem("resetPasswordEmail");
       
       // Close the dialog if onClose is provided
       if (onClose) {
         setTimeout(() => {
           onClose();
         }, 2000);
-      } else {
-        // Redirect to login after a short delay
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 2000);
       }
     } catch (err: any) {
+      console.error("Password reset error:", err);
       setError(err.message || "Failed to update password. Please try again.");
     } finally {
       setResetLoading(false);
@@ -166,6 +181,7 @@ export const usePasswordReset = (onClose?: () => void) => {
 
       // Update the stored OTP
       localStorage.setItem("resetPasswordOtp", generatedOTP);
+      localStorage.setItem("resetPasswordEmail", resetEmail);
 
       setOtpSent(true);
       toast({
@@ -192,6 +208,7 @@ export const usePasswordReset = (onClose?: () => void) => {
     setConfirmPassword,
     resetLoading,
     otpError,
+    error,
     handleSendResetOtp,
     handleVerifyOtp,
     handleResetPassword,

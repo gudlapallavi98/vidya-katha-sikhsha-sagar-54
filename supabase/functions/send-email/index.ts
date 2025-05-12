@@ -43,6 +43,8 @@ const generateOTP = (): string => {
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log("Send email function triggered");
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -51,6 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     // Check if Resend API key is properly configured
     if (!resend) {
+      console.error("Resend API key is not configured");
       throw new Error("Resend API key is not configured. Please set the RESEND_API_KEY environment variable.");
     }
     
@@ -129,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error("Email sending error:", emailError);
       throw new Error(`Failed to send email: ${emailError.message}`);
     }
