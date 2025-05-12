@@ -9,7 +9,8 @@ import {
   useStudentEnrollments, 
   useStudentUpcomingSessions, 
   useStudentProgress, 
-  useStudentAchievements 
+  useStudentAchievements, 
+  useStudentPastSessions 
 } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/api/dashboard";
@@ -40,6 +41,7 @@ const StudentDashboard = () => {
   const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrollments();
   const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
   const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
+  const { data: pastSessions = [], isLoading: pastSessionsLoading } = useStudentPastSessions();
   const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
 
   useEffect(() => {
@@ -84,6 +86,52 @@ const StudentDashboard = () => {
     navigate('/courses');
   };
 
+  // Filter sessions by status for display
+  const upcomingSessionsList = upcomingSessions.filter(session => {
+    return !session.display_status || session.display_status === 'upcoming';
+  });
+  
+  const completedSessionsList = upcomingSessions.filter(session => {
+    return session.display_status && session.display_status !== 'upcoming';
+  });
+  
+  const getStatusBadgeClass = (status: string) => {
+    switch(status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'attended':
+        return 'bg-green-100 text-green-800';
+      case 'in_progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'missed':
+        return 'bg-red-100 text-red-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
+  const getStatusText = (session: any) => {
+    // Use display_status if available, otherwise use status
+    const statusToShow = session.display_status || session.status;
+    
+    switch(statusToShow) {
+      case 'completed':
+        return 'Completed';
+      case 'attended':
+        return 'Attended';
+      case 'in_progress':
+        return 'In Progress';
+      case 'missed':
+        return 'Missed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return 'Upcoming';
+    }
+  };
+
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
@@ -123,6 +171,13 @@ const StudentDashboard = () => {
                   onClick={() => setActiveTab("sessions")}
                 >
                   Upcoming Sessions
+                </Button>
+                <Button 
+                  variant={activeTab === "past-sessions" ? "default" : "ghost"} 
+                  className={activeTab === "past-sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
+                  onClick={() => setActiveTab("past-sessions")}
+                >
+                  Past Sessions
                 </Button>
                 <Button 
                   variant={activeTab === "request-session" ? "default" : "ghost"} 
@@ -167,7 +222,7 @@ const StudentDashboard = () => {
                   <CardContent className="p-6 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Upcoming Sessions</p>
-                      <h3 className="text-2xl font-bold">{upcomingSessions.length}</h3>
+                      <h3 className="text-2xl font-bold">{upcomingSessionsList.length}</h3>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-indian-green/20 flex items-center justify-center">
                       <Calendar className="h-6 w-6 text-indian-green" />
@@ -179,7 +234,7 @@ const StudentDashboard = () => {
                   <CardContent className="p-6 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Completed Sessions</p>
-                      <h3 className="text-2xl font-bold">{completedSessions}</h3>
+                      <h3 className="text-2xl font-bold">{completedSessionsList.length}</h3>
                     </div>
                     <div className="h-12 w-12 rounded-full bg-indian-blue/20 flex items-center justify-center">
                       <Video className="h-6 w-6 text-indian-blue" />
@@ -197,9 +252,9 @@ const StudentDashboard = () => {
                   <CardContent>
                     {sessionsLoading ? (
                       <div className="text-center py-8">Loading sessions...</div>
-                    ) : upcomingSessions.length > 0 ? (
+                    ) : upcomingSessionsList.length > 0 ? (
                       <div className="space-y-4">
-                        {upcomingSessions.map((session) => (
+                        {upcomingSessionsList.map((session) => (
                           <div key={session.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-muted rounded-lg">
                             <div>
                               <h4 className="font-medium">{session.title}</h4>
@@ -235,8 +290,8 @@ const StudentDashboard = () => {
                                   Join Class
                                 </Button>
                               ) : (
-                                <div className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded">
-                                  {session.status === "scheduled" ? "Upcoming" : session.status}
+                                <div className={`px-2 py-1 ${getStatusBadgeClass(session.status)} text-xs font-medium rounded`}>
+                                  {getStatusText(session)}
                                 </div>
                               )}
                             </div>
@@ -250,6 +305,42 @@ const StudentDashboard = () => {
                     )}
                   </CardContent>
                 </Card>
+                
+                {completedSessionsList.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Recent Past Sessions</CardTitle>
+                      <CardDescription>Your completed or missed sessions</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {completedSessionsList.map((session) => (
+                          <div key={session.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-muted rounded-lg">
+                            <div>
+                              <h4 className="font-medium">{session.title}</h4>
+                              <p className="text-sm text-muted-foreground">from {session.course?.title || "Unknown Course"}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {new Date(session.start_time).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="mt-4 md:mt-0">
+                              <div className={`px-2 py-1 ${getStatusBadgeClass(session.display_status)} text-xs font-medium rounded`}>
+                                {getStatusText(session)}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
                 
                 <Card>
                   <CardHeader>
@@ -383,9 +474,9 @@ const StudentDashboard = () => {
                 <CardContent className="p-6">
                   {sessionsLoading ? (
                     <div className="text-center py-8">Loading sessions...</div>
-                  ) : upcomingSessions.length > 0 ? (
+                  ) : upcomingSessionsList.length > 0 ? (
                     <div className="space-y-6">
-                      {upcomingSessions.map((session) => (
+                      {upcomingSessionsList.map((session) => (
                         <div key={session.id} className="border rounded-lg p-6">
                           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
@@ -428,8 +519,8 @@ const StudentDashboard = () => {
                                   Join Session
                                 </Button>
                               ) : (
-                                <div className="w-full md:w-auto px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded text-center">
-                                  {session.status === "scheduled" ? "Upcoming" : session.status}
+                                <div className={`w-full md:w-auto px-3 py-1 ${getStatusBadgeClass(session.status)} text-sm font-medium rounded text-center`}>
+                                  {getStatusText(session)}
                                 </div>
                               )}
                             </div>
@@ -442,6 +533,65 @@ const StudentDashboard = () => {
                       <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                       <h3 className="text-xl font-medium mb-2">No Upcoming Sessions</h3>
                       <p className="text-muted-foreground mb-6">You don't have any upcoming sessions scheduled.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="past-sessions">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
+              <Card>
+                <CardContent className="p-6">
+                  {pastSessionsLoading ? (
+                    <div className="text-center py-8">Loading sessions...</div>
+                  ) : pastSessions.length > 0 ? (
+                    <div className="space-y-6">
+                      {pastSessions.map((session) => (
+                        <div key={session.id} className="border rounded-lg p-6">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                              <h3 className="text-lg font-medium">{session.title}</h3>
+                              <p className="text-muted-foreground mt-1">{session.course?.title || "Unknown Course"}</p>
+                              <div className="flex items-center gap-2 mt-3">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span>
+                                  {new Date(session.start_time).toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                              <div className="mt-1">
+                                <span className="text-sm text-muted-foreground ml-6">
+                                  {new Date(session.start_time).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })} - 
+                                  {new Date(session.end_time).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 md:mt-0">
+                              <div className={`px-3 py-1 ${getStatusBadgeClass(session.display_status)} text-sm font-medium rounded`}>
+                                {getStatusText(session)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-xl font-medium mb-2">No Past Sessions</h3>
+                      <p className="text-muted-foreground mb-6">You don't have any past sessions.</p>
                     </div>
                   )}
                 </CardContent>
