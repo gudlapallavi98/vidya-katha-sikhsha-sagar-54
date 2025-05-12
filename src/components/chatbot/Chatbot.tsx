@@ -251,65 +251,68 @@ const Chatbot = () => {
       // Start submission process
       setChatbotState("submitting");
       
-      // Save to database with generated request ID
-      const { data, error } = await supabase
+      // Generate a request ID
+      const { data: reqIdData, error: reqIdError } = await supabase.rpc('generate_request_id');
+      
+      if (reqIdError) {
+        throw new Error(`Error generating request ID: ${reqIdError.message}`);
+      }
+      
+      const generatedRequestId = reqIdData;
+      
+      // Save to database
+      const { error: insertError } = await supabase
         .from('chatbot_requests')
-        .insert([
-          { 
-            request_id: await generateRequestId(),
-            ...formValues
-          }
-        ])
-        .select('request_id');
+        .insert([{ 
+          request_id: generatedRequestId,
+          ...formValues
+        }]);
       
-      if (error) {
-        throw new Error(`Error saving request: ${error.message}`);
+      if (insertError) {
+        throw new Error(`Error saving request: ${insertError.message}`);
       }
       
-      if (data && data.length > 0) {
-        const savedRequestId = data[0].request_id;
-        setRequestId(savedRequestId);
-        
-        // Send acknowledgment email
-        const emailResponse = await supabase.functions.invoke('send-request-acknowledgment', {
-          body: JSON.stringify({
-            name: formValues.name,
-            email: formValues.email,
-            requestId: savedRequestId,
-          }),
-        });
-        
-        if (!emailResponse.data.success) {
-          console.warn("Email sending failed, but request was recorded", emailResponse.error);
-        }
-        
-        // Add confirmation message
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          content: `Thank you, ${formValues.name}! Your request has been submitted successfully. Your request ID is: ${savedRequestId}. We've sent a confirmation email to ${formValues.email} with these details. Our team will get back to you soon!`,
-          role: "assistant",
-          timestamp: new Date(),
-        };
+      setRequestId(generatedRequestId);
+      
+      // Send acknowledgment email
+      const emailResponse = await supabase.functions.invoke('send-request-acknowledgment', {
+        body: JSON.stringify({
+          name: formValues.name,
+          email: formValues.email,
+          requestId: generatedRequestId,
+        }),
+      });
+      
+      if (!emailResponse.data?.success) {
+        console.warn("Email sending failed, but request was recorded", emailResponse.error);
+      }
+      
+      // Add confirmation message
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content: `Thank you, ${formValues.name}! Your request has been submitted successfully. Your request ID is: ${generatedRequestId}. We've sent a confirmation email to ${formValues.email} with these details. Our team will get back to you soon!`,
+        role: "assistant",
+        timestamp: new Date(),
+      };
 
-        setMessages((prev) => [...prev, assistantMessage]);
-        setChatbotState("completed");
-        
-        // Reset form for future use
-        setFormValues({
-          name: "",
-          email: user?.email || "",
-          phone: "",
-          city: "",
-          description: "",
-        });
-        
-        toast({
-          title: "Request Submitted",
-          description: `Your request ID is: ${savedRequestId}`,
-          duration: 5000,
-        });
-      }
-    } catch (error) {
+      setMessages((prev) => [...prev, assistantMessage]);
+      setChatbotState("completed");
+      
+      // Reset form for future use
+      setFormValues({
+        name: "",
+        email: user?.email || "",
+        phone: "",
+        city: "",
+        description: "",
+      });
+      
+      toast({
+        title: "Request Submitted",
+        description: `Your request ID is: ${generatedRequestId}`,
+        duration: 5000,
+      });
+    } catch (error: any) {
       console.error("Form submission error:", error);
       
       // Add error message
@@ -330,21 +333,6 @@ const Chatbot = () => {
         duration: 5000,
       });
     }
-  };
-
-  // Generate a unique request ID
-  const generateRequestId = async (): Promise<string> => {
-    // Generate on the server side using our SQL function
-    const { data, error } = await supabase
-      .rpc('generate_request_id');
-    
-    if (error) {
-      console.error("Error generating request ID:", error);
-      // Fallback client-side generation if the RPC fails
-      return `REQ-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    }
-    
-    return data;
   };
 
   const generateResponse = (query: string, user: any): string => {
