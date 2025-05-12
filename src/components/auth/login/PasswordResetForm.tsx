@@ -21,6 +21,7 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
     confirmPassword,
     setConfirmPassword,
     resetLoading,
+    otpError,
     handleSendResetOtp,
     handleVerifyOtp,
     handleResetPassword
@@ -46,6 +47,7 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
         onBack={() => setResetPasswordStep("email")}
         onResendCode={handleSendResetOtp}
         resetLoading={resetLoading}
+        otpError={otpError}
       />
     );
   }

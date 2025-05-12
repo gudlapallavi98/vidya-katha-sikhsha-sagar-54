@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface OtpStepProps {
   resetOtp: string;
@@ -11,6 +11,7 @@ interface OtpStepProps {
   onBack: () => void;
   onResendCode: () => void;
   resetLoading: boolean;
+  otpError?: string;
 }
 
 const OtpStep = ({ 
@@ -19,7 +20,8 @@ const OtpStep = ({
   onVerifyOtp, 
   onBack, 
   onResendCode, 
-  resetLoading 
+  resetLoading,
+  otpError
 }: OtpStepProps) => {
   const [resendTimer, setResendTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
@@ -68,6 +70,13 @@ const OtpStep = ({
           </InputOTPGroup>
         </InputOTP>
       </div>
+      
+      {otpError && (
+        <p className="text-xs text-red-500 mt-1 mb-4 text-center flex items-center justify-center gap-1">
+          <AlertCircle size={12} />
+          {otpError}
+        </p>
+      )}
       
       <div className="flex flex-col space-y-2">
         <Button 

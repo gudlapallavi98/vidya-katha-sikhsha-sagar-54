@@ -12,9 +12,10 @@ interface SignUpFormProps {
     num1: number;
     num2: number;
   };
+  onValidationError?: () => void;
 }
 
-const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
+const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
@@ -25,6 +26,38 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
   const navigate = useNavigate();
   
   const handleFormSubmit = async (data: SignUpFormData) => {
+    // Validate CAPTCHA
+    const captchaAnswer = Number(data.captcha);
+    if (captchaAnswer !== captchaValue.num1 + captchaValue.num2) {
+      toast({
+        variant: "destructive",
+        title: "Invalid CAPTCHA",
+        description: "The CAPTCHA answer is incorrect. Please try again.",
+      });
+      if (onValidationError) onValidationError();
+      return;
+    }
+    
+    // Check if email already exists
+    try {
+      const { data: existingUser, error } = await supabase.auth.admin
+        .getUserByEmail(data.email)
+        .catch(() => ({ data: null, error: null }));
+
+      if (existingUser) {
+        toast({
+          variant: "destructive",
+          title: "Email Already Registered",
+          description: "This email is already in use. Please use a different email or try to log in.",
+        });
+        if (onValidationError) onValidationError();
+        return;
+      }
+    } catch (error) {
+      // If we can't check (no admin access), continue with the flow
+      console.log("User check bypassed", error);
+    }
+    
     setFormValues(data);
     setVerificationEmail(data.email);
     setVerificationName(`${data.firstName} ${data.lastName}`);
@@ -62,6 +95,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         title: "Error",
         description: error instanceof Error ? error.message : "Something went wrong",
       });
+      if (onValidationError) onValidationError();
     }
   };
   
@@ -116,6 +150,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         title: "Registration failed",
         description: error instanceof Error ? error.message : "Failed to create account",
       });
+      if (onValidationError) onValidationError();
     } finally {
       setIsLoading(false);
     }
@@ -168,6 +203,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         captchaValue={captchaValue}
         isLoading={isLoading}
         onSubmit={handleFormSubmit}
+        onCaptchaRefresh={onValidationError}
       />
       
       {/* OTP Verification Dialog */}

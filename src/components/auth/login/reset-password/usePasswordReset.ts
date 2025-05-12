@@ -13,6 +13,7 @@ export const usePasswordReset = (onClose: () => void) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
   const { toast } = useToast();
 
   const handleSendResetOtp = async () => {
@@ -26,8 +27,19 @@ export const usePasswordReset = (onClose: () => void) => {
     }
 
     setResetLoading(true);
+    setOtpError("");
     
     try {
+      // First check if user exists
+      const { data: userData, error: userError } = await supabase.auth.admin
+        .getUserByEmail(resetEmail)
+        .catch(() => ({ data: null, error: null }));
+      
+      // If we can't verify user exists (no admin access), just proceed with sending OTP
+      if (userError && userError.message !== "AuthApiError: Email not confirmed") {
+        console.log("User check bypassed:", userError.message);
+      }
+      
       // Use the Supabase Edge Function to send an email with OTP
       const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
         method: "POST",
@@ -70,7 +82,7 @@ export const usePasswordReset = (onClose: () => void) => {
     }
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     if (resetOtp.length !== 6) {
       toast({
         variant: "destructive",
@@ -81,9 +93,12 @@ export const usePasswordReset = (onClose: () => void) => {
     }
 
     setResetLoading(true);
+    setOtpError("");
     
     try {
+      // Check if OTP matches what we sent
       if (resetOtp !== sentOtp) {
+        setOtpError("The verification code is incorrect. Please try again.");
         setResetLoading(false);
         toast({
           variant: "destructive",
@@ -93,6 +108,22 @@ export const usePasswordReset = (onClose: () => void) => {
         return;
       }
       
+      // Prepare for password reset by verifying OTP with Supabase
+      const { data: otpData, error: otpError } = await supabase.auth.verifyOtp({
+        email: resetEmail, 
+        token: resetOtp,
+        type: 'recovery'
+      });
+      
+      if (otpError) {
+        if (otpError.message.includes("expired")) {
+          setOtpError("Verification code has expired. Please request a new one.");
+          throw new Error("Verification code has expired. Please request a new one.");
+        }
+        throw otpError;
+      }
+      
+      // If verification successful, move to new password step
       setResetPasswordStep("newPassword");
     } catch (error) {
       console.error("OTP verification error:", error);
@@ -143,19 +174,7 @@ export const usePasswordReset = (onClose: () => void) => {
     setResetLoading(true);
 
     try {
-      // Create a session with OTP before updating password
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: resetEmail,
-        token: resetOtp,
-        type: 'email'
-      });
-
-      if (error) {
-        console.error("Verify OTP error:", error);
-        throw error;
-      }
-
-      // Now we have a valid session, update the password
+      // Update user's password
       const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -193,6 +212,7 @@ export const usePasswordReset = (onClose: () => void) => {
     confirmPassword,
     setConfirmPassword,
     resetLoading,
+    otpError,
     handleSendResetOtp,
     handleVerifyOtp,
     handleResetPassword
