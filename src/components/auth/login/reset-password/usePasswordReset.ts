@@ -112,30 +112,32 @@ export const usePasswordReset = (onClose?: () => void) => {
         throw new Error("Verification failed. Please restart the password reset process.");
       }
       
-      // Use the updateUserPassword method instead, which doesn't require an active session
-      const { error: updateError } = await supabase.auth.resetPasswordForEmail(
-        resetEmail,
-        { redirectTo: window.location.origin + '/login' }
-      );
+      // Get session for the user based on email and OTP
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email: resetEmail,
+        options: {
+          shouldCreateUser: false
+        }
+      });
+      
+      if (signInError) {
+        console.error("Error signing in with OTP:", signInError);
+        throw new Error("Failed to authenticate. Please try again.");
+      }
+      
+      // Update user password directly
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
 
       if (updateError) {
         throw new Error(updateError.message || "Failed to update password.");
       }
       
-      // Actually set the new password after getting the user's email through the resetPasswordForEmail flow
-      const { error: setPasswordError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-      
-      if (setPasswordError) {
-        console.error("Error setting new password:", setPasswordError);
-        // Still show success since the reset email will be sent
-      }
-      
       setPasswordUpdated(true);
       toast({
-        title: "Password Reset Link Sent",
-        description: "A password reset link has been sent to your email. Please check your inbox to complete the process.",
+        title: "Password Updated",
+        description: "Your password has been updated successfully. You can now log in with your new password.",
       });
       
       // Close the dialog if onClose is provided
