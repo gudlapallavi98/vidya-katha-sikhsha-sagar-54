@@ -24,7 +24,8 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
     otpError,
     handleSendResetOtp,
     handleVerifyOtp,
-    handleResetPassword
+    handleResetPassword,
+    resendOtp
   } = usePasswordReset(onClose);
 
   if (resetPasswordStep === "email") {
@@ -45,7 +46,7 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
         setResetOtp={setResetOtp}
         onVerifyOtp={handleVerifyOtp}
         onBack={() => setResetPasswordStep("email")}
-        onResendCode={handleSendResetOtp}
+        onResendCode={resendOtp}
         resetLoading={resetLoading}
         otpError={otpError}
       />

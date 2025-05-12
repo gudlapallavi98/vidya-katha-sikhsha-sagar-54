@@ -38,57 +38,49 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
       return;
     }
     
-    // Check if email already exists
+    // Check if email already exists - simplified approach
     try {
-      const { data: existingUser, error } = await supabase.auth.admin
-        .getUserByEmail(data.email)
-        .catch(() => ({ data: null, error: null }));
-
-      if (existingUser) {
+      // Remove the attempt to use getUserByEmail which doesn't exist
+      // Instead, we'll try to sign up and handle the error if the email exists
+      setFormValues(data);
+      setVerificationEmail(data.email);
+      setVerificationName(`${data.firstName} ${data.lastName}`);
+      
+      try {
+        // Use the Supabase Edge Function to send a real email with OTP
+        const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: data.email,
+            name: `${data.firstName} ${data.lastName}`,
+            type: "signup"
+          })
+        });
+        
+        const responseData = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(responseData.error || "Failed to send verification email");
+        }
+        
+        // Store the OTP from the server response
+        if (responseData.otp) {
+          setSentOtp(responseData.otp);
+        }
+        
+        // Open verification dialog
+        setVerificationOpen(true);
+      } catch (error) {
         toast({
           variant: "destructive",
-          title: "Email Already Registered",
-          description: "This email is already in use. Please use a different email or try to log in.",
+          title: "Error",
+          description: error instanceof Error ? error.message : "Something went wrong",
         });
         if (onValidationError) onValidationError();
-        return;
       }
-    } catch (error) {
-      // If we can't check (no admin access), continue with the flow
-      console.log("User check bypassed", error);
-    }
-    
-    setFormValues(data);
-    setVerificationEmail(data.email);
-    setVerificationName(`${data.firstName} ${data.lastName}`);
-    
-    try {
-      // Use the Supabase Edge Function to send a real email with OTP
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          name: `${data.firstName} ${data.lastName}`,
-          type: "signup"
-        })
-      });
-      
-      const responseData = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to send verification email");
-      }
-      
-      // Store the OTP from the server response
-      if (responseData.otp) {
-        setSentOtp(responseData.otp);
-      }
-      
-      // Open verification dialog
-      setVerificationOpen(true);
     } catch (error) {
       toast({
         variant: "destructive",

@@ -5,21 +5,14 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { UseFormReturn } from "react-hook-form";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SignUpFormData } from "./SignUpFormFields";
 
 interface CaptchaFieldProps {
   captchaValue: { 
     num1: number; 
     num2: number; 
   };
-  form: UseFormReturn<{
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    captcha?: string;
-    role?: "student" | "teacher";
-  }>;
+  form: UseFormReturn<SignUpFormData>;
   onRefresh?: () => void;
 }
 

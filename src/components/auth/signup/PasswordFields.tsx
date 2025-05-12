@@ -2,17 +2,10 @@
 import { Input } from "@/components/ui/input";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { UseFormReturn } from "react-hook-form";
+import { SignUpFormData } from "./SignUpFormFields";
 
 interface PasswordFieldsProps {
-  form: UseFormReturn<{
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    captcha?: string;
-    role?: "student" | "teacher";
-  }>;
+  form: UseFormReturn<SignUpFormData>;
 }
 
 const PasswordFields = ({ form }: PasswordFieldsProps) => {

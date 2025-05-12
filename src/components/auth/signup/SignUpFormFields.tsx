@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,7 +57,7 @@ const SignUpFormFields = ({
     path: ["confirmPassword"],
   });
 
-  // Create the form
+  // Create the form with the correct type
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
