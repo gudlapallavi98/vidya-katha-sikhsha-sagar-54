@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useSessionStatus } from "@/hooks/use-session-status";
 import AvailabilityForm from "./AvailabilityForm";
 import { AvailabilityList } from "./AvailabilityList";
 
@@ -21,6 +23,7 @@ interface Availability {
 
 export function AvailabilityScheduler() {
   const { user } = useAuth();
+  const { cancelExpiredAvailabilities } = useSessionStatus();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
@@ -46,6 +49,18 @@ export function AvailabilityScheduler() {
     
     checkProfile();
   }, [user]);
+
+  // Run cancelExpiredAvailabilities when component mounts
+  useEffect(() => {
+    cancelExpiredAvailabilities();
+    
+    // Setup interval to check for expired availabilities every hour
+    const intervalId = setInterval(() => {
+      cancelExpiredAvailabilities();
+    }, 60 * 60 * 1000); // 1 hour
+    
+    return () => clearInterval(intervalId);
+  }, [cancelExpiredAvailabilities]);
 
   // Fetch teacher's subjects
   useEffect(() => {
@@ -119,6 +134,10 @@ export function AvailabilityScheduler() {
   const handleAvailabilityRemoved = () => {
     fetchAvailabilities();
   };
+
+  if (!isProfileComplete) {
+    return <ProfileIncompleteMessage />;
+  }
 
   return (
     <div className="space-y-8">
