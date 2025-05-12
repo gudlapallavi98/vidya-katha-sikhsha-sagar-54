@@ -215,8 +215,8 @@ export const useSessionStatus = () => {
           .select()
           .single();
           
-        if (sessionError) {
-          throw sessionError;
+        if (sessionError || !session) {
+          throw sessionError || new Error('Failed to create session');
         }
         
         // Update request status
@@ -227,6 +227,64 @@ export const useSessionStatus = () => {
           
         if (updateError) {
           throw updateError;
+        }
+        
+        // Get teacher profile data
+        const { data: teacherData, error: teacherError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', session.teacher_id)
+          .single();
+          
+        if (teacherError) {
+          console.error("Error fetching teacher data:", teacherError);
+          toast({
+            title: "Session Accepted",
+            description: "The session has been scheduled, but notification emails could not be sent."
+          });
+          return true;
+        }
+        
+        // Get student id from attendees
+        const { data: attendeeData, error: attendeeError } = await supabase
+          .from('session_attendees')
+          .select('student_id')
+          .eq('session_id', session.id)
+          .single();
+          
+        if (attendeeError || !attendeeData) {
+          console.error("Error fetching attendee data:", attendeeError);
+          toast({
+            title: "Session Accepted",
+            description: "The session has been scheduled, but notification emails could not be sent."
+          });
+          return true;
+        }
+        
+        // Get student profile
+        const { data: studentData, error: studentError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', attendeeData.student_id)
+          .single();
+          
+        if (studentError || !studentData) {
+          console.error("Error fetching student data:", studentError);
+          toast({
+            title: "Session Accepted",
+            description: "The session has been scheduled, but notification emails could not be sent."
+          });
+          return true;
+        }
+        
+        // If both teacher and student data are available, send notifications
+        if (teacherData && studentData) {
+          await handleSessionAccepted(
+            session.id,
+            teacherData,
+            studentData,
+            session
+          );
         }
         
         toast({
