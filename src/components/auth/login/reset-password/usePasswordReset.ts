@@ -1,6 +1,6 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { EmailStepData, NewPasswordStepData, OtpStepData } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -29,9 +29,9 @@ export const usePasswordReset = (onClose?: () => void) => {
     try {
       // Generate a 6-digit OTP
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+      console.log("Generated OTP:", generatedOTP);
       
-      // Instead of relying on auth token which might not exist for password reset,
-      // use a direct call to the function without authentication
+      // Call the edge function to send email
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
         headers: {
@@ -45,9 +45,12 @@ export const usePasswordReset = (onClose?: () => void) => {
         })
       });
 
+      const responseData = await response.json();
+      console.log("Edge function response:", responseData);
+
       if (!response.ok) {
-        console.error("Error response:", await response.text());
-        throw new Error("Failed to send OTP. Please try again.");
+        console.error("Error response:", responseData);
+        throw new Error(responseData.error || "Failed to send OTP. Please try again.");
       }
 
       // Store the OTP temporarily in localStorage for verification
@@ -75,6 +78,7 @@ export const usePasswordReset = (onClose?: () => void) => {
     try {
       // Compare the entered OTP with the one we stored
       const storedOTP = localStorage.getItem("resetPasswordOtp");
+      console.log("Verifying OTP - Stored:", storedOTP, "Entered:", resetOtp);
       
       if (resetOtp !== storedOTP) {
         throw new Error("Invalid OTP. Please check and try again.");
@@ -136,8 +140,9 @@ export const usePasswordReset = (onClose?: () => void) => {
     try {
       // Generate a new OTP and send it
       const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+      console.log("Resending OTP - Generated:", generatedOTP);
       
-      // Same direct approach without auth token
+      // Call the edge function to send email
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
         method: "POST",
         headers: {
@@ -151,9 +156,12 @@ export const usePasswordReset = (onClose?: () => void) => {
         })
       });
 
+      const responseData = await response.json();
+      console.log("Edge function response (resend):", responseData);
+
       if (!response.ok) {
-        console.error("Error response:", await response.text());
-        throw new Error("Failed to resend OTP. Please try again.");
+        console.error("Error response:", responseData);
+        throw new Error(responseData.error || "Failed to resend OTP. Please try again.");
       }
 
       // Update the stored OTP
