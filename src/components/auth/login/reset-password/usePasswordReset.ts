@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePasswordResetOTP } from "@/hooks/use-password-reset-otp";
 
 export const usePasswordReset = (onClose?: () => void) => {
   // We'll keep the original naming for consistency with PasswordResetForm.tsx
@@ -16,6 +17,9 @@ export const usePasswordReset = (onClose?: () => void) => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [passwordUpdated, setPasswordUpdated] = useState(false);
   const { toast } = useToast();
+  
+  // Use our custom OTP hook
+  const { createOTP, verifyOTP, markOTPAsUsed } = usePasswordResetOTP();
 
   const resetError = () => setError(null);
 
@@ -24,25 +28,14 @@ export const usePasswordReset = (onClose?: () => void) => {
     setError(null);
     
     try {
-      // Generate a 6-digit OTP
-      const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log("Generated OTP:", generatedOTP);
+      // Generate and store OTP using our custom hook
+      const generatedOTP = await createOTP(resetEmail);
       
-      // First store the OTP in the database
-      const { error: storeOtpError } = await supabase
-        .from("password_reset_otps")
-        .insert([
-          { 
-            email: resetEmail, 
-            otp: generatedOTP, 
-            expires_at: new Date(Date.now() + 15 * 60000).toISOString() // 15 minutes expiry
-          }
-        ]);
-        
-      if (storeOtpError) {
-        console.error("Failed to store OTP:", storeOtpError);
+      if (!generatedOTP) {
         throw new Error("Failed to initialize password reset. Please try again.");
       }
+      
+      console.log("Generated OTP:", generatedOTP);
       
       // Call the edge function to send email
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
@@ -86,26 +79,12 @@ export const usePasswordReset = (onClose?: () => void) => {
     setOtpError(null);
 
     try {
-      // Verify OTP from the database
-      const { data: otpData, error: fetchError } = await supabase
-        .from("password_reset_otps")
-        .select("*")
-        .eq("email", resetEmail)
-        .eq("otp", resetOtp)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+      // Verify OTP using our custom hook
+      const isValid = await verifyOTP(resetEmail, resetOtp);
 
-      if (fetchError || !otpData) {
+      if (!isValid) {
         throw new Error("Invalid or expired OTP. Please try again.");
       }
-      
-      // Mark OTP as verified
-      await supabase
-        .from("password_reset_otps")
-        .update({ verified: true })
-        .eq("id", otpData.id);
       
       setOtpVerified(true);
       setResetPasswordStep("newPassword");
@@ -125,17 +104,10 @@ export const usePasswordReset = (onClose?: () => void) => {
         throw new Error("Passwords do not match.");
       }
       
-      // Verify that the OTP was verified
-      const { data: verifiedOtp, error: verificationError } = await supabase
-        .from("password_reset_otps")
-        .select("*")
-        .eq("email", resetEmail)
-        .eq("verified", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-        
-      if (verificationError || !verifiedOtp) {
+      // Mark the OTP as used using our custom hook
+      const marked = await markOTPAsUsed(resetEmail, resetOtp);
+      
+      if (!marked) {
         throw new Error("Verification failed. Please restart the password reset process.");
       }
       
@@ -147,12 +119,6 @@ export const usePasswordReset = (onClose?: () => void) => {
       if (updateError) {
         throw new Error(updateError.message || "Failed to update password.");
       }
-      
-      // Mark OTP as used
-      await supabase
-        .from("password_reset_otps")
-        .update({ used: true })
-        .eq("id", verifiedOtp.id);
       
       setPasswordUpdated(true);
       toast({
@@ -179,25 +145,14 @@ export const usePasswordReset = (onClose?: () => void) => {
     setError(null);
     
     try {
-      // Generate a new OTP and send it
-      const generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log("Resending OTP - Generated:", generatedOTP);
+      // Generate a new OTP using our custom hook
+      const generatedOTP = await createOTP(resetEmail);
       
-      // Store the new OTP in the database
-      const { error: storeOtpError } = await supabase
-        .from("password_reset_otps")
-        .insert([
-          { 
-            email: resetEmail, 
-            otp: generatedOTP, 
-            expires_at: new Date(Date.now() + 15 * 60000).toISOString() // 15 minutes expiry
-          }
-        ]);
-        
-      if (storeOtpError) {
-        console.error("Failed to store OTP:", storeOtpError);
+      if (!generatedOTP) {
         throw new Error("Failed to resend OTP. Please try again.");
       }
+      
+      console.log("Resending OTP - Generated:", generatedOTP);
       
       // Call the edge function to send email
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
