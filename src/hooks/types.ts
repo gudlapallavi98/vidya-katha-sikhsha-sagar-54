@@ -1,3 +1,4 @@
+
 export interface Course {
   id: string;
   title: string;
@@ -57,6 +58,7 @@ export interface Session {
   end_time: string;
   meeting_link: string | null;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  display_status?: string;
   course?: {
     title: string;
   };
