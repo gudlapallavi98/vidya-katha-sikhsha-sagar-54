@@ -74,17 +74,41 @@ const TeacherDashboard = () => {
       
       // Get teacher and student data for notification
       if (result) {
-        const { data: teacherData } = await supabase
+        // Get teacher data
+        const { data: teacherData, error: teacherError } = await supabase
           .from('profiles')
           .select('first_name, last_name, email')
           .eq('id', result.teacher_id)
           .single();
           
-        const { data: studentData } = await supabase
+        if (teacherError) {
+          console.error("Error fetching teacher data:", teacherError);
+          return;
+        }
+        
+        // Get attendee data to find student_id
+        const { data: attendeeData, error: attendeeError } = await supabase
+          .from('session_attendees')
+          .select('student_id')
+          .eq('session_id', result.id)
+          .single();
+          
+        if (attendeeError) {
+          console.error("Error fetching attendee data:", attendeeError);
+          return;
+        }
+        
+        // Now get the student profile using student_id from attendees
+        const { data: studentData, error: studentError } = await supabase
           .from('profiles')
           .select('first_name, last_name, email')
-          .eq('id', result.student_id)
+          .eq('id', attendeeData.student_id)
           .single();
+          
+        if (studentError) {
+          console.error("Error fetching student data:", studentError);
+          return;
+        }
           
         if (teacherData && studentData) {
           // Send notifications

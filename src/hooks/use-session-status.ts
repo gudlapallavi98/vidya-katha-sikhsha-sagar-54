@@ -131,6 +131,18 @@ export const useSessionStatus = () => {
   // Function to be called when a session is accepted
   const handleSessionAccepted = async (sessionId, teacherData, studentData, sessionData) => {
     try {
+      // Ensure data is valid before proceeding
+      if (!teacherData || !studentData || !sessionData) {
+        console.error("Missing data for session notification");
+        return;
+      }
+      
+      // Verify required properties exist
+      if (!teacherData.email || !studentData.email) {
+        console.error("Missing email for teacher or student");
+        return;
+      }
+
       // Send notification to both teacher and student
       const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/schedule-notification`, {
         method: "POST",
@@ -177,13 +189,13 @@ export const useSessionStatus = () => {
     try {
       if (status === 'accepted') {
         // Get request details
-        const { data: request } = await supabase
+        const { data: request, error: requestError } = await supabase
           .from('session_requests')
           .select('*')
           .eq('id', requestId)
           .single();
           
-        if (!request) {
+        if (requestError || !request) {
           throw new Error('Session request not found');
         }
         
