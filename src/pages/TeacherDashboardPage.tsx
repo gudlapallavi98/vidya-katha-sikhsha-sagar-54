@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
@@ -45,9 +46,9 @@ const TeacherDashboard = () => {
     }
   }, [tabFromUrl]);
 
+  // Update URL when tab changes - with preventDefault and replace: true to avoid page reload
   useEffect(() => {
-    // Update URL when tab changes
-    setSearchParams({ tab: activeTab });
+    setSearchParams({ tab: activeTab }, { replace: true });
   }, [activeTab, setSearchParams]);
   
   // Calculate metrics from sessions data
@@ -175,11 +176,18 @@ const TeacherDashboard = () => {
     setSearchQuery(query);
   };
 
+  // Handle tab changes directly in this component
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Using replace: true to avoid adding to browser history
+    setSearchParams({ tab }, { replace: true });
+  };
+
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
         {/* Sidebar */}
-        <TeacherSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <TeacherSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
 
         {/* Main content */}
         <TeacherDashboardContent

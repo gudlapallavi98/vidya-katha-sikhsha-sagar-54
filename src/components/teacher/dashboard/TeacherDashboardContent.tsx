@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import TeacherOverview from "./TeacherOverview";
 import TeacherCourses from "./TeacherCourses";
@@ -48,6 +48,16 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
   return (
     <div className="w-full md:w-3/4">
       <Tabs value={activeTab} className="w-full">
+        {/* Hidden TabsList for Radix UI internal state management */}
+        <TabsList className="hidden">
+          <TabsTrigger value="overview">Dashboard</TabsTrigger>
+          <TabsTrigger value="courses">My Courses</TabsTrigger>
+          <TabsTrigger value="sessions">Session Requests</TabsTrigger>
+          <TabsTrigger value="schedule">My Schedule</TabsTrigger>
+          <TabsTrigger value="availability">Set Availability</TabsTrigger>
+          <TabsTrigger value="profile">Profile Settings</TabsTrigger>
+        </TabsList>
+        
         <TabsContent value="overview" className="m-0">
           <TeacherOverview
             teacherCourses={teacherCourses}
