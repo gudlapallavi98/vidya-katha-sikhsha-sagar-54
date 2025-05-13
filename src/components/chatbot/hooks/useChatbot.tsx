@@ -45,7 +45,9 @@ export const useChatbot = () => {
     requestId,
     handleFormChange,
     handleFormSubmit,
-    initializeForm
+    initializeForm,
+    setFormValues, // Added to fix TS error
+    setFormErrors  // Added to fix TS error
   } = useChatbotForm(user, setChatbotState, addAssistantMessage);
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { z } from "zod";
-import { FormField } from "../../types/chatbot";
+import { FormField, ChatbotState } from "../../types/chatbot";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,7 +14,11 @@ const formSchema = z.object({
   description: z.string().min(10, "Please provide more details about your query"),
 });
 
-export const useChatbotForm = (user: any, setChatbotState: (state: any) => void, addAssistantMessage: (message: string) => void) => {
+export const useChatbotForm = (
+  user: any, 
+  setChatbotState: (state: ChatbotState) => void, 
+  addAssistantMessage: (message: string) => void
+) => {
   const [formValues, setFormValues] = useState<FormField>({
     name: "",
     email: "",
@@ -151,6 +155,8 @@ export const useChatbotForm = (user: any, setChatbotState: (state: any) => void,
     requestId,
     handleFormChange,
     handleFormSubmit,
-    initializeForm
+    initializeForm,
+    setFormValues, // Export the setter function
+    setFormErrors  // Export the setter function
   };
 };
