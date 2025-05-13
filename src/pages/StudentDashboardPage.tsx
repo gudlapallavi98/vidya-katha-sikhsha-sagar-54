@@ -1,6 +1,5 @@
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +16,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
 import { useStudentDashboard } from "@/hooks/use-student-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useStudentDashboardTabs } from "@/hooks/use-student-dashboard-tabs";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -31,31 +31,14 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  // Use our custom hook for tab management
+  const { activeTab, handleTabChange } = useStudentDashboardTabs("overview");
   const { user } = useAuth();
   const { toast } = useToast();
 
   // Use our consolidated dashboard hook
   const dashboard = useStudentDashboard();
   
-  // Handle URL parameter once on mount and only when it changes
-  useEffect(() => {
-    if (tabFromUrl && ["overview", "courses", "sessions", "past-sessions", "request-session", "profile"].includes(tabFromUrl)) {
-      setActiveTab(tabFromUrl);
-    }
-  }, [tabFromUrl]);
-
-  // Update URL when tab changes - with replace: true to avoid full page reload
-  const handleTabChange = (tab: string) => {
-    if (activeTab === tab) return; // Prevent unnecessary updates
-    
-    setActiveTab(tab);
-    // Use replace: true to avoid adding to history stack and prevent reloads
-    setSearchParams({ tab }, { replace: true });
-  };
-
   // Handle joining a class
   const handleJoinClass = async (sessionId: string) => {
     try {
@@ -109,7 +92,7 @@ const StudentDashboard = () => {
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
-        {/* Sidebar with memoized callback */}
+        {/* Sidebar */}
         <div className="w-full md:w-1/4">
           <StudentSidebar 
             activeTab={activeTab} 
@@ -122,8 +105,8 @@ const StudentDashboard = () => {
         {/* Main content */}
         <div className="w-full md:w-3/4">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            {/* Hidden TabsList - critical for Radix UI's internal state management */}
             <TabsList className="hidden">
-              {/* Hidden TabsList to handle Radix UI TabsTrigger activation */}
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="courses">Courses</TabsTrigger>
               <TabsTrigger value="sessions">Sessions</TabsTrigger>
@@ -132,7 +115,8 @@ const StudentDashboard = () => {
               <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="overview" className="m-0">
+            {/* Tab content sections */}
+            <TabsContent value="overview" className="m-0 focus:outline-none">
               <StudentDashboardOverview 
                 enrolledCourses={dashboard.enrollments.data}
                 upcomingSessionsList={upcomingSessionsList}
@@ -145,7 +129,7 @@ const StudentDashboard = () => {
               />
             </TabsContent>
             
-            <TabsContent value="courses" className="m-0">
+            <TabsContent value="courses" className="m-0 focus:outline-none">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
               <StudentCoursesList 
                 enrolledCourses={dashboard.enrollments.data}
@@ -153,7 +137,7 @@ const StudentDashboard = () => {
               />
             </TabsContent>
             
-            <TabsContent value="sessions" className="m-0">
+            <TabsContent value="sessions" className="m-0 focus:outline-none">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
               <StudentUpcomingSessions 
                 sessions={upcomingSessionsList}
@@ -164,7 +148,7 @@ const StudentDashboard = () => {
               />
             </TabsContent>
             
-            <TabsContent value="past-sessions" className="m-0">
+            <TabsContent value="past-sessions" className="m-0 focus:outline-none">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
               <StudentPastSessions 
                 sessions={dashboard.pastSessions.data}
@@ -174,12 +158,12 @@ const StudentDashboard = () => {
               />
             </TabsContent>
             
-            <TabsContent value="request-session" className="m-0">
+            <TabsContent value="request-session" className="m-0 focus:outline-none">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Request a Session</h1>
               <SessionRequestForm />
             </TabsContent>
             
-            <TabsContent value="profile" className="m-0">
+            <TabsContent value="profile" className="m-0 focus:outline-none">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
               <ProfileSettingsForm role="student" />
             </TabsContent>

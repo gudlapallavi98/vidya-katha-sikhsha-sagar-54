@@ -1,6 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import { 
   useTeacherCourses, 
   useSessionRequests, 
@@ -14,6 +13,7 @@ import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashb
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client"; 
 import { useSessionAcceptance } from "@/hooks/use-session-acceptance";
+import { useTeacherDashboard } from "@/hooks/use-teacher-dashboard";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -28,9 +28,8 @@ const TeacherDashboardWithQueryClient = () => {
 };
 
 const TeacherDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  // Use our custom hook for tab management
+  const { activeTab, handleTabChange } = useTeacherDashboard("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
@@ -39,22 +38,6 @@ const TeacherDashboard = () => {
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
-  
-  // Handle URL parameter once on mount and only when it changes
-  useEffect(() => {
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
-    }
-  }, [tabFromUrl]);
-
-  // Update URL when tab changes with replace: true to avoid page reload
-  const handleTabChange = useCallback((tab: string) => {
-    if (activeTab === tab) return; // Prevent unnecessary updates
-    
-    setActiveTab(tab);
-    // Use replace: true to avoid adding to browser history and prevent reloads
-    setSearchParams({ tab }, { replace: true });
-  }, [activeTab, setSearchParams]);
   
   // Calculate metrics from sessions data
   const upcomingSessions = teacherSessions.filter(s => {

@@ -1,5 +1,5 @@
 
-import React, { useCallback } from "react";
+import React from "react";
 import { Calendar, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,16 +10,19 @@ interface TeacherSidebarProps {
   setActiveTab: (tab: string) => void;
 }
 
-const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ activeTab, setActiveTab }) => {
+const TeacherSidebar: React.FC<TeacherSidebarProps> = React.memo(({ 
+  activeTab, 
+  setActiveTab 
+}) => {
   const { user } = useAuth();
 
-  // Memoize the tab click handler to prevent unnecessary re-renders
-  const handleTabClick = useCallback((tab: string) => (e: React.MouseEvent) => {
+  // Handle tab clicks - defined inline to prevent recreating function on every render
+  const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent default navigation behavior
     if (activeTab !== tab) {
       setActiveTab(tab);
     }
-  }, [activeTab, setActiveTab]);
+  };
 
   return (
     <div className="w-full md:w-1/4">
@@ -86,6 +89,8 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ activeTab, setActiveTab
       </Card>
     </div>
   );
-};
+});
 
-export default React.memo(TeacherSidebar);
+TeacherSidebar.displayName = "TeacherSidebar";
+
+export default TeacherSidebar;

@@ -30,7 +30,7 @@ interface TeacherDashboardContentProps {
   handleStartClass: (sessionId: string) => Promise<void>;
 }
 
-const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
+const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = React.memo(({
   activeTab,
   teacherCourses,
   coursesLoading,
@@ -48,7 +48,7 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
   return (
     <div className="w-full md:w-3/4">
       <Tabs value={activeTab} className="w-full">
-        {/* Hidden TabsList for Radix UI internal state management */}
+        {/* Hidden TabsList for Radix UI state management - this is critical */}
         <TabsList className="hidden">
           <TabsTrigger value="overview">Dashboard</TabsTrigger>
           <TabsTrigger value="courses">My Courses</TabsTrigger>
@@ -58,7 +58,7 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
           <TabsTrigger value="profile">Profile Settings</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="m-0">
+        <TabsContent value="overview" className="m-0 focus:outline-none">
           <TeacherOverview
             teacherCourses={teacherCourses}
             coursesLoading={coursesLoading}
@@ -73,18 +73,18 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
           />
         </TabsContent>
         
-        <TabsContent value="courses">
+        <TabsContent value="courses" className="m-0 focus:outline-none">
           <TeacherCourses
             teacherCourses={teacherCourses}
             coursesLoading={coursesLoading}
           />
         </TabsContent>
         
-        <TabsContent value="sessions">
+        <TabsContent value="sessions" className="m-0 focus:outline-none">
           <TeacherSessionRequests />
         </TabsContent>
         
-        <TabsContent value="schedule">
+        <TabsContent value="schedule" className="m-0 focus:outline-none">
           <TeacherSchedule
             upcomingSessions={upcomingSessions}
             sessionsLoading={sessionsLoading}
@@ -92,12 +92,12 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
           />
         </TabsContent>
 
-        <TabsContent value="availability">
+        <TabsContent value="availability" className="m-0 focus:outline-none">
           <h1 className="font-sanskrit text-3xl font-bold mb-6">Set Your Availability</h1>
           <AvailabilityScheduler />
         </TabsContent>
         
-        <TabsContent value="profile">
+        <TabsContent value="profile" className="m-0 focus:outline-none">
           <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
           <Card className="mb-8">
             <CardContent className="p-6">
@@ -108,6 +108,8 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
       </Tabs>
     </div>
   );
-};
+});
+
+TeacherDashboardContent.displayName = "TeacherDashboardContent";
 
 export default TeacherDashboardContent;

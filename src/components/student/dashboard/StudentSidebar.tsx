@@ -1,5 +1,5 @@
 
-import React, { useCallback } from "react";
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings, User } from "lucide-react";
@@ -11,19 +11,19 @@ interface StudentSidebarProps {
   lastName?: string;
 }
 
-const StudentSidebar: React.FC<StudentSidebarProps> = ({
+const StudentSidebar: React.FC<StudentSidebarProps> = React.memo(({
   activeTab,
   setActiveTab,
   firstName,
   lastName
 }) => {
-  // Memoize the tab click handler to prevent unnecessary re-renders
-  const handleTabClick = useCallback((tab: string) => (e: React.MouseEvent) => {
+  // Helper function to handle tab clicks
+  const handleTabClick = (tab: string) => (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent default navigation behavior
     if (activeTab !== tab) {
       setActiveTab(tab);
     }
-  }, [activeTab, setActiveTab]);
+  };
 
   return (
     <Card>
@@ -87,6 +87,8 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
 
-export default React.memo(StudentSidebar);
+StudentSidebar.displayName = "StudentSidebar";
+
+export default StudentSidebar;
