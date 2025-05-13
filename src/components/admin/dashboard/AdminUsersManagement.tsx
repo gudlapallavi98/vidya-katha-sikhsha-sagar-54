@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 const AdminUsersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const { data: users = [], isLoading, error, isError } = useAdminUsers(searchQuery, roleFilter === "all" ? "" : roleFilter);
+  const { data: users = [], isLoading, error, isError } = useAdminUsers(searchQuery, 10, roleFilter);
   const { toast } = useToast();
 
   const getRoleBadgeVariant = (role: string) => {

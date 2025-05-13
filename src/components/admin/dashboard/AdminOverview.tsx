@@ -1,9 +1,7 @@
+
 import { useEffect } from "react";
 import { useAdminStats, useAdminUsers } from "@/hooks/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
 import { 
   Table, 
   TableBody, 
@@ -12,18 +10,23 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line
+import { useToast } from "@/hooks/use-toast";
+import { 
+  BarChart, 
+  PieChart, 
+  Bar, 
+  Pie, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend,
+  Cell,
+  ResponsiveContainer
 } from "recharts";
-import { Users, GraduationCap, BookOpen, Calendar, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { ChevronRight, Users, BookOpen, Calendar, TrendingUp } from "lucide-react";
 
 const AdminOverview = () => {
   const { data: stats, isLoading: statsLoading, error: statsError } = useAdminStats();
@@ -31,18 +34,19 @@ const AdminOverview = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (statsError) {
+    if (statsError instanceof Error) {
       toast({
+        title: "Error loading statistics",
+        description: statsError.message,
         variant: "destructive",
-        title: "Error fetching statistics",
-        description: statsError instanceof Error ? statsError.message : "An error occurred",
       });
     }
-    if (usersError) {
+    
+    if (usersError instanceof Error) {
       toast({
+        title: "Error loading recent users",
+        description: usersError.message,
         variant: "destructive",
-        title: "Error fetching users",
-        description: usersError instanceof Error ? usersError.message : "An error occurred",
       });
     }
   }, [statsError, usersError, toast]);
