@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,12 +69,10 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       // If email isn't in the database but needed for the AdminUser type,
       // add a placeholder for type compatibility
       const processedData = data?.map(user => {
-        // If email isn't present in the database but required in the AdminUser type,
-        // add a placeholder email derived from the user's name
-        if (!('email' in user) && user.first_name && user.last_name) {
+        if (!('email' in user)) {
           return {
             ...user,
-            email: `${user.first_name.toLowerCase()}.${user.last_name.toLowerCase()}@placeholder.com`
+            email: `${user.first_name?.toLowerCase() || 'user'}.${user.last_name?.toLowerCase() || 'unknown'}@placeholder.com`
           };
         }
         return user;
