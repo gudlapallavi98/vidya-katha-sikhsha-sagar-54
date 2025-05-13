@@ -5,6 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AdminUser, AdminStats } from '@/components/types/admin';
 import { useQuery } from '@tanstack/react-query';
 
+/**
+ * Custom hook to fetch users for admin dashboard
+ */
 export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
   const { user } = useAuth();
 
@@ -23,33 +26,27 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       if (currentUserError) throw currentUserError;
       if (currentUserData.role !== 'admin') throw new Error('Unauthorized: admin access required');
       
-      // Fetch users with proper error handling
-      // First, check if the 'email' column exists in the profiles table
+      // Check if the 'email' column exists in the profiles table
       const { data: columnsData } = await supabase
         .from('profiles')
         .select()
         .limit(1);
       
-      // Define the fields to select based on available columns
-      // Ensure these match the AdminUser interface structure
+      // Define fields to select based on available columns
+      const hasEmailColumn = columnsData?.[0] && 'email' in columnsData[0];
       let selectFields = 'id, first_name, last_name, role, created_at';
       
-      // Only include email if it exists in the profiles table
-      // This is a temporary fix; if email is needed but not in the DB,
-      // a migration should be run to add it
-      if (columnsData && columnsData[0] && 'email' in columnsData[0]) {
+      if (hasEmailColumn) {
         selectFields += ', email';
       }
       
-      let query = supabase
-        .from('profiles')
-        .select(selectFields);
+      // Build the query
+      let query = supabase.from('profiles').select(selectFields);
       
       // Apply search filter if provided
       if (searchQuery) {
         query = query.or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%`);
-        // Only include email in the search if it exists
-        if (columnsData && columnsData[0] && 'email' in columnsData[0]) {
+        if (hasEmailColumn) {
           query = query.or(`email.ilike.%${searchQuery}%`);
         }
       }
@@ -68,67 +65,55 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       
       if (!data) return [] as AdminUser[];
       
-      // Handle data processing with proper type checking
-      const processedData = data.map((userItem) => {
-        // Fix: Add null check before accessing userItem
-        if (!userItem) {
-          return {
-            id: 'unknown',
-            first_name: 'Unknown',
-            last_name: 'User',
-            email: 'unknown@placeholder.com',
-            role: 'unknown',
-            created_at: new Date().toISOString()
-          } as AdminUser;
-        }
-        
-        // Make sure we're dealing with a valid user object
-        if (typeof userItem === 'object') {
-          // If email isn't in the database but needed for the AdminUser type,
-          // add a placeholder based on user properties that we check exist first
-          if (!('email' in userItem)) {
-            // Explicitly type userItem to avoid 'never' type issues
-            const typedUser = userItem as Record<string, unknown>;
-            
-            // Use null coalescing to handle null case
-            const firstName = ('first_name' in typedUser && 
-              typeof typedUser.first_name === 'string')
-                ? String(typedUser.first_name).toLowerCase() 
-                : 'user';
-            
-            const lastName = ('last_name' in typedUser && 
-              typeof typedUser.last_name === 'string')
-                ? String(typedUser.last_name).toLowerCase()
-                : 'unknown';
-               
-            // Create a new object with all properties from user plus email
-            const userWithEmail = {
-              ...typedUser,
-              email: `${firstName}.${lastName}@placeholder.com`
-            };
-            
-            return userWithEmail as AdminUser;
-          }
-          return userItem as AdminUser;
-        }
-        
-        // If for some reason we got an invalid user object, return a safe default
-        return {
-          id: 'unknown',
-          first_name: 'Unknown',
-          last_name: 'User',
-          email: 'unknown@placeholder.com',
-          role: 'unknown',
-          created_at: new Date().toISOString()
-        } as AdminUser;
-      });
-      
-      return processedData;
+      // Process data safely
+      return data.map(user => createSafeUserObject(user, hasEmailColumn));
     },
     enabled: !!user,
   });
 };
 
+/**
+ * Helper function to create a safe user object, handling null values
+ */
+const createSafeUserObject = (user: any | null, hasEmailColumn: boolean): AdminUser => {
+  // Handle null user case
+  if (!user) {
+    return {
+      id: 'unknown',
+      first_name: 'Unknown',
+      last_name: 'User',
+      email: 'unknown@placeholder.com',
+      role: 'unknown',
+      created_at: new Date().toISOString()
+    };
+  }
+  
+  // Create a base user with all required fields
+  const baseUser: AdminUser = {
+    id: user.id || 'unknown',
+    first_name: user.first_name || 'Unknown',
+    last_name: user.last_name || 'User',
+    role: user.role || 'unknown',
+    created_at: user.created_at || new Date().toISOString(),
+    email: 'placeholder@example.com' // Default value
+  };
+  
+  // Add email if it exists in the database
+  if (hasEmailColumn && 'email' in user && user.email) {
+    baseUser.email = user.email;
+  } else {
+    // Generate a placeholder email based on name
+    const firstName = String(user.first_name || 'user').toLowerCase();
+    const lastName = String(user.last_name || 'unknown').toLowerCase();
+    baseUser.email = `${firstName}.${lastName}@placeholder.com`;
+  }
+  
+  return baseUser;
+};
+
+/**
+ * Custom hook to fetch admin dashboard statistics
+ */
 export const useAdminStats = () => {
   const { user } = useAuth();
 
