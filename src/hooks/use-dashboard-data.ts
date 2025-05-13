@@ -5,3 +5,4 @@ export * from './types';
 export * from './use-student-data';
 export * from './use-teacher-data';
 export * from './use-profile-data';
+export * from './use-student-dashboard';

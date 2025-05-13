@@ -3,13 +3,6 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  useStudentEnrollments, 
-  useStudentUpcomingSessions, 
-  useStudentProgress, 
-  useStudentAchievements, 
-  useStudentPastSessions 
-} from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -22,6 +15,8 @@ import StudentPastSessions from "@/components/student/dashboard/StudentPastSessi
 import StudentSidebar from "@/components/student/dashboard/StudentSidebar";
 import { Tabs } from "@/components/ui/tabs";
 import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
+import { useStudentDashboard } from "@/hooks/use-student-dashboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -41,20 +36,16 @@ const StudentDashboard = () => {
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  // Only fetch data if we have a user
-  const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrollments();
-  const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
-  const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
-  const { data: pastSessions = [], isLoading: pastSessionsLoading } = useStudentPastSessions();
-  const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
 
+  // Use our consolidated dashboard hook
+  const dashboard = useStudentDashboard();
+  
   // Set active tab based on URL parameter once on mount
   useEffect(() => {
     if (tabFromUrl && ["overview", "courses", "sessions", "past-sessions", "request-session", "profile"].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
-  }, []);
+  }, [tabFromUrl]);
 
   // Update URL when tab changes
   const handleTabChange = (tab: string) => {
@@ -62,9 +53,7 @@ const StudentDashboard = () => {
     setSearchParams({ tab });
   };
 
-  // Calculate completed sessions from progress data
-  const completedSessions = progress.filter(p => p.completed).length;
-
+  // Handle joining a class
   const handleJoinClass = async (sessionId: string) => {
     try {
       if (!user) return;
@@ -89,14 +78,33 @@ const StudentDashboard = () => {
     }
   };
 
+  // Handle loading state
+  if (dashboard.isLoading) {
+    return (
+      <div className="container py-12">
+        <div className="flex flex-col md:flex-row items-start gap-8">
+          <div className="w-full md:w-1/4">
+            <Skeleton className="h-[400px] w-full" />
+          </div>
+          <div className="w-full md:w-3/4">
+            <Skeleton className="h-[600px] w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Filter sessions by status for display
-  const upcomingSessionsList = upcomingSessions.filter(session => {
+  const upcomingSessionsList = dashboard.upcomingSessions.data.filter(session => {
     return !session.display_status || session.display_status === 'upcoming';
   });
   
-  const completedSessionsList = upcomingSessions.filter(session => {
-    return session.display_status && session.display_status !== 'upcoming';
+  const completedSessionsList = dashboard.pastSessions.data.filter(session => {
+    return session.display_status === 'attended' || session.display_status === 'missed';
   });
+
+  // Calculate completed sessions from progress data
+  const completedSessions = dashboard.progress.data.filter(p => p.completed).length;
 
   return (
     <div className="container py-12">
@@ -116,11 +124,11 @@ const StudentDashboard = () => {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsContent value="overview" className="m-0">
               <StudentDashboardOverview 
-                enrolledCourses={enrolledCourses}
+                enrolledCourses={dashboard.enrollments.data}
                 upcomingSessionsList={upcomingSessionsList}
                 completedSessionsList={completedSessionsList}
-                coursesLoading={coursesLoading}
-                sessionsLoading={sessionsLoading}
+                coursesLoading={dashboard.enrollments.isLoading}
+                sessionsLoading={dashboard.upcomingSessions.isLoading}
                 getStatusBadgeClass={getStatusBadgeClass}
                 getStatusText={getStatusText}
                 handleJoinClass={handleJoinClass}
@@ -129,15 +137,15 @@ const StudentDashboard = () => {
             
             <TabsContent value="courses" className="m-0">
               <StudentCoursesList 
-                enrolledCourses={enrolledCourses}
-                coursesLoading={coursesLoading}
+                enrolledCourses={dashboard.enrollments.data}
+                coursesLoading={dashboard.enrollments.isLoading}
               />
             </TabsContent>
             
             <TabsContent value="sessions" className="m-0">
               <StudentUpcomingSessions 
                 sessions={upcomingSessionsList}
-                sessionsLoading={sessionsLoading}
+                sessionsLoading={dashboard.upcomingSessions.isLoading}
                 getStatusBadgeClass={getStatusBadgeClass}
                 getStatusText={getStatusText}
                 handleJoinClass={handleJoinClass}
@@ -146,8 +154,8 @@ const StudentDashboard = () => {
             
             <TabsContent value="past-sessions" className="m-0">
               <StudentPastSessions 
-                sessions={pastSessions}
-                sessionsLoading={pastSessionsLoading}
+                sessions={dashboard.pastSessions.data}
+                sessionsLoading={dashboard.pastSessions.isLoading}
                 getStatusBadgeClass={getStatusBadgeClass}
                 getStatusText={getStatusText}
               />
