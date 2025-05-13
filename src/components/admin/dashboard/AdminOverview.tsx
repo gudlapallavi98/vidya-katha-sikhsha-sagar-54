@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useAdminStats, useAdminUsers } from "@/hooks/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,11 +21,13 @@ import {
   Tooltip, 
   Legend,
   Cell,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LineChart,
+  Line
 } from "recharts";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Users, BookOpen, Calendar, TrendingUp } from "lucide-react";
+import { ChevronRight, Users, BookOpen, Calendar, TrendingUp, GraduationCap, Clock } from "lucide-react";
 
 const AdminOverview = () => {
   const { data: stats, isLoading: statsLoading, error: statsError } = useAdminStats();
