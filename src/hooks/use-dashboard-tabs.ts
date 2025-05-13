@@ -18,8 +18,11 @@ export const useDashboardTabs = (defaultTab = "overview") => {
     const currentTab = searchParams.get("tab");
     if (currentTab && currentTab !== activeTab) {
       setActiveTab(currentTab);
+    } else if (!currentTab && activeTab !== defaultTab) {
+      // If no tab in URL but we have a default, set it without triggering reload
+      setSearchParams({ tab: activeTab }, { replace: true });
     }
-  }, [searchParams, activeTab]);
+  }, [searchParams, activeTab, defaultTab, setSearchParams]);
 
   // Memoized tab change handler to prevent recreating function on every render
   const handleTabChange = useCallback((tab: string) => {
@@ -28,8 +31,8 @@ export const useDashboardTabs = (defaultTab = "overview") => {
     // Update local state immediately for faster UI response
     setActiveTab(tab);
     
-    // Use replace:true to prevent adding to browser history stack
-    // This is critical to prevent page reloads
+    // Critical: Use replace:true to prevent adding to browser history stack
+    // and to avoid triggering full page reloads
     setSearchParams({ tab }, { replace: true });
   }, [activeTab, setSearchParams]);
 

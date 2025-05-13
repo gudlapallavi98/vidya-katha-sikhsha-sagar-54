@@ -1,9 +1,6 @@
 
-import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { useAuth } from "@/contexts/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 import AdminSidebar from "@/components/admin/dashboard/AdminSidebar";
@@ -13,6 +10,8 @@ import AdminCoursesManagement from "@/components/admin/dashboard/AdminCoursesMan
 import AdminSessionsManagement from "@/components/admin/dashboard/AdminSessionsManagement";
 import AdminRequestsManagement from "@/components/admin/dashboard/AdminRequestsManagement";
 import AdminSettings from "@/components/admin/dashboard/AdminSettings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -27,17 +26,10 @@ const AdminDashboardWithQueryClient = () => {
 };
 
 const AdminDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  // Use our unified dashboard tabs hook
+  const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  // Function to handle tab changes
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    setSearchParams({ tab: value });
-  };
 
   return (
     <div className="container py-12">
@@ -54,28 +46,38 @@ const AdminDashboard = () => {
 
         {/* Main content */}
         <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsContent value="overview" className="m-0">
+          <Tabs value={activeTab} className="w-full">
+            {/* Hidden TabsList - critical for Radix UI's internal state management */}
+            <TabsList className="hidden">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="courses">Courses</TabsTrigger>
+              <TabsTrigger value="sessions">Sessions</TabsTrigger>
+              <TabsTrigger value="requests">Session Requests</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="m-0 focus:outline-none">
               <AdminOverview />
             </TabsContent>
             
-            <TabsContent value="users" className="m-0">
+            <TabsContent value="users" className="m-0 focus:outline-none">
               <AdminUsersManagement />
             </TabsContent>
             
-            <TabsContent value="courses" className="m-0">
+            <TabsContent value="courses" className="m-0 focus:outline-none">
               <AdminCoursesManagement />
             </TabsContent>
             
-            <TabsContent value="sessions" className="m-0">
+            <TabsContent value="sessions" className="m-0 focus:outline-none">
               <AdminSessionsManagement />
             </TabsContent>
             
-            <TabsContent value="requests" className="m-0">
+            <TabsContent value="requests" className="m-0 focus:outline-none">
               <AdminRequestsManagement />
             </TabsContent>
             
-            <TabsContent value="settings" className="m-0">
+            <TabsContent value="settings" className="m-0 focus:outline-none">
               <AdminSettings />
             </TabsContent>
           </Tabs>
