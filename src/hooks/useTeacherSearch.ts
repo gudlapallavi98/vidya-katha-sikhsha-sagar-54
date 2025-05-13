@@ -66,8 +66,8 @@ export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
 
         // Apply search query filter
         if (filterOptions.searchQuery && filterOptions.searchQuery.trim() !== '') {
-          const searchTerm = `%${filterOptions.searchQuery}%`;
-          query = query.or(`teacher.first_name.ilike.${searchTerm},teacher.last_name.ilike.${searchTerm},subject.name.ilike.${searchTerm}`);
+          const searchTerm = filterOptions.searchQuery.trim();
+          query = query.or(`or(teacher.first_name.ilike.%${searchTerm}%,teacher.last_name.ilike.%${searchTerm}%,subject.name.ilike.%${searchTerm}%)`);
         }
 
         // Apply subject filter
@@ -90,10 +90,12 @@ export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
 
         // Apply sorting
         if (filterOptions.sortBy === 'name') {
-          query = query.order('teacher(last_name)', { ascending: true });
+          query = query.order('teacher(last_name)', { ascending: true })
+                       .order('teacher(first_name)', { ascending: true });
         } else {
           // Default sorting by date
-          query = query.order('available_date', { ascending: true });
+          query = query.order('available_date', { ascending: true })
+                       .order('start_time', { ascending: true });
         }
 
         const { data, error } = await query;
@@ -126,14 +128,19 @@ export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
         
         setTeachers(filteredData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching teachers');
         console.error('Error fetching teachers:', err);
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching teachers');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchTeachers();
+    // Add a small delay to prevent too many requests when typing in the search field
+    const debounceTimeout = setTimeout(() => {
+      fetchTeachers();
+    }, 300);
+
+    return () => clearTimeout(debounceTimeout);
   }, [filterOptions]);
 
   return { teachers, isLoading, error };

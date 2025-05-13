@@ -11,6 +11,7 @@ import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -41,6 +42,14 @@ function App() {
           element={
             <ProtectedRoute requiredRole="teacher">
               <TeacherDashboardPage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin-dashboard" 
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboardPage />
             </ProtectedRoute>
           } 
         />
