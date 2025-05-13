@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useAdminUsers } from "@/hooks/use-admin-data";
+import { useAdminUsers } from "@/hooks/admin";
 import { 
   Table, 
   TableBody, 

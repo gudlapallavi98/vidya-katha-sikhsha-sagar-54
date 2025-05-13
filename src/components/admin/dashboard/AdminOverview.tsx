@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats, AdminChartData } from "@/components/types/admin";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminStats } from "@/hooks/admin";
 
 const AdminOverview = () => {
   const [stats, setStats] = useState<AdminStats>({
