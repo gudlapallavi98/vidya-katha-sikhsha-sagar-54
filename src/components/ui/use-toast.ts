@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
@@ -12,7 +11,7 @@ export type Toast = {
   description?: React.ReactNode;
   action?: ToastActionElement;
   variant?: "default" | "destructive";
-  duration?: number; // Add duration property
+  duration?: number;
 } & Omit<ToastProps, "children">;
 
 // Re-export the toast function (implementation from hooks)

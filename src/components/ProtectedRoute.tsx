@@ -19,7 +19,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check role if required (will add this functionality later)
+  // Check role if required - will be implemented in the future
   // For now, just render the children
   return <>{children}</>;
 };

@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import {
@@ -12,7 +11,7 @@ import {
 
 // Define the Toast type
 type Toast = {
-  id: string;
+  id?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: React.ReactElement;
