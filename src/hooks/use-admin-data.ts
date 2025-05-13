@@ -69,29 +69,36 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       if (!data) return [] as AdminUser[];
       
       // Handle data processing with proper type checking
-      const processedData = data.map((user) => {
+      const processedData = data.map((userItem) => {
         // Make sure we're dealing with a valid user object, not an error
-        if (typeof user === 'object' && user !== null) {
+        if (typeof userItem === 'object' && userItem !== null) {
           // If email isn't in the database but needed for the AdminUser type,
           // add a placeholder based on user properties that we check exist first
-          if (!('email' in user)) {
-            const firstName = user && 'first_name' in user && typeof user.first_name === 'string' 
-              ? user.first_name.toLowerCase() 
-              : 'user';
+          if (!('email' in userItem)) {
+            // Explicitly type userItem to avoid 'never' type issues
+            const typedUser = userItem as Record<string, unknown>;
             
-            const lastName = user && 'last_name' in user && typeof user.last_name === 'string'
-              ? user.last_name.toLowerCase()
-              : 'unknown';
+            const firstName = typedUser && 
+              'first_name' in typedUser && 
+              typeof typedUser.first_name === 'string'
+                ? String(typedUser.first_name).toLowerCase() 
+                : 'user';
+            
+            const lastName = typedUser && 
+              'last_name' in typedUser && 
+              typeof typedUser.last_name === 'string'
+                ? String(typedUser.last_name).toLowerCase()
+                : 'unknown';
               
             // Create a new object with all properties from user plus email
             const userWithEmail = {
-              ...(user as Record<string, unknown>),
+              ...(typedUser as Record<string, unknown>),
               email: `${firstName}.${lastName}@placeholder.com`
             };
             
             return userWithEmail as AdminUser;
           }
-          return user as AdminUser;
+          return userItem as AdminUser;
         }
         // If for some reason we got an invalid user object, return a safe default
         return {
