@@ -47,7 +47,7 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = React.me
 }) => {
   return (
     <div className="w-full md:w-3/4">
-      <Tabs value={activeTab} className="w-full">
+      <Tabs value={activeTab} className="w-full" defaultValue={activeTab}>
         {/* Hidden TabsList for Radix UI state management - this is critical */}
         <TabsList className="hidden">
           <TabsTrigger value="overview">Dashboard</TabsTrigger>

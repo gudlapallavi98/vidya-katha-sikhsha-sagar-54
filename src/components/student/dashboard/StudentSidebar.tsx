@@ -17,11 +17,29 @@ const StudentSidebar: React.FC<StudentSidebarProps> = React.memo(({
   firstName,
   lastName
 }) => {
-  // Memoize the tab click handler to prevent recreating function on every render
-  const handleTabClick = useCallback((tab: string) => {
-    if (activeTab !== tab) {
-      setActiveTab(tab);
-    }
+  // Individual button handlers to prevent unnecessary re-renders
+  const handleOverviewClick = useCallback(() => {
+    if (activeTab !== "overview") setActiveTab("overview");
+  }, [activeTab, setActiveTab]);
+
+  const handleCoursesClick = useCallback(() => {
+    if (activeTab !== "courses") setActiveTab("courses");
+  }, [activeTab, setActiveTab]);
+
+  const handleSessionsClick = useCallback(() => {
+    if (activeTab !== "sessions") setActiveTab("sessions");
+  }, [activeTab, setActiveTab]);
+
+  const handlePastSessionsClick = useCallback(() => {
+    if (activeTab !== "past-sessions") setActiveTab("past-sessions");
+  }, [activeTab, setActiveTab]);
+
+  const handleRequestSessionClick = useCallback(() => {
+    if (activeTab !== "request-session") setActiveTab("request-session");
+  }, [activeTab, setActiveTab]);
+
+  const handleProfileClick = useCallback(() => {
+    if (activeTab !== "profile") setActiveTab("profile");
   }, [activeTab, setActiveTab]);
 
   return (
@@ -42,42 +60,42 @@ const StudentSidebar: React.FC<StudentSidebarProps> = React.memo(({
           <Button 
             variant={activeTab === "overview" ? "default" : "ghost"} 
             className={activeTab === "overview" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => handleTabClick("overview")}
+            onClick={handleOverviewClick}
           >
             Dashboard
           </Button>
           <Button 
             variant={activeTab === "courses" ? "default" : "ghost"} 
             className={activeTab === "courses" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => handleTabClick("courses")}
+            onClick={handleCoursesClick}
           >
             My Courses
           </Button>
           <Button 
             variant={activeTab === "sessions" ? "default" : "ghost"} 
             className={activeTab === "sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => handleTabClick("sessions")}
+            onClick={handleSessionsClick}
           >
             Upcoming Sessions
           </Button>
           <Button 
             variant={activeTab === "past-sessions" ? "default" : "ghost"} 
             className={activeTab === "past-sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => handleTabClick("past-sessions")}
+            onClick={handlePastSessionsClick}
           >
             Past Sessions
           </Button>
           <Button 
             variant={activeTab === "request-session" ? "default" : "ghost"} 
             className={activeTab === "request-session" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => handleTabClick("request-session")}
+            onClick={handleRequestSessionClick}
           >
             Request Session
           </Button>
           <Button 
             variant={activeTab === "profile" ? "default" : "ghost"} 
             className={activeTab === "profile" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => handleTabClick("profile")}
+            onClick={handleProfileClick}
           >
             <Settings className="h-4 w-4 mr-2" />
             Profile Settings

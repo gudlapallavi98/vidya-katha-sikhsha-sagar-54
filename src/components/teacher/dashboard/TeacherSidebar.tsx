@@ -16,11 +16,29 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = React.memo(({
 }) => {
   const { user } = useAuth();
 
-  // Memoize the tab click handler to prevent recreating function on every render
-  const handleTabClick = useCallback((tab: string) => {
-    if (activeTab !== tab) {
-      setActiveTab(tab);
-    }
+  // Individual button handlers to prevent unnecessary re-renders
+  const handleOverviewClick = useCallback(() => {
+    if (activeTab !== "overview") setActiveTab("overview");
+  }, [activeTab, setActiveTab]);
+
+  const handleCoursesClick = useCallback(() => {
+    if (activeTab !== "courses") setActiveTab("courses");
+  }, [activeTab, setActiveTab]);
+
+  const handleSessionsClick = useCallback(() => {
+    if (activeTab !== "sessions") setActiveTab("sessions");
+  }, [activeTab, setActiveTab]);
+
+  const handleScheduleClick = useCallback(() => {
+    if (activeTab !== "schedule") setActiveTab("schedule");
+  }, [activeTab, setActiveTab]);
+
+  const handleAvailabilityClick = useCallback(() => {
+    if (activeTab !== "availability") setActiveTab("availability");
+  }, [activeTab, setActiveTab]);
+
+  const handleProfileClick = useCallback(() => {
+    if (activeTab !== "profile") setActiveTab("profile");
   }, [activeTab, setActiveTab]);
 
   return (
@@ -42,35 +60,35 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = React.memo(({
             <Button 
               variant={activeTab === "overview" ? "default" : "ghost"} 
               className={activeTab === "overview" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => handleTabClick("overview")}
+              onClick={handleOverviewClick}
             >
               Dashboard
             </Button>
             <Button 
               variant={activeTab === "courses" ? "default" : "ghost"} 
               className={activeTab === "courses" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => handleTabClick("courses")}
+              onClick={handleCoursesClick}
             >
               My Courses
             </Button>
             <Button 
               variant={activeTab === "sessions" ? "default" : "ghost"} 
               className={activeTab === "sessions" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => handleTabClick("sessions")}
+              onClick={handleSessionsClick}
             >
               Session Requests
             </Button>
             <Button 
               variant={activeTab === "schedule" ? "default" : "ghost"} 
               className={activeTab === "schedule" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => handleTabClick("schedule")}
+              onClick={handleScheduleClick}
             >
               My Schedule
             </Button>
             <Button 
               variant={activeTab === "availability" ? "default" : "ghost"} 
               className={activeTab === "availability" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => handleTabClick("availability")}
+              onClick={handleAvailabilityClick}
             >
               <Calendar className="h-4 w-4 mr-2" />
               Set Availability
@@ -78,7 +96,7 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = React.memo(({
             <Button 
               variant={activeTab === "profile" ? "default" : "ghost"} 
               className={activeTab === "profile" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => handleTabClick("profile")}
+              onClick={handleProfileClick}
             >
               <Settings className="h-4 w-4 mr-2" />
               Profile Settings

@@ -14,9 +14,9 @@ import StudentPastSessions from "@/components/student/dashboard/StudentPastSessi
 import StudentSidebar from "@/components/student/dashboard/StudentSidebar";
 import { Tabs } from "@/components/ui/tabs";
 import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
-import { useStudentDashboard } from "@/hooks/use-student-dashboard";
+import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useStudentDashboardTabs } from "@/hooks/use-student-dashboard-tabs";
+import { useStudentDashboard } from "@/hooks/use-student-dashboard";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -31,8 +31,8 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
-  // Use our custom hook for tab management
-  const { activeTab, handleTabChange } = useStudentDashboardTabs("overview");
+  // Use our unified dashboard tabs hook
+  const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -104,7 +104,7 @@ const StudentDashboard = () => {
 
         {/* Main content */}
         <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} className="w-full">
+          <Tabs value={activeTab} className="w-full" defaultValue={activeTab}>
             {/* Hidden TabsList - critical for Radix UI's internal state management */}
             <TabsList className="hidden">
               <TabsTrigger value="overview">Overview</TabsTrigger>

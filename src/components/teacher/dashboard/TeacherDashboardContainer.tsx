@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client"; 
 import { useSessionAcceptance } from "@/hooks/use-session-acceptance";
-import { useTeacherDashboard } from "@/hooks/teacher/use-teacher-dashboard";
+import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
 import { 
   useTeacherCourses, 
   useAllTeachers, 
@@ -23,8 +23,8 @@ import TeacherDashboardContent from "./TeacherDashboardContent";
  * Handles data fetching and business logic
  */
 const TeacherDashboardContainer = () => {
-  // Use our custom hook for tab management
-  const { activeTab, handleTabChange } = useTeacherDashboard("overview");
+  // Use our unified dashboard tabs hook
+  const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,12 +46,6 @@ const TeacherDashboardContainer = () => {
     completed: teacherSessions.filter(s => s.status === 'completed').length,
     upcoming: upcomingSessions.length
   };
-
-  // Ensure active tab is set from URL on mount
-  useEffect(() => {
-    // The hook already handles this, but this effect can help with deep linking
-    // No need to add implementation here as the hook handles it
-  }, []);
 
   const handleAcceptSession = async (sessionId: string) => {
     try {
