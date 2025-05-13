@@ -29,17 +29,14 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedExperience, setSelectedExperience] = useState<string>("");
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: undefined,
-    to: undefined,
-  });
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>("date");
   
   const { teachers, isLoading, error } = useTeacherSearch({
     searchQuery,
-    subjectId: selectedSubject,
+    subjectId: selectedSubject === "all" ? "" : selectedSubject,
     dateRange: date,
-    experienceLevel: selectedExperience as any,
+    experienceLevel: selectedExperience === "any" ? undefined : selectedExperience as any,
     sortBy: sortBy as any
   });
   
@@ -84,6 +81,7 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
                 <SelectValue placeholder="Filter by subject" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">All Subjects</SelectItem>
                 {subjects.map((subject) => (
                   <SelectItem key={subject.id} value={subject.id}>
                     {subject.name}
@@ -177,9 +175,9 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
               id={teacher.teacher_id}
               firstName={teacher.teacher.first_name}
               lastName={teacher.teacher.last_name}
-              bio={teacher.teacher.bio}
-              experience={teacher.teacher.experience}
-              avatarUrl={teacher.teacher.avatar_url}
+              bio={teacher.teacher.bio || ""}
+              experience={teacher.teacher.experience || ""}
+              avatarUrl={teacher.teacher.avatar_url || ""}
               subjects={[teacher.subject.name]}
               availableDate={new Date(teacher.available_date).toLocaleDateString()}
               availableTime={`${teacher.start_time.substring(0, 5)} - ${teacher.end_time.substring(0, 5)}`}
