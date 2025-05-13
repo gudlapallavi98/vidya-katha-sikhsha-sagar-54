@@ -5,15 +5,31 @@ import {
   Toast,
   ToastClose,
   ToastDescription,
-  ToastProvider,
+  ToastProvider as ToastPrimitive,
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
 
-import { useToast as useToastPrimitive } from "@/components/ui/use-toast"
+// Define the Toast type
+type Toast = {
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactElement;
+  variant?: "default" | "destructive";
+}
 
-export const ToastContext = React.createContext<ReturnType<typeof useToastPrimitive> | null>(null)
+// Define the context type
+type ToastContextType = {
+  toast: (props: Toast) => void;
+  toasts: Toast[];
+  dismiss: (toastId: string) => void;
+}
 
+// Create the context with null as default value
+export const ToastContext = React.createContext<ToastContextType | null>(null)
+
+// Custom hook to use the toast context
 export function useToast() {
   const context = React.useContext(ToastContext)
   
@@ -24,17 +40,30 @@ export function useToast() {
   return context
 }
 
+// Provider component
 export function ToastProvider({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { toast, toasts, dismiss } = useToastPrimitive()
+  const [toasts, setToasts] = React.useState<Toast[]>([])
+
+  // Add a new toast
+  const toast = React.useCallback((props: Toast) => {
+    const id = props.id || String(Date.now())
+    setToasts((prevToasts) => [...prevToasts, { id, ...props }])
+    return id
+  }, [])
+
+  // Remove a toast by ID
+  const dismiss = React.useCallback((toastId: string) => {
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== toastId))
+  }, [])
   
   return (
     <ToastContext.Provider value={{ toast, toasts, dismiss }}>
       {children}
-      <ToastProvider>
+      <ToastPrimitive>
         {toasts.map(function ({ id, title, description, action, ...props }) {
           return (
             <Toast key={id} {...props}>
@@ -45,15 +74,12 @@ export function ToastProvider({
                 )}
               </div>
               {action}
-              <ToastClose />
+              <ToastClose onClick={() => dismiss(id)} />
             </Toast>
           );
         })}
         <ToastViewport />
-      </ToastProvider>
+      </ToastPrimitive>
     </ToastContext.Provider>
   )
 }
-
-// Export toast function for convenience
-export { toast } from "@/components/ui/use-toast"

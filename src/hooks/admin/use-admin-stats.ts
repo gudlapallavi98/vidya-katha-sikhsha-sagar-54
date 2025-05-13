@@ -1,156 +1,116 @@
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-export interface AdminStats {
+export type AdminStats = {
+  totalCourses: number;
   totalStudents: number;
   totalTeachers: number;
-  totalCourses: number;
-  totalSessions: number;
-  sessionsToday: number;
-  sessionsThisWeek: number;
-  pendingRequests: number;
-  recentSignups: Array<{
-    id: string;
-    date: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    role: string;
-  }>;
-  sessionsByDay: Array<{
-    date: string;
-    count: number;
-  }>;
+  totalUsers: number; // Add this property
+  newUsers: number; // Add this property
+  activeTeachers: number; // Add this property
+  sessionCompletionRate: number;
+  courseCompletionRate: number;
+  averageSessionRating: number;
+  revenueThisMonth: number;
+  revenueLastMonth: number;
+  monthlySessionsData: { month: string; sessions: number }[];
+  monthlyUsersData: { month: string; users: number }[];
 }
 
 export const useAdminStats = () => {
   return useQuery({
-    queryKey: ['admin', 'stats'],
+    queryKey: ["admin-stats"],
     queryFn: async (): Promise<AdminStats> => {
-      // Get counts from profiles
-      const { data: profileCounts, error: profilesError } = await supabase
-        .from('profiles')
-        .select('role, count', { count: 'exact', head: false })
-        .group('role');
-        
-      if (profilesError) throw profilesError;
+      // Fetch total courses
+      const { count: totalCourses, error: coursesError } = await supabase
+        .from("courses")
+        .select("*", { count: "exact", head: true });
       
-      // Get courses count
-      const { count: coursesCount, error: coursesError } = await supabase
-        .from('courses')
-        .select('*', { count: 'exact', head: true });
-        
-      if (coursesError) throw coursesError;
+      if (coursesError) throw new Error(coursesError.message);
       
-      // Get sessions count
-      const { count: sessionsCount, error: sessionsError } = await supabase
-        .from('sessions')
-        .select('*', { count: 'exact', head: true });
-        
-      if (sessionsError) throw sessionsError;
+      // Fetch total students 
+      const { count: totalStudents, error: studentsError } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "student");
       
-      // Get today's sessions
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const { count: todaySessions, error: todayError } = await supabase
-        .from('sessions')
-        .select('*', { count: 'exact', head: true })
-        .gte('start_time', today.toISOString());
-        
-      if (todayError) throw todayError;
+      if (studentsError) throw new Error(studentsError.message);
+
+      // Fetch total teachers
+      const { count: totalTeachers, error: teachersError } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "teacher");
       
-      // Get this week's sessions
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-      const { count: weekSessions, error: weekError } = await supabase
-        .from('sessions')
-        .select('*', { count: 'exact', head: true })
-        .gte('start_time', weekStart.toISOString());
-        
-      if (weekError) throw weekError;
+      if (teachersError) throw new Error(teachersError.message);
       
-      // Get pending requests count
-      const { count: requestsCount, error: requestsError } = await supabase
-        .from('session_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-        
-      if (requestsError) throw requestsError;
+      // Fetch active teachers (with at least one course)
+      const { count: activeTeachers, error: activeTeachersError } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "teacher")
+        .in("id", supabase.from("courses").select("teacher_id"));
       
-      // Recent signups
-      const { data: recentUsers, error: recentError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, created_at, role')
-        .order('created_at', { ascending: false })
-        .limit(5);
-        
-      if (recentError) throw recentError;
+      if (activeTeachersError) throw new Error(activeTeachersError.message);
       
-      // Sessions by day for the past week
-      const lastWeek = new Date();
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      const { data: sessionsData, error: sessByDayError } = await supabase
-        .from('sessions')
-        .select('start_time')
-        .gte('start_time', lastWeek.toISOString())
-        .order('start_time', { ascending: true });
-        
-      if (sessByDayError) throw sessByDayError;
+      // Calculate total users
+      const totalUsers = (totalStudents || 0) + (totalTeachers || 0);
       
-      // Process counts
-      const studentCount = profileCounts?.find(p => p.role === 'student')?.count || 0;
-      const teacherCount = profileCounts?.find(p => p.role === 'teacher')?.count || 0;
+      // Use date functions to calculate new users in the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      // Format recent signups
-      const recentSignups = recentUsers?.map(user => ({
-        id: user.id,
-        date: user.created_at,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        // Note: email might not be directly available in profiles, using placeholder
-        email: `${user.first_name.toLowerCase()}.${user.last_name.toLowerCase()}@example.com`,
-        role: user.role
-      })) || [];
+      const { count: newUsers, error: newUsersError } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", thirtyDaysAgo.toISOString());
       
-      // Process sessions by day
-      const dayFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-      const dayMap = new Map<string, number>();
+      if (newUsersError) throw new Error(newUsersError.message);
       
-      // Initialize with past 7 days
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        dayMap.set(dayFormat.format(date), 0);
-      }
+      // Mock data for other stats that may require more complex queries
+      // In a real application, you would implement these properly
+      const sessionCompletionRate = 85; // Placeholder value
+      const courseCompletionRate = 72; // Placeholder value
+      const averageSessionRating = 4.7; // Placeholder value
+      const revenueThisMonth = 12450; // Placeholder value
+      const revenueLastMonth = 10200; // Placeholder value
       
-      // Populate with actual data
-      sessionsData?.forEach(session => {
-        const sessionDate = new Date(session.start_time);
-        const dayKey = dayFormat.format(sessionDate);
-        if (dayMap.has(dayKey)) {
-          dayMap.set(dayKey, (dayMap.get(dayKey) || 0) + 1);
-        }
-      });
+      // Generate monthly sessions data (placeholder)
+      const monthlySessionsData = [
+        { month: "Jan", sessions: 145 },
+        { month: "Feb", sessions: 167 },
+        { month: "Mar", sessions: 190 },
+        { month: "Apr", sessions: 205 },
+        { month: "May", sessions: 230 },
+        { month: "Jun", sessions: 245 }
+      ];
       
-      const sessionsByDay = Array.from(dayMap.entries()).map(([date, count]) => ({
-        date,
-        count
-      }));
-      
+      // Generate monthly users data (placeholder)
+      const monthlyUsersData = [
+        { month: "Jan", users: 50 },
+        { month: "Feb", users: 65 },
+        { month: "Mar", users: 80 },
+        { month: "Apr", users: 95 },
+        { month: "May", users: 110 },
+        { month: "Jun", users: 125 }
+      ];
+
       return {
-        totalStudents: Number(studentCount),
-        totalTeachers: Number(teacherCount),
-        totalCourses: coursesCount || 0,
-        totalSessions: sessionsCount || 0,
-        sessionsToday: todaySessions || 0,
-        sessionsThisWeek: weekSessions || 0,
-        pendingRequests: requestsCount || 0,
-        recentSignups,
-        sessionsByDay
+        totalCourses: totalCourses || 0,
+        totalStudents: totalStudents || 0,
+        totalTeachers: totalTeachers || 0,
+        totalUsers: totalUsers || 0,
+        newUsers: newUsers || 0,
+        activeTeachers: activeTeachers || 0,
+        sessionCompletionRate,
+        courseCompletionRate,
+        averageSessionRating,
+        revenueThisMonth,
+        revenueLastMonth,
+        monthlySessionsData,
+        monthlyUsersData
       };
-    },
-    staleTime: 60 * 1000, // 1 minute
+    }
   });
 };
