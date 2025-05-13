@@ -40,17 +40,20 @@ const StudentDashboard = () => {
   // Use our consolidated dashboard hook
   const dashboard = useStudentDashboard();
   
-  // Handle URL parameter once on mount
+  // Handle URL parameter once on mount and only when it changes
   useEffect(() => {
     if (tabFromUrl && ["overview", "courses", "sessions", "past-sessions", "request-session", "profile"].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
 
-  // Update URL when tab changes - with preventDefault to avoid full page reload
+  // Update URL when tab changes - with replace: true to avoid full page reload
   const handleTabChange = (tab: string) => {
+    if (activeTab === tab) return; // Prevent unnecessary updates
+    
     setActiveTab(tab);
-    setSearchParams({ tab }, { replace: true });  // Use replace: true to avoid adding to history
+    // Use replace: true to avoid adding to history stack and prevent reloads
+    setSearchParams({ tab }, { replace: true });
   };
 
   // Handle joining a class
@@ -106,7 +109,7 @@ const StudentDashboard = () => {
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
-        {/* Sidebar */}
+        {/* Sidebar with memoized callback */}
         <div className="w-full md:w-1/4">
           <StudentSidebar 
             activeTab={activeTab} 
@@ -143,6 +146,7 @@ const StudentDashboard = () => {
             </TabsContent>
             
             <TabsContent value="courses" className="m-0">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
               <StudentCoursesList 
                 enrolledCourses={dashboard.enrollments.data}
                 coursesLoading={dashboard.enrollments.isLoading}
@@ -150,6 +154,7 @@ const StudentDashboard = () => {
             </TabsContent>
             
             <TabsContent value="sessions" className="m-0">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
               <StudentUpcomingSessions 
                 sessions={upcomingSessionsList}
                 sessionsLoading={dashboard.upcomingSessions.isLoading}
@@ -160,6 +165,7 @@ const StudentDashboard = () => {
             </TabsContent>
             
             <TabsContent value="past-sessions" className="m-0">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
               <StudentPastSessions 
                 sessions={dashboard.pastSessions.data}
                 sessionsLoading={dashboard.pastSessions.isLoading}

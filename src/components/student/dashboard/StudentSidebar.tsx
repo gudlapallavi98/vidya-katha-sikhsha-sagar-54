@@ -1,4 +1,5 @@
 
+import React, { useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings, User } from "lucide-react";
@@ -16,6 +17,14 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   firstName,
   lastName
 }) => {
+  // Memoize the tab click handler to prevent unnecessary re-renders
+  const handleTabClick = useCallback((tab: string) => (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default navigation behavior
+    if (activeTab !== tab) {
+      setActiveTab(tab);
+    }
+  }, [activeTab, setActiveTab]);
+
   return (
     <Card>
       <CardHeader>
@@ -34,42 +43,42 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
           <Button 
             variant={activeTab === "overview" ? "default" : "ghost"} 
             className={activeTab === "overview" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => setActiveTab("overview")}
+            onClick={handleTabClick("overview")}
           >
             Dashboard
           </Button>
           <Button 
             variant={activeTab === "courses" ? "default" : "ghost"} 
             className={activeTab === "courses" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => setActiveTab("courses")}
+            onClick={handleTabClick("courses")}
           >
             My Courses
           </Button>
           <Button 
             variant={activeTab === "sessions" ? "default" : "ghost"} 
             className={activeTab === "sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => setActiveTab("sessions")}
+            onClick={handleTabClick("sessions")}
           >
             Upcoming Sessions
           </Button>
           <Button 
             variant={activeTab === "past-sessions" ? "default" : "ghost"} 
             className={activeTab === "past-sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => setActiveTab("past-sessions")}
+            onClick={handleTabClick("past-sessions")}
           >
             Past Sessions
           </Button>
           <Button 
             variant={activeTab === "request-session" ? "default" : "ghost"} 
             className={activeTab === "request-session" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => setActiveTab("request-session")}
+            onClick={handleTabClick("request-session")}
           >
             Request Session
           </Button>
           <Button 
             variant={activeTab === "profile" ? "default" : "ghost"} 
             className={activeTab === "profile" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={() => setActiveTab("profile")}
+            onClick={handleTabClick("profile")}
           >
             <Settings className="h-4 w-4 mr-2" />
             Profile Settings
@@ -80,4 +89,4 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   );
 };
 
-export default StudentSidebar;
+export default React.memo(StudentSidebar);

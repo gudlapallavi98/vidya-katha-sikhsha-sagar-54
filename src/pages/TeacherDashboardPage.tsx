@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
   useTeacherCourses, 
@@ -40,15 +40,20 @@ const TeacherDashboard = () => {
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
   
+  // Handle URL parameter once on mount and only when it changes
   useEffect(() => {
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
 
-  // Update URL when tab changes - with preventDefault and replace: true to avoid page reload
-  useEffect(() => {
-    setSearchParams({ tab: activeTab }, { replace: true });
+  // Update URL when tab changes with replace: true to avoid page reload
+  const handleTabChange = useCallback((tab: string) => {
+    if (activeTab === tab) return; // Prevent unnecessary updates
+    
+    setActiveTab(tab);
+    // Use replace: true to avoid adding to browser history and prevent reloads
+    setSearchParams({ tab }, { replace: true });
   }, [activeTab, setSearchParams]);
   
   // Calculate metrics from sessions data
@@ -174,13 +179,6 @@ const TeacherDashboard = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-  };
-
-  // Handle tab changes directly in this component
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    // Using replace: true to avoid adding to browser history
-    setSearchParams({ tab }, { replace: true });
   };
 
   return (
