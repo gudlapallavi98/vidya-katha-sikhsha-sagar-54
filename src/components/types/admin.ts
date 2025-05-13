@@ -17,6 +17,13 @@ export interface AdminStats {
   newUsers: number;
   activeTeachers: number;
   pendingRequests: number;
+  sessionCompletionRate: number;
+  courseCompletionRate: number;
+  averageSessionRating: number;
+  revenueThisMonth: number;
+  revenueLastMonth: number;
+  monthlySessionsData: { month: string; sessions: number }[];
+  monthlyUsersData: { month: string; users: number }[];
 }
 
 export interface AdminDashboardData {

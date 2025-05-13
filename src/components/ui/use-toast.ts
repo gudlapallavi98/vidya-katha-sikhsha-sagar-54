@@ -7,7 +7,7 @@ export { useToast };
 
 // Define toast action types
 export type Toast = {
-  id: string;
+  id?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;

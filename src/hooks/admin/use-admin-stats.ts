@@ -6,9 +6,11 @@ export type AdminStats = {
   totalCourses: number;
   totalStudents: number;
   totalTeachers: number;
-  totalUsers: number; // Add this property
-  newUsers: number; // Add this property
-  activeTeachers: number; // Add this property
+  totalUsers: number;
+  newUsers: number;
+  activeTeachers: number;
+  totalSessions: number;
+  pendingRequests: number;
   sessionCompletionRate: number;
   courseCompletionRate: number;
   averageSessionRating: number;
@@ -67,6 +69,21 @@ export const useAdminStats = () => {
         .gte("created_at", thirtyDaysAgo.toISOString());
       
       if (newUsersError) throw new Error(newUsersError.message);
+
+      // Fetch total sessions
+      const { count: totalSessions, error: sessionsError } = await supabase
+        .from("sessions")
+        .select("*", { count: "exact", head: true });
+      
+      if (sessionsError) throw new Error(sessionsError.message);
+      
+      // Fetch pending requests
+      const { count: pendingRequests, error: pendingRequestsError } = await supabase
+        .from("session_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      
+      if (pendingRequestsError) throw new Error(pendingRequestsError.message);
       
       // Mock data for other stats that may require more complex queries
       // In a real application, you would implement these properly
@@ -103,6 +120,8 @@ export const useAdminStats = () => {
         totalUsers: totalUsers || 0,
         newUsers: newUsers || 0,
         activeTeachers: activeTeachers || 0,
+        totalSessions: totalSessions || 0,
+        pendingRequests: pendingRequests || 0,
         sessionCompletionRate,
         courseCompletionRate,
         averageSessionRating,

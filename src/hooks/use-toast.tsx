@@ -21,7 +21,7 @@ type Toast = {
 
 // Define the context type
 type ToastContextType = {
-  toast: (props: Toast) => void;
+  toast: (props: Omit<Toast, "id"> & { id?: string }) => void;
   toasts: Toast[];
   dismiss: (toastId: string) => void;
 }
@@ -49,7 +49,7 @@ export function ToastProvider({
   const [toasts, setToasts] = React.useState<Toast[]>([])
 
   // Add a new toast
-  const toast = React.useCallback((props: Toast) => {
+  const toast = React.useCallback((props: Omit<Toast, "id"> & { id?: string }) => {
     const id = props.id || String(Date.now())
     setToasts((prevToasts) => [...prevToasts, { id, ...props }])
     return id
@@ -83,3 +83,6 @@ export function ToastProvider({
     </ToastContext.Provider>
   )
 }
+
+// Re-export functions for use-toast.ts compatibility
+export { toast, type Toast } from "@/components/ui/use-toast"
