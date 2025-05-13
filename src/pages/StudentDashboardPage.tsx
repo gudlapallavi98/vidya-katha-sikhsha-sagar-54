@@ -42,22 +42,25 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
+  // Only fetch data if we have a user
   const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrollments();
   const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
   const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
   const { data: pastSessions = [], isLoading: pastSessionsLoading } = useStudentPastSessions();
   const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
 
+  // Set active tab based on URL parameter once on mount
   useEffect(() => {
-    if (tabFromUrl) {
+    if (tabFromUrl && ["overview", "courses", "sessions", "past-sessions", "request-session", "profile"].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
-  }, [tabFromUrl]);
+  }, []);
 
-  useEffect(() => {
-    // Update URL when tab changes
-    setSearchParams({ tab: activeTab });
-  }, [activeTab, setSearchParams]);
+  // Update URL when tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   // Calculate completed sessions from progress data
   const completedSessions = progress.filter(p => p.completed).length;
@@ -102,7 +105,7 @@ const StudentDashboard = () => {
         <div className="w-full md:w-1/4">
           <StudentSidebar 
             activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
+            setActiveTab={handleTabChange} 
             firstName={user?.user_metadata?.first_name}
             lastName={user?.user_metadata?.last_name}
           />
@@ -110,7 +113,7 @@ const StudentDashboard = () => {
 
         {/* Main content */}
         <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsContent value="overview" className="m-0">
               <StudentDashboardOverview 
                 enrolledCourses={enrolledCourses}
