@@ -23,7 +23,7 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       if (currentUserError) throw currentUserError;
       if (currentUserData.role !== 'admin') throw new Error('Unauthorized: admin access required');
       
-      // Fetch users
+      // Fetch users with proper error handling
       let query = supabase
         .from('profiles')
         .select('id, first_name, last_name, email, role, created_at');
@@ -45,7 +45,7 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       
       if (error) throw error;
       
-      return data || [];
+      return data as AdminUser[] || [];
     },
     enabled: !!user,
   });

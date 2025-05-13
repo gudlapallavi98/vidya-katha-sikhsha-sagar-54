@@ -23,11 +23,13 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminUser } from "@/components/types/admin";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminUsersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
-  const { data: users = [], isLoading, error } = useAdminUsers(searchQuery, roleFilter);
+  const { data: users = [], isLoading, error, isError } = useAdminUsers(searchQuery, roleFilter);
+  const { toast } = useToast();
 
   const getRoleBadgeVariant = (role: string) => {
     switch(role) {
@@ -46,6 +48,15 @@ const AdminUsersManagement = () => {
     e.preventDefault();
     // The search is already handled by the useAdminUsers hook
   };
+
+  // Show error toast if there's an error
+  if (isError && error instanceof Error) {
+    toast({
+      title: "Error fetching users",
+      description: error.message,
+      variant: "destructive",
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +96,7 @@ const AdminUsersManagement = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           <span className="ml-3">Loading users...</span>
         </div>
-      ) : error ? (
+      ) : isError ? (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-4 text-red-500">
@@ -112,7 +123,7 @@ const AdminUsersManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {users.map((user: AdminUser) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   {user.first_name} {user.last_name}
