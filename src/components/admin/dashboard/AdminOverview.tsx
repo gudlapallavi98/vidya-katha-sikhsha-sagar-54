@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useAdminStats, useAdminUsers } from "@/hooks/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +27,7 @@ import { Users, GraduationCap, BookOpen, Calendar, Clock } from "lucide-react";
 
 const AdminOverview = () => {
   const { data: stats, isLoading: statsLoading, error: statsError } = useAdminStats();
-  const { data: recentUsers = [], isLoading: usersLoading, error: usersError } = useAdminUsers("", "", 5);
+  const { data: recentUsers = [], isLoading: usersLoading, error: usersError } = useAdminUsers("", 5);
   const { toast } = useToast();
 
   useEffect(() => {
