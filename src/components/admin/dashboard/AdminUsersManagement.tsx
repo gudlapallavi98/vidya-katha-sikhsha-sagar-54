@@ -112,7 +112,7 @@ const AdminUsersManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user: AdminUser) => (
+            {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   {user.first_name} {user.last_name}
