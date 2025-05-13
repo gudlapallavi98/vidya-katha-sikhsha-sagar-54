@@ -78,21 +78,22 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
             // Explicitly type userItem to avoid 'never' type issues
             const typedUser = userItem as Record<string, unknown>;
             
-            const firstName = typedUser && 
+            // Use null coalescing to handle null case
+            const firstName = (typedUser && 
               'first_name' in typedUser && 
-              typeof typedUser.first_name === 'string'
+              typeof typedUser.first_name === 'string')
                 ? String(typedUser.first_name).toLowerCase() 
                 : 'user';
             
-            const lastName = typedUser && 
+            const lastName = (typedUser && 
               'last_name' in typedUser && 
-              typeof typedUser.last_name === 'string'
+              typeof typedUser.last_name === 'string')
                 ? String(typedUser.last_name).toLowerCase()
                 : 'unknown';
-              
+               
             // Create a new object with all properties from user plus email
             const userWithEmail = {
-              ...(typedUser as Record<string, unknown>),
+              ...typedUser,
               email: `${firstName}.${lastName}@placeholder.com`
             };
             
