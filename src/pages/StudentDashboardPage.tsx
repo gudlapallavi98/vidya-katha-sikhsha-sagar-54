@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { TabsContent } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/api/dashboard";
@@ -40,17 +40,17 @@ const StudentDashboard = () => {
   // Use our consolidated dashboard hook
   const dashboard = useStudentDashboard();
   
-  // Set active tab based on URL parameter once on mount
+  // Handle URL parameter once on mount
   useEffect(() => {
     if (tabFromUrl && ["overview", "courses", "sessions", "past-sessions", "request-session", "profile"].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
 
-  // Update URL when tab changes
+  // Update URL when tab changes - with preventDefault to avoid full page reload
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setSearchParams({ tab });
+    setSearchParams({ tab }, { replace: true });  // Use replace: true to avoid adding to history
   };
 
   // Handle joining a class
@@ -103,9 +103,6 @@ const StudentDashboard = () => {
     return session.display_status === 'attended' || session.display_status === 'missed';
   });
 
-  // Calculate completed sessions from progress data
-  const completedSessions = dashboard.progress.data.filter(p => p.completed).length;
-
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
@@ -122,6 +119,16 @@ const StudentDashboard = () => {
         {/* Main content */}
         <div className="w-full md:w-3/4">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="hidden">
+              {/* Hidden TabsList to handle Radix UI TabsTrigger activation */}
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="courses">Courses</TabsTrigger>
+              <TabsTrigger value="sessions">Sessions</TabsTrigger>
+              <TabsTrigger value="past-sessions">Past Sessions</TabsTrigger>
+              <TabsTrigger value="request-session">Request Session</TabsTrigger>
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+            </TabsList>
+            
             <TabsContent value="overview" className="m-0">
               <StudentDashboardOverview 
                 enrolledCourses={dashboard.enrollments.data}
