@@ -22,6 +22,7 @@ import { Search, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminUser } from "@/components/types/admin";
 
 const AdminUsersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -111,7 +112,7 @@ const AdminUsersManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {users.map((user: AdminUser) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   {user.first_name} {user.last_name}

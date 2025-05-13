@@ -26,7 +26,7 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       // Fetch users
       let query = supabase
         .from('profiles')
-        .select('id, first_name, last_name, role, created_at, email');
+        .select('id, first_name, last_name, email, role, created_at');
       
       // Apply search filter if provided
       if (searchQuery) {
