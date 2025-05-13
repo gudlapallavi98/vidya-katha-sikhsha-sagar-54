@@ -66,17 +66,40 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       
       if (error) throw error;
       
-      // If email isn't in the database but needed for the AdminUser type,
-      // add a placeholder for type compatibility
-      const processedData = data?.map(user => {
-        if (!('email' in user)) {
-          return {
-            ...user,
-            email: `${user.first_name?.toLowerCase() || 'user'}.${user.last_name?.toLowerCase() || 'unknown'}@placeholder.com`
-          };
+      if (!data) return [] as AdminUser[];
+      
+      // Handle data processing with proper type checking
+      const processedData = data.map(user => {
+        // Make sure we're dealing with a valid user object, not an error
+        if (typeof user === 'object' && user !== null) {
+          // If email isn't in the database but needed for the AdminUser type,
+          // add a placeholder based on user properties that we check exist first
+          if (!('email' in user)) {
+            const firstName = 'first_name' in user && typeof user.first_name === 'string' 
+              ? user.first_name.toLowerCase() 
+              : 'user';
+            
+            const lastName = 'last_name' in user && typeof user.last_name === 'string'
+              ? user.last_name.toLowerCase()
+              : 'unknown';
+              
+            return {
+              ...user,
+              email: `${firstName}.${lastName}@placeholder.com`
+            };
+          }
+          return user;
         }
-        return user;
-      }) || [];
+        // If for some reason we got an invalid user object, return a safe default
+        return {
+          id: 'unknown',
+          first_name: 'Unknown',
+          last_name: 'User',
+          email: 'unknown@placeholder.com',
+          role: 'unknown',
+          created_at: new Date().toISOString()
+        } as AdminUser;
+      });
       
       return processedData as AdminUser[];
     },
