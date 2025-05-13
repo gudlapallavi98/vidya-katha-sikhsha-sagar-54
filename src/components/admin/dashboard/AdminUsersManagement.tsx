@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAdminUsers } from "@/hooks/admin";
 import { 
   Table, 
@@ -23,12 +23,12 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminUser } from "@/components/types/admin";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 const AdminUsersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all"); // Changed initial value from "" to "all"
-  const { data: users = [], isLoading, error, isError } = useAdminUsers(searchQuery, roleFilter === "all" ? "" : roleFilter); // Convert back to empty string for the hook
+  const [roleFilter, setRoleFilter] = useState("all");
+  const { data: users = [], isLoading, error, isError } = useAdminUsers(searchQuery, roleFilter === "all" ? "" : roleFilter);
   const { toast } = useToast();
 
   const getRoleBadgeVariant = (role: string) => {
@@ -49,14 +49,16 @@ const AdminUsersManagement = () => {
     // The search is already handled by the useAdminUsers hook
   };
 
-  // Show error toast if there's an error
-  if (isError && error instanceof Error) {
-    toast({
-      title: "Error fetching users",
-      description: error.message,
-      variant: "destructive",
-    });
-  }
+  // Use useEffect to display the error toast instead of calling it during render
+  useEffect(() => {
+    if (isError && error instanceof Error) {
+      toast({
+        title: "Error fetching users",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [isError, error, toast]);
 
   return (
     <div className="space-y-6">
@@ -80,7 +82,7 @@ const AdminUsersManagement = () => {
             <SelectValue placeholder="Filter by role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Roles</SelectItem> {/* Changed value from "" to "all" */}
+            <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="student">Students</SelectItem>
             <SelectItem value="teacher">Teachers</SelectItem>
             <SelectItem value="admin">Admins</SelectItem>
