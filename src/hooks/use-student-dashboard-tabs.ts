@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 /**
@@ -10,6 +10,14 @@ export const useStudentDashboardTabs = (defaultTab = "overview") => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab);
+
+  // Sync state with URL params on mount and when URL changes
+  useEffect(() => {
+    const currentTab = searchParams.get("tab");
+    if (currentTab && currentTab !== activeTab) {
+      setActiveTab(currentTab);
+    }
+  }, [searchParams, activeTab]);
 
   // Memoized tab change handler to prevent recreating function on every render
   const handleTabChange = useCallback((tab: string) => {

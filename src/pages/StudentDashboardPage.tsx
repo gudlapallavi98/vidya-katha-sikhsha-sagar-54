@@ -104,7 +104,7 @@ const StudentDashboard = () => {
 
         {/* Main content */}
         <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs value={activeTab} className="w-full">
             {/* Hidden TabsList - critical for Radix UI's internal state management */}
             <TabsList className="hidden">
               <TabsTrigger value="overview">Overview</TabsTrigger>
