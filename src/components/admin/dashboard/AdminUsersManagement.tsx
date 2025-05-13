@@ -23,7 +23,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminUser } from "@/components/types/admin";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminUsersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");

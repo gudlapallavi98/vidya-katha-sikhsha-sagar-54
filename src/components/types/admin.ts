@@ -9,21 +9,45 @@ export interface AdminUser {
 }
 
 export interface AdminStats {
-  totalStudents: number;
+  totalUsers: number;
   totalTeachers: number;
+  totalStudents: number;
   totalCourses: number;
   totalSessions: number;
-  newUsersPastWeek: number;
-  newSessionsPastWeek: number;
+  newUsers: number;
+  activeTeachers: number;
+  pendingRequests: number;
 }
 
-export interface AdminTableData {
-  users: AdminUser[];
-  loading: boolean;
-  error: string | null;
+export interface AdminDashboardData {
+  recentUsers: AdminUser[];
+  stats: AdminStats;
+  sessionRequestsChart: {
+    labels: string[];
+    data: number[];
+  };
+  userGrowthChart: {
+    labels: string[];
+    data: number[];
+  };
 }
 
-export interface AdminChartData {
-  name: string;
-  value: number;
+export interface AdminSessionRequest {
+  id: string;
+  student: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+  teacher: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  };
+  proposed_title: string;
+  request_message?: string;
+  proposed_date: string;
+  proposed_duration: number;
+  status: string;
+  created_at: string;
 }

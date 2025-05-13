@@ -1,243 +1,278 @@
-import { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { AdminStats, AdminChartData } from "@/components/types/admin";
+
+import { useEffect } from "react";
+import { useAdminStats, useAdminUsers } from "@/hooks/admin";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { useAdminStats } from "@/hooks/admin";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line
+} from "recharts";
+import { Users, GraduationCap, BookOpen, Calendar, Clock } from "lucide-react";
 
 const AdminOverview = () => {
-  const [stats, setStats] = useState<AdminStats>({
-    totalStudents: 0,
-    totalTeachers: 0,
-    totalCourses: 0,
-    totalSessions: 0,
-    newUsersPastWeek: 0,
-    newSessionsPastWeek: 0
-  });
-  const [chartPeriod, setChartPeriod] = useState("week");
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: stats, isLoading: statsLoading, error: statsError } = useAdminStats();
+  const { data: recentUsers = [], isLoading: usersLoading, error: usersError } = useAdminUsers("", "", 5);
   const { toast } = useToast();
 
-  // Colors for pie chart
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
   useEffect(() => {
-    const fetchStats = async () => {
-      setIsLoading(true);
-      
-      try {
-        // Get total students count
-        const { count: studentsCount, error: studentsError } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('role', 'student');
-          
-        if (studentsError) throw studentsError;
-        
-        // Get total teachers count
-        const { count: teachersCount, error: teachersError } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .eq('role', 'teacher');
-          
-        if (teachersError) throw teachersError;
-          
-        // Get total courses count
-        const { count: coursesCount, error: coursesError } = await supabase
-          .from('courses')
-          .select('id', { count: 'exact', head: true });
-          
-        if (coursesError) throw coursesError;
-          
-        // Get total sessions count
-        const { count: sessionsCount, error: sessionsError } = await supabase
-          .from('sessions')
-          .select('id', { count: 'exact', head: true });
-          
-        if (sessionsError) throw sessionsError;
-          
-        // Get new users in past week
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        
-        const { count: newUsersCount, error: newUsersError } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', oneWeekAgo.toISOString());
-          
-        if (newUsersError) throw newUsersError;
-          
-        // Get new sessions in past week
-        const { count: newSessionsCount, error: newSessionsError } = await supabase
-          .from('sessions')
-          .select('id', { count: 'exact', head: true })
-          .gte('created_at', oneWeekAgo.toISOString());
-          
-        if (newSessionsError) throw newSessionsError;
-          
-        setStats({
-          totalStudents: studentsCount || 0,
-          totalTeachers: teachersCount || 0,
-          totalCourses: coursesCount || 0,
-          totalSessions: sessionsCount || 0,
-          newUsersPastWeek: newUsersCount || 0,
-          newSessionsPastWeek: newSessionsCount || 0
-        });
-      } catch (error) {
-        console.error('Error fetching admin statistics:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load dashboard statistics"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchStats();
-  }, [toast]);
+    if (statsError) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching statistics",
+        description: statsError instanceof Error ? statsError.message : "An error occurred",
+      });
+    }
+    if (usersError) {
+      toast({
+        variant: "destructive",
+        title: "Error fetching users",
+        description: usersError instanceof Error ? usersError.message : "An error occurred",
+      });
+    }
+  }, [statsError, usersError, toast]);
 
-  // Sample data for charts - in a real app, this would come from the database
-  const userDistributionData: AdminChartData[] = [
-    { name: 'Students', value: stats.totalStudents },
-    { name: 'Teachers', value: stats.totalTeachers }
+  // Sample data for charts
+  const sessionRequestData = [
+    { name: "Mon", requests: 4 },
+    { name: "Tue", requests: 6 },
+    { name: "Wed", requests: 8 },
+    { name: "Thu", requests: 5 },
+    { name: "Fri", requests: 9 },
+    { name: "Sat", requests: 3 },
+    { name: "Sun", requests: 2 }
   ];
-  
-  const activityData = [
-    { name: 'Mon', sessions: 4, users: 3 },
-    { name: 'Tue', sessions: 6, users: 5 },
-    { name: 'Wed', sessions: 8, users: 7 },
-    { name: 'Thu', sessions: 7, users: 6 },
-    { name: 'Fri', sessions: 9, users: 8 },
-    { name: 'Sat', sessions: 5, users: 4 },
-    { name: 'Sun', sessions: 3, users: 2 }
+
+  const userGrowthData = [
+    { name: "Jan", users: 40 },
+    { name: "Feb", users: 55 },
+    { name: "Mar", users: 65 },
+    { name: "Apr", users: 90 },
+    { name: "May", users: 120 },
+    { name: "Jun", users: 150 },
+    { name: "Jul", users: 180 }
   ];
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch(role) {
+      case 'admin':
+        return 'destructive';
+      case 'teacher':
+        return 'default';
+      case 'student':
+        return 'secondary';
+      default:
+        return 'outline';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <h1 className="font-sanskrit text-3xl font-bold mb-6">Dashboard Overview</h1>
+      <h1 className="font-sanskrit text-3xl font-bold mb-6">Admin Dashboard</h1>
       
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Students</CardDescription>
-            <CardTitle className="text-3xl">{isLoading ? "..." : stats.totalStudents}</CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Teachers</CardDescription>
-            <CardTitle className="text-3xl">{isLoading ? "..." : stats.totalTeachers}</CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Courses</CardDescription>
-            <CardTitle className="text-3xl">{isLoading ? "..." : stats.totalCourses}</CardTitle>
-          </CardHeader>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Sessions</CardDescription>
-            <CardTitle className="text-3xl">{isLoading ? "..." : stats.totalSessions}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-      
-      {/* Growth Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>New Users (Past Week)</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{isLoading ? "..." : stats.newUsersPastWeek}</div>
+            {statsLoading ? (
+              <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+            ) : (
+              <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {statsLoading ? (
+                <span className="h-3 w-20 bg-muted animate-pulse rounded inline-block"></span>
+              ) : (
+                <span>+{stats?.newUsers || 0} since last week</span>
+              )}
+            </p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader>
-            <CardTitle>New Sessions (Past Week)</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Teachers</CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{isLoading ? "..." : stats.newSessionsPastWeek}</div>
+            {statsLoading ? (
+              <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+            ) : (
+              <div className="text-2xl font-bold">{stats?.totalTeachers || 0}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {statsLoading ? (
+                <span className="h-3 w-20 bg-muted animate-pulse rounded inline-block"></span>
+              ) : (
+                <span>{stats?.activeTeachers || 0} active teachers</span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Courses</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+            ) : (
+              <div className="text-2xl font-bold">{stats?.totalCourses || 0}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {statsLoading ? (
+                <span className="h-3 w-20 bg-muted animate-pulse rounded inline-block"></span>
+              ) : (
+                <span>{stats?.totalSessions || 0} total sessions</span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+            ) : (
+              <div className="text-2xl font-bold">{stats?.pendingRequests || 0}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Require your attention
+            </p>
           </CardContent>
         </Card>
       </div>
       
-      {/* Charts */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* User Distribution */}
-        <Card className="col-span-1">
+        <Card>
           <CardHeader>
-            <CardTitle>User Distribution</CardTitle>
+            <CardTitle>Session Requests</CardTitle>
+            <CardDescription>Session requests over the past week</CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={userDistributionData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {userDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                width={500}
+                height={300}
+                data={sessionRequestData}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="requests" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
         
-        {/* Activity Chart */}
-        <Card className="col-span-1">
+        <Card>
           <CardHeader>
-            <CardTitle>Activity Overview</CardTitle>
-            <Tabs defaultValue="week" value={chartPeriod} onValueChange={setChartPeriod}>
-              <TabsList>
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <CardTitle>User Growth</CardTitle>
+            <CardDescription>User growth over the past months</CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="users" name="New Users" fill="#8884d8" />
-                  <Bar dataKey="sessions" name="Sessions" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                width={500}
+                height={300}
+                data={userGrowthData}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="users" stroke="#8884d8" activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
+      
+      {/* Recent Users */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Users</CardTitle>
+          <CardDescription>Latest users who joined the platform</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {usersLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-10 bg-muted animate-pulse rounded"></div>
+              ))}
+            </div>
+          ) : recentUsers.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Joined</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      {user.first_name} {user.last_name}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getRoleBadgeVariant(user.role)}>
+                        {user.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'N/A'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center py-4 text-muted-foreground">No recent users found</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

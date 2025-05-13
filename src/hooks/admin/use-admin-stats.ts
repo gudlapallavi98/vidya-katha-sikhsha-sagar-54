@@ -25,63 +25,93 @@ export const useAdminStats = () => {
       if (currentUserError) throw currentUserError;
       if (currentUserData.role !== 'admin') throw new Error('Unauthorized: admin access required');
       
-      // Get students count
-      const { count: studentsCount, error: studentsError } = await supabase
+      // Get total users count
+      const { count: totalUsers, error: usersError } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'student');
+        .select('*', { count: 'exact', head: true });
       
-      if (studentsError) throw studentsError;
+      if (usersError) throw usersError;
       
-      // Get teachers count
-      const { count: teachersCount, error: teachersError } = await supabase
+      // Get total teachers count
+      const { count: totalTeachers, error: teachersError } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .eq('role', 'teacher');
       
       if (teachersError) throw teachersError;
       
-      // Get courses count
-      const { count: coursesCount, error: coursesError } = await supabase
+      // Get total students count
+      const { count: totalStudents, error: studentsError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'student');
+      
+      if (studentsError) throw studentsError;
+      
+      // Get total courses count
+      const { count: totalCourses, error: coursesError } = await supabase
         .from('courses')
-        .select('id', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true });
       
       if (coursesError) throw coursesError;
       
-      // Get sessions count
-      const { count: sessionsCount, error: sessionsError } = await supabase
+      // Get total sessions count
+      const { count: totalSessions, error: sessionsError } = await supabase
         .from('sessions')
-        .select('id', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true });
       
       if (sessionsError) throw sessionsError;
       
-      // Get new users in past week
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      // Get new users in last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
-      const { count: newUsersCount, error: newUsersError } = await supabase
+      const { count: newUsers, error: newUsersError } = await supabase
         .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', oneWeekAgo.toISOString());
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', sevenDaysAgo.toISOString());
       
       if (newUsersError) throw newUsersError;
       
-      // Get new sessions in past week
-      const { count: newSessionsCount, error: newSessionsError } = await supabase
+      // Active teachers (with at least one session in last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: activeTeachersData, error: activeTeachersError } = await supabase
         .from('sessions')
-        .select('id', { count: 'exact', head: true })
-        .gte('created_at', oneWeekAgo.toISOString());
+        .select('teacher_id')
+        .gte('start_time', thirtyDaysAgo.toISOString())
+        .order('teacher_id');
       
-      if (newSessionsError) throw newSessionsError;
+      if (activeTeachersError) throw activeTeachersError;
       
-      return {
-        totalStudents: studentsCount || 0,
-        totalTeachers: teachersCount || 0, 
-        totalCourses: coursesCount || 0,
-        totalSessions: sessionsCount || 0,
-        newUsersPastWeek: newUsersCount || 0,
-        newSessionsPastWeek: newSessionsCount || 0
-      } as AdminStats;
+      // Count unique teachers
+      const uniqueTeachers = new Set();
+      activeTeachersData?.forEach(session => {
+        if (session.teacher_id) uniqueTeachers.add(session.teacher_id);
+      });
+      const activeTeachers = uniqueTeachers.size;
+      
+      // Get pending session requests count
+      const { count: pendingRequests, error: pendingRequestsError } = await supabase
+        .from('session_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (pendingRequestsError) throw pendingRequestsError;
+      
+      const stats: AdminStats = {
+        totalUsers: totalUsers || 0,
+        totalTeachers: totalTeachers || 0,
+        totalStudents: totalStudents || 0,
+        totalCourses: totalCourses || 0,
+        totalSessions: totalSessions || 0,
+        newUsers: newUsers || 0,
+        activeTeachers: activeTeachers || 0,
+        pendingRequests: pendingRequests || 0,
+      };
+      
+      return stats;
     },
     enabled: !!user,
   });
