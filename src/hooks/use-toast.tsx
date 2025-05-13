@@ -17,6 +17,7 @@ type Toast = {
   description?: React.ReactNode;
   action?: React.ReactElement;
   variant?: "default" | "destructive";
+  duration?: number; // Add duration property
 }
 
 // Define the context type

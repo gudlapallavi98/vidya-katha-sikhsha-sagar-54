@@ -48,13 +48,30 @@ export const useAdminStats = () => {
       if (teachersError) throw new Error(teachersError.message);
       
       // Fetch active teachers (with at least one course)
-      const { count: activeTeachers, error: activeTeachersError } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("role", "teacher")
-        .in("id", supabase.from("courses").select("teacher_id"));
+      // Fix: This query was using incorrect syntax for the in() method
+      // We need to first get the teacher_ids from courses and then use them
+      const { data: coursesWithTeachers, error: coursesWithTeachersError } = await supabase
+        .from("courses")
+        .select("teacher_id")
+        .not("teacher_id", "is", null);
+        
+      if (coursesWithTeachersError) throw new Error(coursesWithTeachersError.message);
       
-      if (activeTeachersError) throw new Error(activeTeachersError.message);
+      // Extract unique teacher IDs
+      const uniqueTeacherIds = [...new Set(coursesWithTeachers.map(course => course.teacher_id))];
+      
+      // Only query if we have teacher IDs
+      let activeTeachers = 0;
+      if (uniqueTeacherIds.length > 0) {
+        const { count: activeTeachersCount, error: activeTeachersError } = await supabase
+          .from("profiles")
+          .select("id", { count: "exact", head: true })
+          .eq("role", "teacher")
+          .in("id", uniqueTeacherIds);
+        
+        if (activeTeachersError) throw new Error(activeTeachersError.message);
+        activeTeachers = activeTeachersCount || 0;
+      }
       
       // Calculate total users
       const totalUsers = (totalStudents || 0) + (totalTeachers || 0);

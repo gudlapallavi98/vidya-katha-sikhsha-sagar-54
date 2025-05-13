@@ -12,6 +12,7 @@ export type Toast = {
   description?: React.ReactNode;
   action?: ToastActionElement;
   variant?: "default" | "destructive";
+  duration?: number; // Add duration property
 } & Omit<ToastProps, "children">;
 
 // Re-export the toast function (implementation from hooks)
