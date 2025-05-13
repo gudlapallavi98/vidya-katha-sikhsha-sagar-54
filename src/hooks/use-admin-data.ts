@@ -70,8 +70,20 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
       
       // Handle data processing with proper type checking
       const processedData = data.map((userItem) => {
-        // Make sure we're dealing with a valid user object, not an error
-        if (typeof userItem === 'object' && userItem !== null) {
+        // Fix: Add null check before accessing userItem
+        if (!userItem) {
+          return {
+            id: 'unknown',
+            first_name: 'Unknown',
+            last_name: 'User',
+            email: 'unknown@placeholder.com',
+            role: 'unknown',
+            created_at: new Date().toISOString()
+          } as AdminUser;
+        }
+        
+        // Make sure we're dealing with a valid user object
+        if (typeof userItem === 'object') {
           // If email isn't in the database but needed for the AdminUser type,
           // add a placeholder based on user properties that we check exist first
           if (!('email' in userItem)) {
@@ -79,14 +91,12 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
             const typedUser = userItem as Record<string, unknown>;
             
             // Use null coalescing to handle null case
-            const firstName = (typedUser && 
-              'first_name' in typedUser && 
+            const firstName = ('first_name' in typedUser && 
               typeof typedUser.first_name === 'string')
                 ? String(typedUser.first_name).toLowerCase() 
                 : 'user';
             
-            const lastName = (typedUser && 
-              'last_name' in typedUser && 
+            const lastName = ('last_name' in typedUser && 
               typeof typedUser.last_name === 'string')
                 ? String(typedUser.last_name).toLowerCase()
                 : 'unknown';
@@ -101,6 +111,7 @@ export const useAdminUsers = (searchQuery = '', roleFilter = '') => {
           }
           return userItem as AdminUser;
         }
+        
         // If for some reason we got an invalid user object, return a safe default
         return {
           id: 'unknown',
