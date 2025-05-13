@@ -27,8 +27,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const AdminUsersManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-  const { data: users = [], isLoading, error, isError } = useAdminUsers(searchQuery, roleFilter);
+  const [roleFilter, setRoleFilter] = useState("all"); // Changed initial value from "" to "all"
+  const { data: users = [], isLoading, error, isError } = useAdminUsers(searchQuery, roleFilter === "all" ? "" : roleFilter); // Convert back to empty string for the hook
   const { toast } = useToast();
 
   const getRoleBadgeVariant = (role: string) => {
@@ -80,7 +80,7 @@ const AdminUsersManagement = () => {
             <SelectValue placeholder="Filter by role" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Roles</SelectItem>
+            <SelectItem value="all">All Roles</SelectItem> {/* Changed value from "" to "all" */}
             <SelectItem value="student">Students</SelectItem>
             <SelectItem value="teacher">Teachers</SelectItem>
             <SelectItem value="admin">Admins</SelectItem>
@@ -150,7 +150,7 @@ const AdminUsersManagement = () => {
             <CardTitle className="text-xl font-medium">No Users Found</CardTitle>
           </CardHeader>
           <CardContent className="text-center text-muted-foreground">
-            {searchQuery || roleFilter ? 
+            {searchQuery || roleFilter !== "all" ? 
               "No users match your search criteria. Try different filters." :
               "There are no users in the system yet."}
           </CardContent>
