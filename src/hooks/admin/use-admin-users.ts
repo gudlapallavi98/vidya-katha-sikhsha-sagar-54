@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminUser } from '@/components/types/admin';
+import { createSafeUserObject } from './utils/user-utils';
 
 /**
  * Custom hook to fetch users for admin dashboard
