@@ -12,7 +12,7 @@ import {
   useStudentProgress, 
   useStudentAchievements 
 } from "@/hooks/use-dashboard-data";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { joinSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
@@ -90,6 +90,7 @@ const StudentDashboard = () => {
     newParams.set("tab", tab);
     
     // Update the URL without causing a page refresh
+    // Use window.history.replaceState instead of updating the searchParams directly
     window.history.replaceState(null, '', `?${newParams.toString()}`);
   };
 

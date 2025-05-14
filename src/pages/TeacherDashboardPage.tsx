@@ -6,7 +6,7 @@ import {
   useSessionRequests, 
   useTeacherSessions
 } from "@/hooks/use-dashboard-data";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TeacherSidebar from "@/components/teacher/dashboard/TeacherSidebar";
@@ -127,6 +127,7 @@ const TeacherDashboard = () => {
     newParams.set("tab", tab);
     
     // Update the URL without causing a page refresh
+    // Use window.history.replaceState instead of updating the searchParams directly
     window.history.replaceState(null, '', `?${newParams.toString()}`);
   };
 
