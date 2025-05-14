@@ -38,6 +38,11 @@ const TeacherSessionRequests = () => {
     );
   }
 
+  // Filter requests by status for each tab
+  const pendingRequests = sessionRequests.filter(request => request.status === "pending");
+  const acceptedRequests = sessionRequests.filter(request => request.status === "accepted");
+  const rejectedRequests = sessionRequests.filter(request => request.status === "rejected");
+
   return (
     <div className="space-y-6">
       <div>
@@ -45,7 +50,7 @@ const TeacherSessionRequests = () => {
         <p className="text-muted-foreground">Manage your incoming session requests from students</p>
       </div>
 
-      <Tabs defaultValue="pending" onValueChange={setActiveTab} value={activeTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="accepted">Accepted</TabsTrigger>
@@ -53,30 +58,42 @@ const TeacherSessionRequests = () => {
         </TabsList>
         
         <TabsContent value="pending" className="space-y-4">
-          <SessionRequestsList 
-            requests={sessionRequests} 
-            onAccept={handleAccept} 
-            onReject={handleReject}
-            status="pending"
-          />
+          {pendingRequests.length > 0 ? (
+            <SessionRequestsList 
+              requests={pendingRequests} 
+              onAccept={handleAccept} 
+              onReject={handleReject}
+              status="pending"
+            />
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No pending requests found.</p>
+          )}
         </TabsContent>
         
         <TabsContent value="accepted" className="space-y-4">
-          <SessionRequestsList 
-            requests={sessionRequests} 
-            onAccept={handleAccept} 
-            onReject={handleReject}
-            status="accepted"
-          />
+          {acceptedRequests.length > 0 ? (
+            <SessionRequestsList 
+              requests={acceptedRequests} 
+              onAccept={handleAccept} 
+              onReject={handleReject}
+              status="accepted"
+            />
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No accepted requests found.</p>
+          )}
         </TabsContent>
         
         <TabsContent value="rejected" className="space-y-4">
-          <SessionRequestsList 
-            requests={sessionRequests} 
-            onAccept={handleAccept} 
-            onReject={handleReject}
-            status="rejected"
-          />
+          {rejectedRequests.length > 0 ? (
+            <SessionRequestsList 
+              requests={rejectedRequests} 
+              onAccept={handleAccept} 
+              onReject={handleReject}
+              status="rejected"
+            />
+          ) : (
+            <p className="text-center text-muted-foreground py-8">No rejected requests found.</p>
+          )}
         </TabsContent>
       </Tabs>
     </div>
