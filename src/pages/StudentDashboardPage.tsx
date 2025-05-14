@@ -27,7 +27,17 @@ const queryClient = new QueryClient({
   },
 });
 
-// Define tabs outside of the component render function to avoid hooks issues
+// Wrapper component to provide React Query context
+const StudentDashboardWithQueryClient = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <StudentDashboard />
+    </QueryClientProvider>
+  );
+};
+
+// Define tabs outside of the component render function
+// This prevents hooks rendering inconsistency
 const createStudentTabs = (
   enrollments,
   upcomingSessions,
@@ -121,15 +131,6 @@ const createStudentTabs = (
   }
 ];
 
-// Wrapper component to provide React Query context
-const StudentDashboardWithQueryClient = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <StudentDashboard />
-    </QueryClientProvider>
-  );
-};
-
 const StudentDashboard = () => {
   // Use our improved dashboard tabs hook
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
@@ -140,7 +141,7 @@ const StudentDashboard = () => {
   const dashboard = useStudentDashboard();
   
   // Handle joining a class
-  const handleJoinClass = async (sessionId: string) => {
+  const handleJoinClass = async (sessionId) => {
     try {
       if (!user) return;
       
@@ -195,11 +196,12 @@ const StudentDashboard = () => {
     pastSessions: dashboard.pastSessions.isLoading
   };
   
-  // Create tabs with stable reference
+  // Create tabs with data from the dashboard
+  // IMPORTANT: This must be created here after all state values are defined
   const studentTabs = createStudentTabs(
     dashboard.enrollments.data,
     upcomingSessionsList,
-    dashboard.pastSessions.data,
+    completedSessionsList,
     loadingStates,
     handleJoinClass
   );

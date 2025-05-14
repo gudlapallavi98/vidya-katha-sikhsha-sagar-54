@@ -31,7 +31,7 @@ interface TeacherDashboardContentProps {
   handleStartClass: (sessionId: string) => Promise<void>;
 }
 
-// Define tabs creator function outside component to avoid hooks issues
+// Define tab creation function outside component
 const createTeacherTabs = (props: TeacherDashboardContentProps) => [
   {
     value: "overview",
@@ -104,7 +104,7 @@ const createTeacherTabs = (props: TeacherDashboardContentProps) => [
 ];
 
 const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = (props) => {
-  // Create tabs with stable references
+  // Create tabs with stable references using the function
   const dashboardTabs = createTeacherTabs(props);
 
   return (

@@ -54,4 +54,4 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   );
 };
 
-export default DashboardTabs;
+export default React.memo(DashboardTabs);
