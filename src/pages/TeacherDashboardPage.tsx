@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
@@ -45,8 +44,6 @@ const TeacherDashboard = () => {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
-
-  // Removed the effect that was updating URL when tab changes to prevent reload cycles
   
   // Calculate metrics from sessions data
   const upcomingSessions = teacherSessions.filter(s => {

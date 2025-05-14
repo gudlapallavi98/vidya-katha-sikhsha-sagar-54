@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, User, Settings, Home, Book } from "lucide-react";
+import { Menu, User, Settings, Home, Book, Calendar, Clock, MessageSquare } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
 interface RadialMenuItemProps {
@@ -77,19 +77,14 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
 };
 
 export const RadialMenu: React.FC<RadialMenuProps> = ({
-  items = [
-    { icon: <Home className="h-5 w-5" />, label: "Home", path: "/", onClick: () => window.location.href = "/" },
-    { icon: <User className="h-5 w-5" />, label: "Profile", path: "/profile", onClick: () => window.location.href = "/profile" },
-    { icon: <Book className="h-5 w-5" />, label: "Courses", path: "/courses", onClick: () => window.location.href = "/courses" },
-    { icon: <Settings className="h-5 w-5" />, label: "Settings", path: "/profile", onClick: () => window.location.href = "/profile?tab=settings" },
-  ],
+  items = [],
   className,
   triggerIcon = <Menu className="h-6 w-6" />,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
   const currentPath = location.pathname;
-
+  
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
@@ -109,42 +104,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
     };
   }, [isOpen]);
 
-  // Determine if we're on a teacher dashboard page
-  const isTeacherDashboard = currentPath === '/teacher-dashboard';
-
-  // If we're on teacher dashboard, modify menu items
-  const menuItems = React.useMemo(() => {
-    if (isTeacherDashboard) {
-      return [
-        { 
-          icon: <Home className="h-5 w-5" />, 
-          label: "Overview", 
-          path: "/teacher-dashboard?tab=overview", 
-          onClick: () => window.location.href = "/teacher-dashboard?tab=overview" 
-        },
-        { 
-          icon: <Book className="h-5 w-5" />, 
-          label: "Courses", 
-          path: "/teacher-dashboard?tab=courses", 
-          onClick: () => window.location.href = "/teacher-dashboard?tab=courses" 
-        },
-        { 
-          icon: <User className="h-5 w-5" />, 
-          label: "Requests", 
-          path: "/teacher-dashboard?tab=session-requests", 
-          onClick: () => window.location.href = "/teacher-dashboard?tab=session-requests" 
-        },
-        { 
-          icon: <Settings className="h-5 w-5" />, 
-          label: "Profile", 
-          path: "/teacher-dashboard?tab=profile", 
-          onClick: () => window.location.href = "/teacher-dashboard?tab=profile" 
-        },
-      ];
-    }
-    return items;
-  }, [isTeacherDashboard, items]);
-
   // Get current tab from URL
   const searchParams = new URLSearchParams(location.search);
   const currentTab = searchParams.get('tab') || "overview";
@@ -152,12 +111,12 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
   return (
     <div
       className={cn(
-        "fixed bottom-20 right-6 z-50 radial-menu-container",
+        "fixed bottom-6 right-6 z-50 radial-menu-container",
         className
       )}
     >
       {/* Radial menu items */}
-      {menuItems.map((item, index) => {
+      {items.map((item, index) => {
         // Check if this item is active based on path and query params
         const itemPath = item.path.split("?")[0];
         const itemQuery = new URLSearchParams(item.path.split("?")[1] || "");
@@ -179,7 +138,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
               setIsOpen(false);
             }}
             index={index}
-            totalItems={menuItems.length}
+            totalItems={items.length}
             isOpen={isOpen}
             isActive={isActive}
           />
