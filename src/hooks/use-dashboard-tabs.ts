@@ -1,42 +1,42 @@
 
-import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 /**
- * Custom hook to manage dashboard tab state with URL synchronization
- * This hook ensures tab state is preserved during navigation without causing reloads
+ * Custom hook for managing dashboard tab state and URL synchronization
+ * Works for both teacher and student dashboards
  */
-export const useDashboardTabs = (defaultTab = "overview") => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
+export const useDashboardTabs = (defaultTab: string = "overview") => {
+  const location = useLocation();
+  const navigate = useNavigate();
   
-  // Initialize with URL param if available, otherwise use default
-  const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab);
-
-  // Sync state with URL when URL changes directly (browser navigation)
-  useEffect(() => {
-    const currentTab = searchParams.get("tab");
-    if (currentTab && currentTab !== activeTab) {
-      setActiveTab(currentTab);
-    } else if (!currentTab && activeTab !== defaultTab) {
-      // If no tab in URL but we have a default, set it without triggering reload
-      setSearchParams({ tab: activeTab }, { replace: true });
-    }
-  }, [searchParams, activeTab, defaultTab, setSearchParams]);
-
-  // Tab change handler that prevents recreating function on every render
-  const handleTabChange = useCallback((tab: string) => {
-    if (tab === activeTab) return; // Prevent unnecessary updates
-    
-    // Update local state immediately for faster UI response
-    setActiveTab(tab);
-    
-    // Update URL without adding to browser history
-    setSearchParams({ tab }, { replace: true });
-  }, [activeTab, setSearchParams]);
-
-  return {
-    activeTab,
-    handleTabChange
+  // Extract current tab from URL if present
+  const getTabFromUrl = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') || defaultTab;
   };
+  
+  // Initialize tab state from URL
+  const [activeTab, setActiveTab] = useState<string>(getTabFromUrl());
+  
+  // Update URL when tab changes
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(location.search);
+    params.set('tab', tab);
+    navigate({
+      pathname: location.pathname,
+      search: params.toString()
+    }, { replace: true });
+  };
+  
+  // Sync with URL changes (e.g., from browser navigation)
+  useEffect(() => {
+    const currentTab = getTabFromUrl();
+    if (currentTab !== activeTab) {
+      setActiveTab(currentTab);
+    }
+  }, [location.search]);
+  
+  return { activeTab, handleTabChange };
 };

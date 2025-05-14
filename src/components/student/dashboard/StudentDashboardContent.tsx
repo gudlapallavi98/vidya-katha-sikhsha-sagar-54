@@ -29,48 +29,81 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
   loadingStates,
   handleJoinClass
 }) => {
+  // Helper function to get status text based on session status
+  const getStatusText = (session: any) => {
+    if (session.status === "in_progress") return "In Progress";
+    if (session.status === "completed") return "Completed";
+    if (session.status === "scheduled") {
+      const now = new Date();
+      const sessionTime = new Date(session.start_time);
+      const timeUntilSession = sessionTime.getTime() - now.getTime();
+      const hoursUntil = timeUntilSession / (1000 * 60 * 60);
+      
+      if (hoursUntil <= 1) return "Starting Soon";
+      return "Scheduled";
+    }
+    return session.status.charAt(0).toUpperCase() + session.status.slice(1);
+  };
+  
+  // Helper function to determine badge class based on status
+  const getStatusBadgeClass = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "in_progress":
+        return "bg-green-100 text-green-800";
+      case "completed":
+        return "bg-blue-100 text-blue-800";
+      case "scheduled":
+        return "bg-purple-100 text-purple-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
+      case "starting soon":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   // Render the appropriate content based on active tab
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return (
           <StudentDashboardOverview
-            enrollments={enrollments}
-            upcomingSessions={upcomingSessions}
-            isLoading={loadingStates.enrollments || loadingStates.upcomingSessions}
+            enrolledCourses={enrollments}
+            upcomingSessionsList={upcomingSessions}
+            completedSessionsList={pastSessions}
+            coursesLoading={loadingStates.enrollments}
+            sessionsLoading={loadingStates.upcomingSessions}
+            getStatusBadgeClass={getStatusBadgeClass}
+            getStatusText={getStatusText}
             handleJoinClass={handleJoinClass}
           />
         );
       case "courses":
         return (
-          <>
-            <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
-            <StudentCoursesList 
-              enrollments={enrollments} 
-              isLoading={loadingStates.enrollments} 
-            />
-          </>
+          <StudentCoursesList
+            enrolledCourses={enrollments}
+            coursesLoading={loadingStates.enrollments}
+          />
         );
       case "sessions":
         return (
-          <>
-            <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
-            <StudentUpcomingSessions
-              sessions={upcomingSessions}
-              isLoading={loadingStates.upcomingSessions}
-              handleJoinClass={handleJoinClass}
-            />
-          </>
+          <StudentUpcomingSessions
+            sessions={upcomingSessions}
+            sessionsLoading={loadingStates.upcomingSessions}
+            getStatusBadgeClass={getStatusBadgeClass}
+            getStatusText={getStatusText}
+            handleJoinClass={handleJoinClass}
+          />
         );
       case "past-sessions":
         return (
-          <>
-            <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
-            <StudentPastSessions
-              sessions={pastSessions}
-              isLoading={loadingStates.pastSessions}
-            />
-          </>
+          <StudentPastSessions
+            sessions={pastSessions}
+            sessionsLoading={loadingStates.pastSessions}
+            getStatusBadgeClass={getStatusBadgeClass}
+            getStatusText={getStatusText}
+          />
         );
       case "request-session":
         return (
