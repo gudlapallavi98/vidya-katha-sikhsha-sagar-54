@@ -8,7 +8,6 @@ import TeacherSchedule from "./TeacherSchedule";
 import AvailabilityScheduler from "@/components/teacher/AvailabilityScheduler";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import { SessionRequest, Session } from "@/hooks/types";
-import DashboardTabs from "@/components/dashboard/DashboardTabs";
 
 interface TeacherDashboardContentProps {
   activeTab: string;
@@ -31,89 +30,82 @@ interface TeacherDashboardContentProps {
   handleStartClass: (sessionId: string) => Promise<void>;
 }
 
-// Define tab creation function outside component
-const createTeacherTabs = (props: TeacherDashboardContentProps) => [
-  {
-    value: "overview",
-    label: "Dashboard",
-    content: (
-      <TeacherOverview
-        teacherCourses={props.teacherCourses}
-        coursesLoading={props.coursesLoading}
-        sessionRequests={props.sessionRequests}
-        requestsLoading={props.requestsLoading}
-        upcomingSessions={props.upcomingSessions}
-        sessionsLoading={props.sessionsLoading}
-        totalSessions={props.totalSessions}
-        handleAcceptSession={props.handleAcceptSession}
-        handleRejectSession={props.handleRejectSession}
-        handleStartClass={props.handleStartClass}
-      />
-    ),
-  },
-  {
-    value: "courses",
-    label: "My Courses",
-    content: (
-      <TeacherCourses
-        teacherCourses={props.teacherCourses}
-        coursesLoading={props.coursesLoading}
-      />
-    ),
-  },
-  {
-    value: "sessions",
-    label: "Session Requests",
-    content: <TeacherSessionRequests />,
-  },
-  {
-    value: "schedule",
-    label: "My Schedule",
-    content: (
-      <TeacherSchedule
-        upcomingSessions={props.upcomingSessions}
-        sessionsLoading={props.sessionsLoading}
-        handleStartClass={props.handleStartClass}
-      />
-    ),
-  },
-  {
-    value: "availability",
-    label: "Set Availability",
-    content: (
-      <>
-        <h1 className="font-sanskrit text-3xl font-bold mb-6">Set Your Availability</h1>
-        <AvailabilityScheduler />
-      </>
-    ),
-  },
-  {
-    value: "profile",
-    label: "Profile Settings",
-    content: (
-      <>
-        <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <ProfileSettingsForm role="teacher" />
-          </CardContent>
-        </Card>
-      </>
-    ),
-  },
-];
-
 const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = (props) => {
-  // Create tabs with stable references using the function
-  const dashboardTabs = createTeacherTabs(props);
+  const {
+    activeTab,
+    teacherCourses,
+    coursesLoading,
+    sessionRequests,
+    requestsLoading,
+    upcomingSessions,
+    sessionsLoading,
+    totalSessions,
+    handleAcceptSession,
+    handleRejectSession,
+    handleStartClass,
+  } = props;
+
+  // Render the appropriate content based on active tab
+  const renderContent = () => {
+    switch (activeTab) {
+      case "overview":
+        return (
+          <TeacherOverview
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
+          />
+        );
+      case "courses":
+        return (
+          <TeacherCourses
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+          />
+        );
+      case "sessions":
+        return <TeacherSessionRequests />;
+      case "schedule":
+        return (
+          <TeacherSchedule
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            handleStartClass={handleStartClass}
+          />
+        );
+      case "availability":
+        return (
+          <>
+            <h1 className="font-sanskrit text-3xl font-bold mb-6">Set Your Availability</h1>
+            <AvailabilityScheduler />
+          </>
+        );
+      case "profile":
+        return (
+          <>
+            <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <ProfileSettingsForm role="teacher" />
+              </CardContent>
+            </Card>
+          </>
+        );
+      default:
+        return <p>Select an option from the sidebar</p>;
+    }
+  };
 
   return (
-    <div className="w-full md:w-3/4">
-      <DashboardTabs 
-        tabs={dashboardTabs} 
-        activeTab={props.activeTab}
-        onTabChange={props.handleTabChange}
-      />
+    <div className="w-full">
+      {renderContent()}
     </div>
   );
 };

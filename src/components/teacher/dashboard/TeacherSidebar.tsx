@@ -1,113 +1,88 @@
 
-import React, { useCallback } from "react";
-import { Calendar, Settings, User } from "lucide-react";
+import React from "react";
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  Calendar,
+  Users,
+  Settings 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface TeacherSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  collapsed: boolean;
 }
 
-const TeacherSidebar: React.FC<TeacherSidebarProps> = React.memo(({ 
+const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ 
   activeTab, 
-  setActiveTab 
+  setActiveTab,
+  collapsed
 }) => {
   const { user } = useAuth();
-
-  // Individual button handlers to prevent unnecessary re-renders
-  const handleOverviewClick = useCallback(() => {
-    if (activeTab !== "overview") setActiveTab("overview");
-  }, [activeTab, setActiveTab]);
-
-  const handleCoursesClick = useCallback(() => {
-    if (activeTab !== "courses") setActiveTab("courses");
-  }, [activeTab, setActiveTab]);
-
-  const handleSessionsClick = useCallback(() => {
-    if (activeTab !== "sessions") setActiveTab("sessions");
-  }, [activeTab, setActiveTab]);
-
-  const handleScheduleClick = useCallback(() => {
-    if (activeTab !== "schedule") setActiveTab("schedule");
-  }, [activeTab, setActiveTab]);
-
-  const handleAvailabilityClick = useCallback(() => {
-    if (activeTab !== "availability") setActiveTab("availability");
-  }, [activeTab, setActiveTab]);
-
-  const handleProfileClick = useCallback(() => {
-    if (activeTab !== "profile") setActiveTab("profile");
-  }, [activeTab, setActiveTab]);
+  
+  const navItems = [
+    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+    { id: "courses", label: "My Courses", icon: BookOpen },
+    { id: "sessions", label: "Session Requests", icon: Users },
+    { id: "schedule", label: "My Schedule", icon: Calendar },
+    { id: "availability", label: "Set Availability", icon: Calendar },
+    { id: "profile", label: "Profile Settings", icon: Settings },
+  ];
 
   return (
-    <div className="w-full md:w-1/4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-indian-blue/20 flex items-center justify-center">
-              <User className="h-8 w-8 text-indian-blue" />
-            </div>
-            <div>
-              <CardTitle>{user?.user_metadata?.first_name || "Teacher"} {user?.user_metadata?.last_name || ""}</CardTitle>
-              <CardDescription>Teacher</CardDescription>
-            </div>
+    <div className="h-full py-4">
+      {/* Header/Profile section */}
+      <div className={`flex ${collapsed ? "justify-center" : "px-4"} mb-6`}>
+        {!collapsed ? (
+          <div>
+            <h3 className="font-medium">
+              {user?.user_metadata?.first_name || "Teacher"}
+            </h3>
+            <p className="text-sm text-muted-foreground">Teacher</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <nav className="space-y-2">
-            <Button 
-              variant={activeTab === "overview" ? "default" : "ghost"} 
-              className={activeTab === "overview" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={handleOverviewClick}
-            >
-              Dashboard
-            </Button>
-            <Button 
-              variant={activeTab === "courses" ? "default" : "ghost"} 
-              className={activeTab === "courses" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={handleCoursesClick}
-            >
-              My Courses
-            </Button>
-            <Button 
-              variant={activeTab === "sessions" ? "default" : "ghost"} 
-              className={activeTab === "sessions" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={handleSessionsClick}
-            >
-              Session Requests
-            </Button>
-            <Button 
-              variant={activeTab === "schedule" ? "default" : "ghost"} 
-              className={activeTab === "schedule" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={handleScheduleClick}
-            >
-              My Schedule
-            </Button>
-            <Button 
-              variant={activeTab === "availability" ? "default" : "ghost"} 
-              className={activeTab === "availability" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={handleAvailabilityClick}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Set Availability
-            </Button>
-            <Button 
-              variant={activeTab === "profile" ? "default" : "ghost"} 
-              className={activeTab === "profile" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={handleProfileClick}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Profile Settings
-            </Button>
-          </nav>
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="h-10 w-10 rounded-full bg-indian-blue/20 flex items-center justify-center">
+            <span className="text-indian-blue font-bold">
+              {user?.user_metadata?.first_name?.charAt(0) || "T"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="space-y-1 px-2">
+        <TooltipProvider delayDuration={0}>
+          {navItems.map((item) => (
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTab === item.id ? "default" : "ghost"}
+                  className={`
+                    ${activeTab === item.id ? "bg-indian-blue" : ""} 
+                    ${collapsed ? "justify-center w-12 px-0 mx-auto" : "justify-start w-full"}
+                    h-10 mb-1
+                  `}
+                  onClick={() => setActiveTab(item.id)}
+                >
+                  <item.icon className={`h-5 w-5 ${collapsed ? "" : "mr-2"}`} />
+                  {!collapsed && <span>{item.label}</span>}
+                </Button>
+              </TooltipTrigger>
+              {collapsed && (
+                <TooltipContent side="right">
+                  {item.label}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          ))}
+        </TooltipProvider>
+      </nav>
     </div>
   );
-});
+};
 
-TeacherSidebar.displayName = "TeacherSidebar";
-
-export default TeacherSidebar;
+export default React.memo(TeacherSidebar);

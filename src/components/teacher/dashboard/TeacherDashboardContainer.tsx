@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client"; 
 import { useSessionAcceptance } from "@/hooks/use-session-acceptance";
 import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
+import { useSidebarState } from "@/hooks/use-sidebar-state";
 import { 
   useTeacherCourses, 
   useTeacherProfile 
@@ -16,6 +17,8 @@ import {
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
 import TeacherSidebar from "./TeacherSidebar";
 import TeacherDashboardContent from "./TeacherDashboardContent";
+import { PanelLeftIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /**
  * Main container component for the teacher dashboard
@@ -24,6 +27,7 @@ import TeacherDashboardContent from "./TeacherDashboardContent";
 const TeacherDashboardContainer = () => {
   // Use our improved dashboard tabs hook
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
+  const { collapsed, toggleSidebar } = useSidebarState();
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
@@ -150,12 +154,31 @@ const TeacherDashboardContainer = () => {
   };
 
   return (
-    <div className="container py-12">
-      <div className="flex flex-col md:flex-row items-start gap-8">
-        {/* Sidebar */}
-        <TeacherSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
+    <div className="container p-0 h-full flex">
+      {/* Collapsible Sidebar */}
+      <div className={`transition-all duration-300 ease-in-out ${collapsed ? "w-16" : "w-64"} min-h-[calc(100vh-4rem)] border-r`}>
+        <TeacherSidebar 
+          activeTab={activeTab} 
+          setActiveTab={handleTabChange}
+          collapsed={collapsed}
+        />
+      </div>
 
-        {/* Main content */}
+      {/* Main content area */}
+      <div className="flex-1 p-6">
+        <div className="flex items-center mb-6">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleSidebar}
+            className="mr-4"
+          >
+            <PanelLeftIcon className={`h-5 w-5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
+          <h1 className="text-2xl font-bold font-sanskrit">Teacher Dashboard</h1>
+        </div>
+
         <TeacherDashboardContent
           activeTab={activeTab}
           handleTabChange={handleTabChange}

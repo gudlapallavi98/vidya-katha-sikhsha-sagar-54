@@ -1,108 +1,89 @@
 
-import React, { useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  Calendar,
+  Clock,
+  Users,
+  Settings 
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Settings, User } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface StudentSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   firstName?: string;
   lastName?: string;
+  collapsed: boolean;
 }
 
 const StudentSidebar: React.FC<StudentSidebarProps> = React.memo(({
   activeTab,
   setActiveTab,
   firstName,
-  lastName
+  lastName,
+  collapsed
 }) => {
-  // Individual button handlers to prevent unnecessary re-renders
-  const handleOverviewClick = useCallback(() => {
-    if (activeTab !== "overview") setActiveTab("overview");
-  }, [activeTab, setActiveTab]);
-
-  const handleCoursesClick = useCallback(() => {
-    if (activeTab !== "courses") setActiveTab("courses");
-  }, [activeTab, setActiveTab]);
-
-  const handleSessionsClick = useCallback(() => {
-    if (activeTab !== "sessions") setActiveTab("sessions");
-  }, [activeTab, setActiveTab]);
-
-  const handlePastSessionsClick = useCallback(() => {
-    if (activeTab !== "past-sessions") setActiveTab("past-sessions");
-  }, [activeTab, setActiveTab]);
-
-  const handleRequestSessionClick = useCallback(() => {
-    if (activeTab !== "request-session") setActiveTab("request-session");
-  }, [activeTab, setActiveTab]);
-
-  const handleProfileClick = useCallback(() => {
-    if (activeTab !== "profile") setActiveTab("profile");
-  }, [activeTab, setActiveTab]);
+  const navItems = [
+    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+    { id: "courses", label: "My Courses", icon: BookOpen },
+    { id: "sessions", label: "Upcoming Sessions", icon: Calendar },
+    { id: "past-sessions", label: "Past Sessions", icon: Clock },
+    { id: "request-session", label: "Request Session", icon: Users },
+    { id: "profile", label: "Profile Settings", icon: Settings },
+  ];
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-indian-saffron/20 flex items-center justify-center">
-            <User className="h-8 w-8 text-indian-saffron" />
-          </div>
+    <div className="h-full py-4">
+      {/* Header/Profile section */}
+      <div className={`flex ${collapsed ? "justify-center" : "px-4"} mb-6`}>
+        {!collapsed ? (
           <div>
-            <CardTitle>{firstName || "Student"} {lastName || ""}</CardTitle>
-            <CardDescription>Student</CardDescription>
+            <h3 className="font-medium">
+              {firstName || "Student"} {!collapsed && lastName}
+            </h3>
+            <p className="text-sm text-muted-foreground">Student</p>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <nav className="space-y-2">
-          <Button 
-            variant={activeTab === "overview" ? "default" : "ghost"} 
-            className={activeTab === "overview" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={handleOverviewClick}
-          >
-            Dashboard
-          </Button>
-          <Button 
-            variant={activeTab === "courses" ? "default" : "ghost"} 
-            className={activeTab === "courses" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={handleCoursesClick}
-          >
-            My Courses
-          </Button>
-          <Button 
-            variant={activeTab === "sessions" ? "default" : "ghost"} 
-            className={activeTab === "sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={handleSessionsClick}
-          >
-            Upcoming Sessions
-          </Button>
-          <Button 
-            variant={activeTab === "past-sessions" ? "default" : "ghost"} 
-            className={activeTab === "past-sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={handlePastSessionsClick}
-          >
-            Past Sessions
-          </Button>
-          <Button 
-            variant={activeTab === "request-session" ? "default" : "ghost"} 
-            className={activeTab === "request-session" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={handleRequestSessionClick}
-          >
-            Request Session
-          </Button>
-          <Button 
-            variant={activeTab === "profile" ? "default" : "ghost"} 
-            className={activeTab === "profile" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-            onClick={handleProfileClick}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Profile Settings
-          </Button>
-        </nav>
-      </CardContent>
-    </Card>
+        ) : (
+          <div className="h-10 w-10 rounded-full bg-indian-saffron/20 flex items-center justify-center">
+            <span className="text-indian-saffron font-bold">
+              {firstName?.charAt(0) || "S"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="space-y-1 px-2">
+        <TooltipProvider delayDuration={0}>
+          {navItems.map((item) => (
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={activeTab === item.id ? "default" : "ghost"}
+                  className={`
+                    ${activeTab === item.id ? "bg-indian-saffron" : ""} 
+                    ${collapsed ? "justify-center w-12 px-0 mx-auto" : "justify-start w-full"}
+                    h-10 mb-1
+                  `}
+                  onClick={() => setActiveTab(item.id)}
+                >
+                  <item.icon className={`h-5 w-5 ${collapsed ? "" : "mr-2"}`} />
+                  {!collapsed && <span>{item.label}</span>}
+                </Button>
+              </TooltipTrigger>
+              {collapsed && (
+                <TooltipContent side="right">
+                  {item.label}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          ))}
+        </TooltipProvider>
+      </nav>
+    </div>
   );
 });
 

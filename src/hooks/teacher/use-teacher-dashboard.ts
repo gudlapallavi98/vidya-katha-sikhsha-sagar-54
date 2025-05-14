@@ -1,37 +1,48 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useDashboardTabs } from "../use-dashboard-tabs";
+import { useTeacherCourses } from "./use-teacher-data";
+import { useSessionRequests, useTeacherSessions } from "./use-teacher-sessions";
 
 /**
- * Custom hook to manage teacher dashboard tab state
- * This centralizes tab management logic and prevents unnecessary re-renders
+ * Custom hook to centralize teacher dashboard data and state management
  */
-export const useTeacherDashboard = (defaultTab = "overview") => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab);
+export const useTeacherDashboard = () => {
+  const { activeTab, handleTabChange } = useDashboardTabs("overview");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Sync state with URL params on mount and when URL changes
-  useEffect(() => {
-    const currentTab = searchParams.get("tab");
-    if (currentTab && currentTab !== activeTab) {
-      setActiveTab(currentTab);
-    }
-  }, [searchParams, activeTab]);
+  // Get all teacher data
+  const teacherCourses = useTeacherCourses();
+  const sessionRequests = useSessionRequests(searchQuery);
+  const teacherSessions = useTeacherSessions();
 
-  // Memoized tab change handler to prevent recreating function on every render
-  const handleTabChange = useCallback((tab: string) => {
-    if (tab === activeTab) return; // Prevent unnecessary updates
-    
-    setActiveTab(tab);
-    
-    // Using { replace: true } is critical to prevent page reloads
-    // This replaces the current history state instead of adding a new one
-    setSearchParams({ tab }, { replace: true });
-  }, [activeTab, setSearchParams]);
+  // Calculate metrics from sessions data
+  const upcomingSessions = teacherSessions.data?.filter(s => {
+    const sessionEndTime = new Date(s.end_time);
+    const now = new Date();
+    return s.status === 'scheduled' || s.status === 'in_progress' || sessionEndTime >= now;
+  }) || [];
+  
+  const totalSessions = {
+    completed: (teacherSessions.data?.filter(s => s.status === 'completed') || []).length,
+    upcoming: upcomingSessions.length
+  };
+
+  // Search handler
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
 
   return {
     activeTab,
-    handleTabChange
+    handleTabChange,
+    searchQuery,
+    handleSearch,
+    teacherCourses,
+    sessionRequests,
+    teacherSessions,
+    upcomingSessions,
+    totalSessions
   };
 };

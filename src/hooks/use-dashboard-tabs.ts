@@ -31,8 +31,7 @@ export const useDashboardTabs = (defaultTab = "overview") => {
     // Update local state immediately for faster UI response
     setActiveTab(tab);
     
-    // CRITICAL: Use replace:true to prevent adding to browser history stack
-    // and to avoid triggering full page reloads
+    // Update URL without adding to browser history
     setSearchParams({ tab }, { replace: true });
   }, [activeTab, setSearchParams]);
 
