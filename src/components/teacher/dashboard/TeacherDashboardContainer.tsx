@@ -30,6 +30,7 @@ const TeacherDashboardContainer = () => {
   const { user } = useAuth();
   const { handleSessionAccepted } = useSessionAcceptance();
   
+  // Force synchronous loading to prevent flashes between tab changes
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();

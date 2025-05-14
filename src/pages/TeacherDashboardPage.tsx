@@ -2,8 +2,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TeacherDashboardWrapper from "@/components/teacher/dashboard/TeacherDashboardWrapper";
 
-// Create a client
-const queryClient = new QueryClient();
+// Create a persistent QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+    },
+  },
+});
 
 /**
  * Main page component for the teacher dashboard

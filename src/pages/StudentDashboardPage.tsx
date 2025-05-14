@@ -1,10 +1,8 @@
 
-import { useEffect } from "react";
-import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/api/dashboard";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import SessionRequestForm from "@/components/student/SessionRequestForm";
 import StudentDashboardOverview from "@/components/student/dashboard/StudentDashboardOverview";
@@ -12,14 +10,21 @@ import StudentCoursesList from "@/components/student/dashboard/StudentCoursesLis
 import StudentUpcomingSessions from "@/components/student/dashboard/StudentUpcomingSessions";
 import StudentPastSessions from "@/components/student/dashboard/StudentPastSessions";
 import StudentSidebar from "@/components/student/dashboard/StudentSidebar";
-import { Tabs } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
 import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudentDashboard } from "@/hooks/use-student-dashboard";
 
-// Create a client
-const queryClient = new QueryClient();
+// Create a persistent QueryClient instance with consistent configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+    },
+  },
+});
 
 // Wrapper component to provide React Query context
 const StudentDashboardWithQueryClient = () => {
