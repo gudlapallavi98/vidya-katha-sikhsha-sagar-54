@@ -50,6 +50,12 @@ export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
 
   useEffect(() => {
     const fetchTeachers = async () => {
+      if (
+        filterOptions.searchQuery && 
+        filterOptions.searchQuery.length < 2 && 
+        filterOptions.searchQuery.length > 0
+      ) return;
+      
       setIsLoading(true);
       setError(null);
 
@@ -65,13 +71,13 @@ export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
           .gte('available_date', new Date().toISOString().split('T')[0]);
 
         // Apply search query filter
-        if (filterOptions.searchQuery && filterOptions.searchQuery.trim() !== '') {
-          const searchTerm = `%${filterOptions.searchQuery}%`;
-          query = query.or(`teacher.first_name.ilike.${searchTerm},teacher.last_name.ilike.${searchTerm},subject.name.ilike.${searchTerm}`);
+        if (filterOptions.searchQuery && filterOptions.searchQuery.length >= 2) {
+          // Search by teacher name or subject name
+          query = query.or(`teacher.first_name.ilike.%${filterOptions.searchQuery}%,teacher.last_name.ilike.%${filterOptions.searchQuery}%,subject.name.ilike.%${filterOptions.searchQuery}%`);
         }
 
         // Apply subject filter
-        if (filterOptions.subjectId && filterOptions.subjectId.trim() !== '') {
+        if (filterOptions.subjectId) {
           query = query.eq('subject_id', filterOptions.subjectId);
         }
 
@@ -91,6 +97,8 @@ export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
         // Apply sorting
         if (filterOptions.sortBy === 'name') {
           query = query.order('teacher(last_name)', { ascending: true });
+        } else if (filterOptions.sortBy === 'date') {
+          query = query.order('available_date', { ascending: true });
         } else {
           // Default sorting by date
           query = query.order('available_date', { ascending: true });
@@ -103,10 +111,10 @@ export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
         // Filter by experience level if needed
         let filteredData = data || [];
         if (filterOptions.experienceLevel && filteredData.length > 0) {
+          // This is a simple implementation - in real life, you might want to have more
+          // precise criteria for determining experience level
           filteredData = filteredData.filter(item => {
-            if (!item.teacher?.experience) return false;
-            
-            const experience = item.teacher.experience.toLowerCase();
+            const experience = item.teacher?.experience?.toLowerCase() || '';
             
             switch(filterOptions.experienceLevel) {
               case 'beginner':
