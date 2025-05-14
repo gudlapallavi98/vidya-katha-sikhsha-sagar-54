@@ -1,13 +1,6 @@
 
 import React from "react";
-import { 
-  Home, 
-  BookOpen, 
-  Calendar, 
-  Clock, 
-  MessageSquare, 
-  Settings 
-} from "lucide-react";
+import { Home, Settings } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -17,31 +10,12 @@ interface TeacherSidebarProps {
 }
 
 const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ activeTab, setActiveTab }) => {
+  // Simplified navigation items
   const navigationItems = [
     { 
       icon: Home, 
-      label: "Overview", 
+      label: "Dashboard", 
       value: "overview"
-    },
-    { 
-      icon: BookOpen, 
-      label: "Courses", 
-      value: "courses"
-    },
-    { 
-      icon: Calendar, 
-      label: "Session Requests", 
-      value: "sessions"
-    },
-    { 
-      icon: Clock, 
-      label: "Schedule", 
-      value: "schedule"
-    },
-    { 
-      icon: MessageSquare, 
-      label: "Availability", 
-      value: "availability"
     },
     { 
       icon: Settings, 
@@ -62,7 +36,7 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ activeTab, setActiveTab
         </p>
       </div>
       
-      {/* Navigation Menu */}
+      {/* Navigation Menu - Simplified */}
       <nav className="space-y-2">
         {navigationItems.map((item) => {
           const Icon = item.icon;
@@ -84,11 +58,6 @@ const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ activeTab, setActiveTab
                 isActive ? "text-indian-blue" : ""
               )} />
               <span>{item.label}</span>
-              {item.value === "sessions" && (
-                <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] text-white">
-                  New
-                </span>
-              )}
             </button>
           );
         })}

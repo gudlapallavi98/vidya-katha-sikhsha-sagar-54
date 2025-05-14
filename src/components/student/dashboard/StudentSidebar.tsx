@@ -1,13 +1,6 @@
 
 import React from "react";
-import { 
-  Home, 
-  BookOpen, 
-  Calendar, 
-  History, 
-  MessageSquare, 
-  Settings 
-} from "lucide-react";
+import { Home, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StudentSidebarProps {
@@ -23,31 +16,12 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   firstName,
   lastName
 }) => {
+  // Simplified navigation items
   const navigationItems = [
     { 
       icon: Home, 
-      label: "Overview", 
+      label: "Dashboard", 
       value: "overview"
-    },
-    { 
-      icon: BookOpen, 
-      label: "My Courses", 
-      value: "courses"
-    },
-    { 
-      icon: Calendar, 
-      label: "Upcoming Sessions", 
-      value: "sessions"
-    },
-    { 
-      icon: History, 
-      label: "Past Sessions", 
-      value: "past-sessions"
-    },
-    { 
-      icon: MessageSquare, 
-      label: "Request Session", 
-      value: "request-session"
     },
     { 
       icon: Settings, 
@@ -70,7 +44,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
         </p>
       </div>
       
-      {/* Navigation Menu */}
+      {/* Navigation Menu - Simplified */}
       <nav className="space-y-2">
         {navigationItems.map((item) => {
           const Icon = item.icon;

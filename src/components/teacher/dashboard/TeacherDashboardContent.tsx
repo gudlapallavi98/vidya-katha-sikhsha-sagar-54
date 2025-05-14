@@ -4,10 +4,6 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import DashboardTiles from "./components/DashboardTiles";
 import TeacherOverview from "./TeacherOverview";
-import TeacherCourses from "./TeacherCourses";
-import TeacherSessionRequests from "./TeacherSessionRequests";
-import TeacherSchedule from "./TeacherSchedule";
-import AvailabilityScheduler from "@/components/teacher/AvailabilityScheduler";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import { SessionRequest, Session } from "@/hooks/types";
 
@@ -53,6 +49,20 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
       <div className="w-full md:w-3/4">
         <h1 className="font-sanskrit text-3xl font-bold mb-6">Teacher Dashboard</h1>
         <DashboardTiles activeTab={activeTab} />
+        <div className="mt-8">
+          <TeacherOverview
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
+          />
+        </div>
       </div>
     );
   }
@@ -73,30 +83,6 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
             handleRejectSession={handleRejectSession}
             handleStartClass={handleStartClass}
           />
-        </TabsContent>
-        
-        <TabsContent value="courses">
-          <TeacherCourses
-            teacherCourses={teacherCourses}
-            coursesLoading={coursesLoading}
-          />
-        </TabsContent>
-        
-        <TabsContent value="sessions">
-          <TeacherSessionRequests />
-        </TabsContent>
-        
-        <TabsContent value="schedule">
-          <TeacherSchedule
-            upcomingSessions={upcomingSessions}
-            sessionsLoading={sessionsLoading}
-            handleStartClass={handleStartClass}
-          />
-        </TabsContent>
-
-        <TabsContent value="availability">
-          <h1 className="font-sanskrit text-3xl font-bold mb-6">Set Your Availability</h1>
-          <AvailabilityScheduler />
         </TabsContent>
         
         <TabsContent value="profile">
