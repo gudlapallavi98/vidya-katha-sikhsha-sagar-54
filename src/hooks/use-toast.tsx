@@ -130,19 +130,16 @@ export const Toaster = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Provider>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Provider>
 >(({ children, ...props }, ref) => (
-  <ToastProvider ref={ref} {...props}>
+  <ToastProvider {...props}>
     {children}
     <ToastViewport />
   </ToastProvider>
 ));
 Toaster.displayName = "Toaster";
 
-import {
-  useToast as useToastOriginal,
-  toast as toastOriginal,
-} from "@radix-ui/react-toast";
-
-type ToastType = {
+// Define the shape of a toast
+export type ToastType = {
+  id?: string;
   title?: string;
   description?: string;
   action?: ToastActionElement;
@@ -159,18 +156,15 @@ function genId() {
   return count.toString();
 }
 
-type ToasterToast = {
+type ToasterToast = ToastType & {
   id: string;
-  title?: string;
-  description?: string;
-  action?: ToastActionElement;
-  variant?: "default" | "destructive";
 };
 
 const toasts = new Set<ToasterToast>();
 
-export function toast({ title, description, action, variant = "default" }: ToastType) {
-  const id = genId();
+export function toast(props: ToastType) {
+  const { title, description, action, variant = "default" } = props;
+  const id = props.id || genId();
   
   const toast = {
     id,
@@ -199,6 +193,7 @@ export function useToast() {
           }
         });
       }
-    }
+    },
+    toasts: Array.from(toasts)
   };
 }

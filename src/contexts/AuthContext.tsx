@@ -4,8 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 
+// Extend the User type to include custom properties
+export interface ExtendedUser extends User {
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string;
+  role?: string;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: ExtendedUser | null;
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
@@ -16,7 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ExtendedUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -26,7 +34,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log("Auth state changed:", event, newSession ? "session exists" : "no session");
       setSession(newSession);
-      setUser(newSession?.user ?? null);
+      
+      // Cast the user to our extended type and set metadata properties
+      if (newSession?.user) {
+        const extendedUser: ExtendedUser = {
+          ...newSession.user,
+          first_name: newSession.user.user_metadata?.first_name,
+          last_name: newSession.user.user_metadata?.last_name,
+          avatar_url: newSession.user.user_metadata?.avatar_url,
+          role: newSession.user.user_metadata?.role
+        };
+        setUser(extendedUser);
+      } else {
+        setUser(null);
+      }
+      
       setLoading(false);
     });
 
@@ -34,7 +56,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Initial session check:", currentSession ? "session exists" : "no session");
       setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      
+      // Cast the user to our extended type and set metadata properties
+      if (currentSession?.user) {
+        const extendedUser: ExtendedUser = {
+          ...currentSession.user,
+          first_name: currentSession.user.user_metadata?.first_name,
+          last_name: currentSession.user.user_metadata?.last_name,
+          avatar_url: currentSession.user.user_metadata?.avatar_url,
+          role: currentSession.user.user_metadata?.role
+        };
+        setUser(extendedUser);
+      } else {
+        setUser(null);
+      }
+      
       setLoading(false);
     });
 

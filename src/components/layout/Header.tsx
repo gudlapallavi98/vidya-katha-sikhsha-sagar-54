@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -33,7 +33,7 @@ const Header = () => {
 
   // Handle logout
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     navigate("/");
   };
 
@@ -61,7 +61,7 @@ const Header = () => {
           <GraduationCap className="h-8 w-8 text-indian-saffron" />
           <h1 className="font-sanskrit text-2xl font-bold">
             <span className="text-orange-500 text-3xl">E</span>
-            <span className="text-indian-blue">tutors</span>
+            <span className="text-indian-blue">tutorss</span>
             <span className="text-green-500">s</span>
           </h1>
         </Link>

@@ -198,8 +198,7 @@ const Chatbot = () => {
     setMessages(initialMessages);
     toast({
       title: "Chat Reset",
-      description: "The conversation has been reset.",
-      duration: 3000, // Now duration is properly typed
+      description: "The conversation has been reset."
     });
   };
 
