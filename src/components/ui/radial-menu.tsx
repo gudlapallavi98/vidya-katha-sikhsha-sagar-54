@@ -37,7 +37,7 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
   isActive,
 }) => {
   // Calculate position in a semicircle on the left side
-  const radius = 120; // increased radius for better visibility
+  const radius = 150; // Increased radius for better visibility
   // Distribute items in a semicircle on the left side (from -90° to 90°)
   const angle = (index * Math.PI) / (totalItems - 1) - Math.PI / 2;
   const x = -radius * Math.cos(angle); // Negative to go to the left
@@ -63,7 +63,7 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
         variant="default"
         size="icon"
         className={cn(
-          "rounded-full shadow-lg h-12 w-12 flex flex-col items-center justify-center",
+          "rounded-full shadow-lg h-14 w-14 flex flex-col items-center justify-center",
           isActive 
             ? "bg-blue-500 hover:bg-blue-600" 
             : "bg-primary hover:bg-primary/90"
@@ -112,7 +112,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
   return (
     <div
       className={cn(
-        "fixed bottom-[30%] left-10 z-[1000] radial-menu-container", // Moved up from bottom and slightly from left
+        "fixed left-10 top-1/2 -translate-y-1/2 z-[1000] radial-menu-container", // Repositioned to left-middle of screen
         className
       )}
     >
@@ -155,7 +155,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
         variant="default"
         size="icon"
         className={cn(
-          "rounded-full h-14 w-14 shadow-lg bg-blue-500 hover:bg-blue-600 z-[1001] transition-transform",
+          "rounded-full h-16 w-16 shadow-lg bg-blue-500 hover:bg-blue-600 z-[1001] transition-transform",
           isOpen ? "rotate-45" : ""
         )}
       >

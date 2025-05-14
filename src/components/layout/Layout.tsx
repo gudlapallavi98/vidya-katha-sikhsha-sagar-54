@@ -22,37 +22,37 @@ const Layout = () => {
       // Configure menu items for teacher dashboard
       setMenuItems([
         { 
-          icon: <Home className="h-5 w-5" />, 
+          icon: <Home className="h-7 w-7" />, 
           label: "Overview", 
           path: "/teacher-dashboard?tab=overview", 
           onClick: () => window.location.href = "/teacher-dashboard?tab=overview" 
         },
         { 
-          icon: <Book className="h-5 w-5" />, 
+          icon: <Book className="h-7 w-7" />, 
           label: "Courses", 
           path: "/teacher-dashboard?tab=courses", 
           onClick: () => window.location.href = "/teacher-dashboard?tab=courses" 
         },
         { 
-          icon: <Calendar className="h-5 w-5" />, 
+          icon: <Calendar className="h-7 w-7" />, 
           label: "Session Requests", 
           path: "/teacher-dashboard?tab=session-requests", 
           onClick: () => window.location.href = "/teacher-dashboard?tab=session-requests" 
         },
         { 
-          icon: <Clock className="h-5 w-5" />, 
+          icon: <Clock className="h-7 w-7" />, 
           label: "Schedule", 
           path: "/teacher-dashboard?tab=schedule", 
           onClick: () => window.location.href = "/teacher-dashboard?tab=schedule" 
         },
         { 
-          icon: <MessageSquare className="h-5 w-5" />, 
+          icon: <MessageSquare className="h-7 w-7" />, 
           label: "Availability", 
           path: "/teacher-dashboard?tab=availability", 
           onClick: () => window.location.href = "/teacher-dashboard?tab=availability" 
         },
         { 
-          icon: <Settings className="h-5 w-5" />, 
+          icon: <Settings className="h-7 w-7" />, 
           label: "Profile", 
           path: "/teacher-dashboard?tab=profile", 
           onClick: () => window.location.href = "/teacher-dashboard?tab=profile" 
@@ -62,37 +62,37 @@ const Layout = () => {
       // Configure menu items for student dashboard
       setMenuItems([
         { 
-          icon: <Home className="h-5 w-5" />, 
+          icon: <Home className="h-7 w-7" />, 
           label: "Overview", 
           path: "/student-dashboard?tab=overview", 
           onClick: () => window.location.href = "/student-dashboard?tab=overview" 
         },
         { 
-          icon: <Book className="h-5 w-5" />, 
+          icon: <Book className="h-7 w-7" />, 
           label: "My Courses", 
           path: "/student-dashboard?tab=courses", 
           onClick: () => window.location.href = "/student-dashboard?tab=courses" 
         },
         { 
-          icon: <Calendar className="h-5 w-5" />, 
+          icon: <Calendar className="h-7 w-7" />, 
           label: "Upcoming Sessions", 
           path: "/student-dashboard?tab=sessions", 
           onClick: () => window.location.href = "/student-dashboard?tab=sessions" 
         },
         { 
-          icon: <Clock className="h-5 w-5" />, 
+          icon: <Clock className="h-7 w-7" />, 
           label: "Past Sessions", 
           path: "/student-dashboard?tab=past-sessions", 
           onClick: () => window.location.href = "/student-dashboard?tab=past-sessions" 
         },
         { 
-          icon: <MessageSquare className="h-5 w-5" />, 
+          icon: <MessageSquare className="h-7 w-7" />, 
           label: "Request Session", 
           path: "/student-dashboard?tab=request-session", 
           onClick: () => window.location.href = "/student-dashboard?tab=request-session" 
         },
         { 
-          icon: <Settings className="h-5 w-5" />, 
+          icon: <Settings className="h-7 w-7" />, 
           label: "Profile", 
           path: "/student-dashboard?tab=profile", 
           onClick: () => window.location.href = "/student-dashboard?tab=profile" 
@@ -101,10 +101,10 @@ const Layout = () => {
     } else {
       // Default menu items for other pages
       setMenuItems([
-        { icon: <Home className="h-5 w-5" />, label: "Home", path: "/", onClick: () => window.location.href = "/" },
-        { icon: <User className="h-5 w-5" />, label: "Profile", path: "/profile", onClick: () => window.location.href = "/profile" },
-        { icon: <Book className="h-5 w-5" />, label: "Courses", path: "/courses", onClick: () => window.location.href = "/courses" },
-        { icon: <Settings className="h-5 w-5" />, label: "Settings", path: "/profile", onClick: () => window.location.href = "/profile?tab=settings" },
+        { icon: <Home className="h-7 w-7" />, label: "Home", path: "/", onClick: () => window.location.href = "/" },
+        { icon: <User className="h-7 w-7" />, label: "Profile", path: "/profile", onClick: () => window.location.href = "/profile" },
+        { icon: <Book className="h-7 w-7" />, label: "Courses", path: "/courses", onClick: () => window.location.href = "/courses" },
+        { icon: <Settings className="h-7 w-7" />, label: "Settings", path: "/profile", onClick: () => window.location.href = "/profile?tab=settings" },
       ]);
     }
   }, [location.pathname]);
