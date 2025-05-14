@@ -1,208 +1,209 @@
 
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { GraduationCap, Menu, X, User, LogOut } from "lucide-react";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, X, GraduationCap } from "lucide-react";
-import { useMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 const Header = () => {
-  const { user, signOut } = useAuth();
-  const { isMobile } = useMobile();
-  const [isScrolled, setIsScrolled] = useState(false);
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
+  // Navigation items
   const navItems = [
-    { label: "Home", path: "/" },
-    { label: "Courses", path: "/courses" },
-    { label: "About", path: "/about" },
-    { label: "Contact", path: "/contact" },
+    { name: "Home", path: "/" },
+    { name: "Courses", path: "/courses" },
+    { name: "About", path: "/about" },
+    { name: "Contact", path: "/contact" },
   ];
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
+  const isDashboard = location.pathname.includes("dashboard");
+
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
   };
 
-  const NavList = ({ className = "", onItemClick = () => {} }: 
-    { className?: string, onItemClick?: () => void }) => (
-    <ul className={`${className}`}>
-      {navItems.map((item) => (
-        <li key={item.path}>
-          <Link
-            to={item.path}
-            className={`text-sm px-4 py-2 rounded transition-colors block hover:bg-muted ${
-              isActive(item.path)
-                ? "font-medium text-primary"
-                : "text-muted-foreground"
-            }`}
-            onClick={onItemClick}
-          >
-            {item.label}
-          </Link>
-        </li>
-      ))}
-    </ul>
-  );
+  // Get user role for dashboard link
+  const dashboardLink = user?.role === "teacher" ? "/teacher-dashboard" : "/student-dashboard";
+
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (user?.first_name && user?.last_name) {
+      return `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`;
+    }
+    return "U";
+  };
 
   return (
     <header
-      className={`sticky top-0 z-50 w-full transition-all duration-200 ${
-        isScrolled
-          ? "bg-white/95 backdrop-blur-sm border-b shadow-sm"
-          : "bg-white border-b"
-      }`}
+      className={cn(
+        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur",
+        isDashboard ? "shadow-sm" : ""
+      )}
     >
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2 mr-4">
-          <Link to="/" className="flex items-center gap-2">
-            <GraduationCap className="h-7 w-7 text-indian-saffron" />
-            <h1 className="font-sanskrit text-xl font-bold flex items-center">
-              <span className="text-indian-saffron">e</span>
-              <span className="text-indian-blue">tutorss</span>
-            </h1>
-          </Link>
-        </div>
+      <div className="container flex h-16 items-center justify-between py-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2">
+          <GraduationCap className="h-8 w-8 text-indian-saffron" />
+          <h1 className="font-sanskrit text-2xl font-bold">
+            <span className="text-orange-500 text-3xl">E</span>
+            <span className="text-indian-blue">tutors</span>
+            <span className="text-green-500">s</span>
+          </h1>
+        </Link>
 
-        {isMobile ? (
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[80vw] sm:w-[350px] pr-0">
-              <div className="flex flex-row items-center gap-2 mb-6">
-                <GraduationCap className="h-6 w-6 text-indian-saffron" />
-                <h3 className="font-sanskrit text-lg font-bold">
-                  <span className="text-indian-saffron">e</span>
-                  <span className="text-indian-blue">tutorss</span>
-                </h3>
-                <SheetClose className="absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
-                </SheetClose>
-              </div>
-              <div className="grid gap-2 py-4">
-                <div className="flex flex-col space-y-3">
-                  {!user ? (
-                    <>
-                      <SheetClose asChild>
-                        <NavList />
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link to="/login" className="w-full">
-                          <Button
-                            className="w-full bg-indian-saffron hover:bg-indian-saffron/90"
-                            size="sm"
-                          >
-                            Sign In
-                          </Button>
-                        </Link>
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link to="/signup" className="w-full">
-                          <Button variant="outline" size="sm" className="w-full">
-                            Sign Up
-                          </Button>
-                        </Link>
-                      </SheetClose>
-                    </>
-                  ) : (
-                    <>
-                      <SheetClose asChild>
-                        <NavList />
-                      </SheetClose>
-                      <SheetClose asChild>
-                        <Link
-                          to={
-                            user.user_metadata.role === "student"
-                              ? "/student-dashboard"
-                              : "/teacher-dashboard"
-                          }
-                          className="w-full"
-                        >
-                          <Button
-                            size="sm"
-                            className="w-full bg-indian-saffron hover:bg-indian-saffron/90"
-                          >
-                            Dashboard
-                          </Button>
-                        </Link>
-                      </SheetClose>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => signOut()}
-                      >
-                        Sign Out
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        ) : (
-          <nav className="flex items-center justify-between flex-1">
-            <NavList className="flex" />
-            <div className="flex items-center gap-2">
-              {!user ? (
-                <>
-                  <Link to="/login">
-                    <Button
-                      className="bg-indian-saffron hover:bg-indian-saffron/90"
-                      size="sm"
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link to="/signup">
-                    <Button variant="outline" size="sm">
-                      Sign Up
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to={
-                      user.user_metadata.role === "student"
-                        ? "/student-dashboard"
-                        : "/teacher-dashboard"
-                    }
-                  >
-                    <Button
-                      size="sm"
-                      className="bg-indian-saffron hover:bg-indian-saffron/90"
-                    >
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => signOut()}
-                  >
-                    Sign Out
-                  </Button>
-                </>
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-6">
+          {navItems.map((item) => (
+            <Link
+              key={item.name}
+              to={item.path}
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-indian-saffron",
+                location.pathname === item.path
+                  ? "text-indian-saffron"
+                  : "text-muted-foreground"
               )}
-            </div>
-          </nav>
-        )}
+            >
+              {item.name}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Auth Buttons or User Menu */}
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 rounded-full"
+                  >
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage
+                        src={user.avatar_url || undefined}
+                        alt={user.first_name || "User"}
+                      />
+                      <AvatarFallback>{getInitials()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>
+                    {user.first_name} {user.last_name}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => navigate(dashboardLink)}
+                    className="cursor-pointer"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" className="hidden sm:flex">
+                  Log in
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button className="bg-indian-saffron hover:bg-indian-saffron/90">
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
+          {/* Mobile menu button */}
+          <button
+            className="md:hidden"
+            onClick={() => setMobileNavOpen(!mobileNavOpen)}
+          >
+            {mobileNavOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {mobileNavOpen && (
+        <div className="md:hidden border-t p-4">
+          <nav className="flex flex-col space-y-4">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-indian-saffron",
+                  location.pathname === item.path
+                    ? "text-indian-saffron"
+                    : "text-muted-foreground"
+                )}
+                onClick={() => setMobileNavOpen(false)}
+              >
+                {item.name}
+              </Link>
+            ))}
+            {!user && (
+              <Link
+                to="/login"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-indian-saffron"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                Log in
+              </Link>
+            )}
+            {user && (
+              <Link
+                to={dashboardLink}
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-indian-saffron"
+                onClick={() => setMobileNavOpen(false)}
+              >
+                Dashboard
+              </Link>
+            )}
+            {user && (
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMobileNavOpen(false);
+                }}
+                className="text-sm font-medium text-left text-muted-foreground transition-colors hover:text-indian-saffron"
+              >
+                Logout
+              </button>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

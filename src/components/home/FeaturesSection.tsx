@@ -1,105 +1,76 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import { GraduationCap, BookOpen, Video, Award } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  BookOpen,
+  Users,
+  Globe,
+  Clock,
+  Award,
+  MessageCircle,
+} from "lucide-react";
+
+const features = [
+  {
+    icon: <BookOpen className="h-12 w-12 text-indian-saffron" />,
+    title: "Expert Teachers",
+    description:
+      "Learn from experienced educators who are experts in their subjects.",
+  },
+  {
+    icon: <Users className="h-12 w-12 text-indian-saffron" />,
+    title: "Personalized Learning",
+    description:
+      "Get individualized attention and customized learning plans tailored to your needs.",
+  },
+  {
+    icon: <Globe className="h-12 w-12 text-indian-saffron" />,
+    title: "Learn Anywhere",
+    description:
+      "Access classes from any location with our flexible online learning platform.",
+  },
+  {
+    icon: <Clock className="h-12 w-12 text-indian-saffron" />,
+    title: "Flexible Schedule",
+    description:
+      "Book sessions at times that work for you with our convenient scheduling system.",
+  },
+  {
+    icon: <Award className="h-12 w-12 text-indian-saffron" />,
+    title: "Certified Courses",
+    description:
+      "Earn certificates upon completion to showcase your new skills.",
+  },
+  {
+    icon: <MessageCircle className="h-12 w-12 text-indian-saffron" />,
+    title: "Interactive Sessions",
+    description:
+      "Engage in real-time conversations and get immediate feedback during live classes.",
+  },
+];
 
 const FeaturesSection = () => {
-  const features = [
-    {
-      icon: <GraduationCap className="h-6 w-6 text-indian-saffron" />,
-      title: "Expert Teachers",
-      description: "Learn from qualified tutors with years of teaching experience.",
-      bgColor: "bg-indian-saffron/10",
-      textColor: "text-indian-saffron",
-      delay: 0,
-    },
-    {
-      icon: <BookOpen className="h-6 w-6 text-indian-green" />,
-      title: "Comprehensive Curriculum",
-      description: "Structured courses designed to cover all essential topics.",
-      bgColor: "bg-indian-green/10",
-      textColor: "text-indian-green",
-      delay: 0.1,
-    },
-    {
-      icon: <Video className="h-6 w-6 text-indian-blue" />,
-      title: "Interactive Sessions",
-      description: "Engage in live video classes with real-time doubt solving.",
-      bgColor: "bg-indian-blue/10",
-      textColor: "text-indian-blue",
-      delay: 0.2,
-    },
-    {
-      icon: <Award className="h-6 w-6 text-indian-saffron" />,
-      title: "Proven Results",
-      description: "Our students consistently achieve academic excellence.",
-      bgColor: "bg-indian-saffron/10",
-      textColor: "text-indian-saffron",
-      delay: 0.3,
-    },
-  ];
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { y: 20, opacity: 0 },
-    show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } }
-  };
-
   return (
-    <section className="py-16 px-4 indian-pattern-bg overflow-hidden">
+    <section className="py-16 bg-gray-50">
       <div className="container">
-        <motion.h2 
-          className="font-sanskrit text-3xl md:text-4xl font-bold text-center mb-12"
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true, margin: "-100px" }}
-        >
-          Why Choose <span className="text-indian-saffron">Vidya</span> <span className="text-indian-blue">Katha</span>
-        </motion.h2>
-        
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-        >
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4">Why Choose Etutorss</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            We combine traditional teaching wisdom with modern technology to provide
+            a comprehensive and effective learning experience.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <motion.div key={index} variants={item}>
-              <Card className="border-none shadow-lg hover:shadow-xl transition-all duration-300 group h-full">
-                <CardContent className="p-6 flex flex-col items-center text-center h-full">
-                  <motion.div 
-                    className={`h-12 w-12 rounded-full ${feature.bgColor} flex items-center justify-center mb-4`}
-                    whileHover={{ 
-                      scale: 1.2,
-                      rotate: 360
-                    }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    {feature.icon}
-                  </motion.div>
-                  <h3 className={`font-sanskrit text-xl font-bold mb-2 ${feature.textColor} transition-colors duration-300 group-hover:text-indian-blue`}>
-                    {feature.title}
-                  </h3>
-                  <p className="text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </motion.div>
+            <div
+              key={index}
+              className="bg-white p-6 rounded-lg shadow-sm transition-all hover:shadow-md"
+            >
+              <div className="mb-4">{feature.icon}</div>
+              <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+              <p className="text-muted-foreground">{feature.description}</p>
+            </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

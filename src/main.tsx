@@ -5,7 +5,7 @@ import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from './components/ui/toaster';
-import { ToastProvider } from '@radix-ui/react-toast';
+import { ToastProvider } from './hooks/use-toast';
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +18,7 @@ interface Availability {
   start_time: string;
   end_time: string;
   status: string;
+  auto_cancel_at?: string;
 }
 
 export function AvailabilityScheduler() {
@@ -109,6 +111,46 @@ export function AvailabilityScheduler() {
   useEffect(() => {
     fetchAvailabilities();
   }, [user]);
+
+  // Auto-cancel check at regular intervals
+  useEffect(() => {
+    const checkForAutoCancellations = async () => {
+      if (!user) return;
+      
+      const now = new Date().toISOString();
+      
+      // Find availabilities that should be auto-cancelled
+      const toCancelAvailabilities = availabilities.filter(avail => 
+        avail.auto_cancel_at && avail.auto_cancel_at <= now && avail.status === "available"
+      );
+      
+      if (toCancelAvailabilities.length > 0) {
+        // Update status of expired availabilities
+        for (const avail of toCancelAvailabilities) {
+          const { error } = await supabase
+            .from("teacher_availability")
+            .update({ status: "cancelled" })
+            .eq("id", avail.id)
+            .eq("teacher_id", user.id);
+            
+          if (error) {
+            console.error("Error auto-cancelling availability:", error);
+          }
+        }
+        
+        // Refresh availabilities list after cancellations
+        fetchAvailabilities();
+      }
+    };
+    
+    // Check every minute
+    const intervalId = setInterval(checkForAutoCancellations, 60000);
+    
+    // Initial check
+    checkForAutoCancellations();
+    
+    return () => clearInterval(intervalId);
+  }, [availabilities, user]);
 
   // Handler for when a new availability is added
   const handleAvailabilityAdded = () => {

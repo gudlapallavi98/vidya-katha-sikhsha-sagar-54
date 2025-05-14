@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, addHours } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -59,6 +59,16 @@ const formSchema = z.object({
 .refine(data => data.startTime < data.endTime, {
   message: "End time must be after start time",
   path: ["endTime"],
+})
+.refine(data => {
+  // Ensure selected date is at least 24 hours from now
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+  tomorrow.setHours(0, 0, 0, 0); // Reset to midnight
+  return data.date >= tomorrow;
+}, {
+  message: "Date must be at least 24 hours from now",
+  path: ["date"],
 });
 
 interface AvailabilityFormProps {
@@ -92,7 +102,7 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
       // Format date to YYYY-MM-DD
       const formattedDate = format(date, "yyyy-MM-dd");
       
-      // Create availability object
+      // Create availability object with auto-cancellation after 3 hours
       const availabilityData = {
         teacher_id: user.id,
         available_date: formattedDate,
@@ -100,6 +110,7 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
         end_time: endTime,
         subject_id: subject,
         status: "available",
+        auto_cancel_at: format(addHours(new Date(), 3), "yyyy-MM-dd HH:mm:ss"), // Cancel after 3 hours if no requests
       };
       
       const { error } = await supabase
@@ -171,7 +182,12 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => {
+                          const now = new Date();
+                          const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                          tomorrow.setHours(0, 0, 0, 0); // Reset to midnight
+                          return date < tomorrow;
+                        }}
                         initialFocus
                       />
                     </PopoverContent>
