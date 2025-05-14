@@ -1,6 +1,5 @@
-
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import { joinSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 import SessionRequestForm from "@/components/student/SessionRequestForm";
+import { useTabNavigation } from "@/hooks/use-tab-navigation";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -31,9 +31,7 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
-  const [searchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  const { activeTab, handleTabChange } = useTabNavigation("overview");
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -42,13 +40,6 @@ const StudentDashboard = () => {
   const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
   const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
   const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
-
-  useEffect(() => {
-    // Only update activeTab if tabFromUrl changes and is not null
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
-    }
-  }, [tabFromUrl]);
 
   // Calculate completed sessions from progress data
   const completedSessions = progress.filter(p => p.completed).length;
@@ -79,19 +70,6 @@ const StudentDashboard = () => {
 
   const handleNavigateToCourses = () => {
     navigate('/courses');
-  };
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    
-    // Create a new URLSearchParams object based on the current params
-    const newParams = new URLSearchParams(searchParams);
-    // Update the tab parameter
-    newParams.set("tab", tab);
-    
-    // Update the URL without causing a page refresh
-    // Use window.history.replaceState instead of updating the searchParams directly
-    window.history.replaceState(null, '', `?${newParams.toString()}`);
   };
 
   return (

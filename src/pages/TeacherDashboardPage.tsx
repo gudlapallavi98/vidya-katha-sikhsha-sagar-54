@@ -1,6 +1,4 @@
-
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 import { 
   useTeacherCourses, 
   useSessionRequests, 
@@ -11,6 +9,7 @@ import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TeacherSidebar from "@/components/teacher/dashboard/TeacherSidebar";
 import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
+import { useTabNavigation } from "@/hooks/use-tab-navigation";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -25,22 +24,13 @@ const TeacherDashboardWithQueryClient = () => {
 };
 
 const TeacherDashboard = () => {
-  const [searchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  const { activeTab, handleTabChange } = useTabNavigation("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
-  
-  useEffect(() => {
-    // Only update activeTab if tabFromUrl changes and is not null
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl);
-    }
-  }, [tabFromUrl]);
   
   // Calculate metrics from sessions data
   const upcomingSessions = teacherSessions.filter(s => {
@@ -116,19 +106,6 @@ const TeacherDashboard = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-  };
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    
-    // Create a new URLSearchParams object based on the current params
-    const newParams = new URLSearchParams(searchParams);
-    // Update the tab parameter
-    newParams.set("tab", tab);
-    
-    // Update the URL without causing a page refresh
-    // Use window.history.replaceState instead of updating the searchParams directly
-    window.history.replaceState(null, '', `?${newParams.toString()}`);
   };
 
   return (
