@@ -7,10 +7,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { RadialMenu } from "@/components/ui/radial-menu";
 import { Home, Book, User, Calendar, Clock, MessageSquare, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Layout = () => {
   const location = useLocation();
   const [menuItems, setMenuItems] = useState<any[]>([]);
+  const { user } = useAuth(); // Get user from auth context
   
   useEffect(() => {
     // Determine which menu items to show based on the current route
@@ -113,7 +115,8 @@ const Layout = () => {
       <main className="flex-1">
         <Outlet />
       </main>
-      <RadialMenu items={menuItems} />
+      {/* Only show RadialMenu if user is logged in */}
+      {user && <RadialMenu items={menuItems} />}
       <Footer />
       <Chatbot />
       <Toaster />

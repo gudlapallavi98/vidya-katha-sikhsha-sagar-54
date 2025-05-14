@@ -37,7 +37,7 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
   isActive,
 }) => {
   // Calculate position in a semicircle on the left side
-  const radius = 100; // px - increased radius for better visibility
+  const radius = 120; // increased radius for better visibility
   // Distribute items in a semicircle on the left side (from -90° to 90°)
   const angle = (index * Math.PI) / (totalItems - 1) - Math.PI / 2;
   const x = -radius * Math.cos(angle); // Negative to go to the left
@@ -56,7 +56,7 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
             }
           : { scale: 0, x: 0, y: 0 }
       }
-      className="absolute z-50"
+      className="absolute z-[1000]" // Increased z-index to ensure visibility
     >
       <Button
         onClick={onClick}
@@ -112,7 +112,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
   return (
     <div
       className={cn(
-        "fixed bottom-6 left-6 z-[100] radial-menu-container",
+        "fixed bottom-[30%] left-10 z-[1000] radial-menu-container", // Moved up from bottom and slightly from left
         className
       )}
     >
@@ -155,7 +155,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
         variant="default"
         size="icon"
         className={cn(
-          "rounded-full h-14 w-14 shadow-lg bg-blue-500 hover:bg-blue-600 z-[101] transition-transform",
+          "rounded-full h-14 w-14 shadow-lg bg-blue-500 hover:bg-blue-600 z-[1001] transition-transform",
           isOpen ? "rotate-45" : ""
         )}
       >
