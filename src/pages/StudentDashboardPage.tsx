@@ -3,13 +3,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSidebarState } from "@/hooks/use-sidebar-state";
 import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
 import { useStudentDashboard } from "@/hooks/use-student-dashboard";
-import { PanelLeftIcon } from "lucide-react";
-import StudentSidebar from "@/components/student/dashboard/StudentSidebar";
+import {
+  LayoutDashboard,
+  BookOpen,
+  Calendar,
+  Clock,
+  Users,
+  Settings
+} from "lucide-react";
 import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
-import { Button } from "@/components/ui/button";
+import HorizontalNavigation from "@/components/dashboard/HorizontalNavigation";
 
 // Create a persistent QueryClient instance
 const queryClient = new QueryClient({
@@ -33,7 +38,6 @@ const StudentDashboardPage = () => {
 const StudentDashboard = () => {
   // Use our improved dashboard tabs hook
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
-  const { collapsed, toggleSidebar } = useSidebarState();
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -82,44 +86,36 @@ const StudentDashboard = () => {
     upcomingSessions: dashboard.upcomingSessions.isLoading,
     pastSessions: dashboard.pastSessions.isLoading
   };
+
+  // Navigation items
+  const navItems = [
+    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+    { id: "courses", label: "My Courses", icon: BookOpen },
+    { id: "sessions", label: "Upcoming Sessions", icon: Calendar },
+    { id: "past-sessions", label: "Past Sessions", icon: Clock },
+    { id: "request-session", label: "Request Session", icon: Users },
+    { id: "profile", label: "Profile Settings", icon: Settings },
+  ];
   
   return (
-    <div className="container p-0 h-full flex">
-      {/* Collapsible Sidebar */}
-      <div className={`transition-all duration-300 ease-in-out ${collapsed ? "w-16" : "w-64"} min-h-[calc(100vh-4rem)] border-r`}>
-        <StudentSidebar 
-          activeTab={activeTab} 
-          setActiveTab={handleTabChange}
-          firstName={user?.user_metadata?.first_name}
-          lastName={user?.user_metadata?.last_name}
-          collapsed={collapsed}
-        />
-      </div>
+    <div className="container p-6">
+      <h1 className="text-2xl font-bold font-sanskrit mb-6">Student Dashboard</h1>
+      
+      <HorizontalNavigation
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        items={navItems}
+        variant="student"
+      />
 
-      {/* Main content area */}
-      <div className="flex-1 p-6">
-        <div className="flex items-center mb-6">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleSidebar}
-            className="mr-4"
-          >
-            <PanelLeftIcon className={`h-5 w-5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
-            <span className="sr-only">Toggle Sidebar</span>
-          </Button>
-          <h1 className="text-2xl font-bold font-sanskrit">Student Dashboard</h1>
-        </div>
-
-        <StudentDashboardContent
-          activeTab={activeTab}
-          enrollments={dashboard.enrollments.data || []}
-          upcomingSessions={upcomingSessionsList}
-          pastSessions={completedSessionsList}
-          loadingStates={loadingStates}
-          handleJoinClass={handleJoinClass}
-        />
-      </div>
+      <StudentDashboardContent
+        activeTab={activeTab}
+        enrollments={dashboard.enrollments.data || []}
+        upcomingSessions={upcomingSessionsList}
+        pastSessions={completedSessionsList}
+        loadingStates={loadingStates}
+        handleJoinClass={handleJoinClass}
+      />
     </div>
   );
 };

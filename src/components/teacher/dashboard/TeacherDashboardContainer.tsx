@@ -1,11 +1,9 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client"; 
 import { useSessionAcceptance } from "@/hooks/use-session-acceptance";
 import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
-import { useSidebarState } from "@/hooks/use-sidebar-state";
 import { 
   useTeacherCourses, 
   useTeacherProfile 
@@ -15,10 +13,15 @@ import {
   useTeacherSessions
 } from "@/hooks/teacher/use-teacher-sessions";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
-import TeacherSidebar from "./TeacherSidebar";
 import TeacherDashboardContent from "./TeacherDashboardContent";
-import { PanelLeftIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import HorizontalNavigation from "@/components/dashboard/HorizontalNavigation";
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  Calendar,
+  Users,
+  Settings 
+} from "lucide-react";
 
 /**
  * Main container component for the teacher dashboard
@@ -29,7 +32,6 @@ const TeacherDashboardContainer = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
-  const { collapsed, toggleSidebar } = useSidebarState();
   const { handleSessionAccepted } = useSessionAcceptance();
   
   // State hooks
@@ -156,50 +158,44 @@ const TeacherDashboardContainer = () => {
     setSearchQuery(query);
   };
 
+  // Navigation items
+  const navItems = [
+    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
+    { id: "courses", label: "My Courses", icon: BookOpen },
+    { id: "sessions", label: "Session Requests", icon: Users },
+    { id: "schedule", label: "My Schedule", icon: Calendar },
+    { id: "availability", label: "Set Availability", icon: Calendar },
+    { id: "profile", label: "Profile Settings", icon: Settings },
+  ];
+
   return (
-    <div className="container p-0 h-full flex">
-      {/* Collapsible Sidebar */}
-      <div className={`transition-all duration-300 ease-in-out ${collapsed ? "w-16" : "w-64"} min-h-[calc(100vh-4rem)] border-r`}>
-        <TeacherSidebar 
-          activeTab={activeTab} 
-          setActiveTab={handleTabChange}
-          collapsed={collapsed}
-        />
-      </div>
-
-      {/* Main content area */}
-      <div className="flex-1 p-6">
-        <div className="flex items-center mb-6">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleSidebar}
-            className="mr-4"
-          >
-            <PanelLeftIcon className={`h-5 w-5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
-            <span className="sr-only">Toggle Sidebar</span>
-          </Button>
-          <h1 className="text-2xl font-bold font-sanskrit">Teacher Dashboard</h1>
-        </div>
-
-        <TeacherDashboardContent
-          activeTab={activeTab}
-          handleTabChange={handleTabChange}
-          teacherCourses={teacherCourses}
-          coursesLoading={coursesLoading}
-          sessionRequests={sessionRequests}
-          requestsLoading={requestsLoading}
-          teacherSessions={teacherSessions}
-          upcomingSessions={upcomingSessions}
-          sessionsLoading={sessionsLoading}
-          totalSessions={totalSessions}
-          searchQuery={searchQuery}
-          handleSearch={handleSearch}
-          handleAcceptSession={handleAcceptSession}
-          handleRejectSession={handleRejectSession}
-          handleStartClass={handleStartClass}
-        />
-      </div>
+    <div className="container p-6">
+      <h1 className="text-2xl font-bold font-sanskrit mb-6">Teacher Dashboard</h1>
+      
+      <HorizontalNavigation
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        items={navItems}
+        variant="teacher"
+      />
+      
+      <TeacherDashboardContent
+        activeTab={activeTab}
+        handleTabChange={handleTabChange}
+        teacherCourses={teacherCourses}
+        coursesLoading={coursesLoading}
+        sessionRequests={sessionRequests}
+        requestsLoading={requestsLoading}
+        teacherSessions={teacherSessions}
+        upcomingSessions={upcomingSessions}
+        sessionsLoading={sessionsLoading}
+        totalSessions={totalSessions}
+        searchQuery={searchQuery}
+        handleSearch={handleSearch}
+        handleAcceptSession={handleAcceptSession}
+        handleRejectSession={handleRejectSession}
+        handleStartClass={handleStartClass}
+      />
     </div>
   );
 };

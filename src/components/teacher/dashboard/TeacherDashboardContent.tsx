@@ -83,14 +83,14 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = (props) 
       case "availability":
         return (
           <>
-            <h1 className="font-sanskrit text-3xl font-bold mb-6">Set Your Availability</h1>
+            <h2 className="font-sanskrit text-2xl font-bold mb-6">Set Your Availability</h2>
             <AvailabilityScheduler />
           </>
         );
       case "profile":
         return (
           <>
-            <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
+            <h2 className="font-sanskrit text-2xl font-bold mb-6">Profile Settings</h2>
             <Card className="mb-8">
               <CardContent className="p-6">
                 <ProfileSettingsForm role="teacher" />
@@ -99,7 +99,7 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = (props) 
           </>
         );
       default:
-        return <p>Select an option from the sidebar</p>;
+        return <p>Select an option from the navigation</p>;
     }
   };
 
