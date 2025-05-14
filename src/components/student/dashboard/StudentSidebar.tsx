@@ -1,7 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Graduation, Calendar, Clock, MessageSquare, Settings } from "lucide-react";
+import { User, GraduationCap, Calendar, Clock, MessageSquare, Settings } from "lucide-react";
 
 interface StudentSidebarProps {
   activeTab: string;
@@ -59,7 +58,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
             }`}
             onClick={(e) => handleTabClick("courses", e)}
           >
-            <Graduation className="mr-2 h-4 w-4" />
+            <GraduationCap className="mr-2 h-4 w-4" />
             My Courses
           </TabsTrigger>
           

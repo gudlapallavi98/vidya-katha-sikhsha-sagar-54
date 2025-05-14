@@ -2,7 +2,7 @@
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, 
-  Graduation, 
+  GraduationCap, 
   Calendar, 
   Inbox, 
   Clock, 
@@ -54,7 +54,7 @@ const TeacherSidebar = ({ activeTab, setActiveTab }: TeacherSidebarProps) => {
             }`}
             onClick={(e) => handleTabClick("courses", e)}
           >
-            <Graduation className="mr-2 h-4 w-4" />
+            <GraduationCap className="mr-2 h-4 w-4" />
             My Courses
           </TabsTrigger>
           
