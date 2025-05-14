@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useProfileFormData } from "../hooks/useProfileFormData";
@@ -99,33 +99,35 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <TabsContent value="personal">
-          <PersonalInfoTab 
-            form={form} 
-            avatarUrl={avatarUrl} 
-            setAvatarUrl={setAvatarUrl} 
-            userId={user?.id || ""}
-          />
-        </TabsContent>
+        <Tabs value={activeTab}>
+          <TabsContent value="personal">
+            <PersonalInfoTab 
+              form={form} 
+              avatarUrl={avatarUrl} 
+              setAvatarUrl={setAvatarUrl} 
+              userId={user?.id || ""}
+            />
+          </TabsContent>
 
-        <TabsContent value="experience">
-          <TeachingExperienceTab form={form} />
-        </TabsContent>
+          <TabsContent value="experience">
+            <TeachingExperienceTab form={form} />
+          </TabsContent>
 
-        <TabsContent value="subjects">
-          <SubjectsTab 
-            selectedSubjects={selectedSubjects} 
-            setSelectedSubjects={setSelectedSubjects} 
-          />
-        </TabsContent>
+          <TabsContent value="subjects">
+            <SubjectsTab 
+              selectedSubjects={selectedSubjects} 
+              setSelectedSubjects={setSelectedSubjects} 
+            />
+          </TabsContent>
 
-        <TabsContent value="certifications">
-          <CertificationsTab 
-            certificates={certificates} 
-            setCertificates={setCertificates} 
-            userId={user?.id || ""}
-          />
-        </TabsContent>
+          <TabsContent value="certifications">
+            <CertificationsTab 
+              certificates={certificates} 
+              setCertificates={setCertificates} 
+              userId={user?.id || ""}
+            />
+          </TabsContent>
+        </Tabs>
 
         <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? "Saving..." : "Save Profile"}
