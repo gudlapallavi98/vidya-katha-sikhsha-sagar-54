@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Enrollment, Progress, StudentAchievement } from './types';
+import { Enrollment, Progress, StudentAchievement, Session } from './types';
 
 export const useStudentEnrollments = () => {
   const { user } = useAuth();
@@ -114,7 +114,12 @@ export const useStudentUpcomingSessions = () => {
           .limit(10);
           
         if (error) throw error;
-        return data;
+        
+        // Add display_status to each session
+        return (data || []).map(session => ({
+          ...session,
+          display_status: 'upcoming'
+        })) as Session[];
       }
       
       // If we have session attendees, fetch those specific sessions
@@ -148,22 +153,21 @@ export const useStudentUpcomingSessions = () => {
       if (pastError) throw pastError;
       
       // Combine the results, with proper status indicators
-      const combinedSessions = [
-        ...(upcomingSessions || []).map(session => ({
-          ...session,
-          display_status: 'upcoming'
-        })),
-        ...(pastSessions || []).map(session => {
-          // Check if the student attended this session
-          const displayStatus = session.status === 'completed' ? 'completed' : 'missed';
-          return {
-            ...session,
-            display_status: displayStatus
-          };
-        })
-      ];
+      const upcomingWithStatus = (upcomingSessions || []).map(session => ({
+        ...session,
+        display_status: 'upcoming'
+      }));
       
-      return combinedSessions;
+      const pastWithStatus = (pastSessions || []).map(session => {
+        // Check if the student attended this session
+        const displayStatus = session.status === 'completed' ? 'completed' : 'missed';
+        return {
+          ...session,
+          display_status: displayStatus
+        };
+      });
+      
+      return [...upcomingWithStatus, ...pastWithStatus] as Session[];
     },
     enabled: !!user,
   });
@@ -211,7 +215,7 @@ export const useStudentPastSessions = () => {
       if (error) throw error;
       
       // Add status information based on attendance
-      return data.map(session => {
+      return (data || []).map(session => {
         const joinTime = attendanceMap[session.id];
         let status = 'missed';
         
@@ -225,7 +229,7 @@ export const useStudentPastSessions = () => {
           ...session,
           display_status: status
         };
-      });
+      }) as Session[];
     },
     enabled: !!user,
   });
