@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 // Define time slots for the select dropdown
 const timeSlots = [
@@ -78,7 +78,6 @@ interface AvailabilityFormProps {
 
 const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormProps) => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -92,7 +91,14 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to add availability",
+      });
+      return;
+    }
     
     setIsLoading(true);
     
@@ -147,6 +153,14 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
     }
   };
 
+  // Function to check if a date should be disabled (less than 24 hours from now)
+  const isDateDisabled = (date: Date) => {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    tomorrow.setHours(0, 0, 0, 0); // Reset to midnight
+    return date < tomorrow;
+  };
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -182,12 +196,7 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) => {
-                          const now = new Date();
-                          const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-                          tomorrow.setHours(0, 0, 0, 0); // Reset to midnight
-                          return date < tomorrow;
-                        }}
+                        disabled={isDateDisabled}
                         initialFocus
                       />
                     </PopoverContent>
@@ -206,7 +215,7 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
                     <FormLabel>Start Time</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -234,7 +243,7 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
                     <FormLabel>End Time</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -263,7 +272,7 @@ const AvailabilityForm = ({ subjects, onAvailabilityCreated }: AvailabilityFormP
                   <FormLabel>Subject</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    defaultValue={field.value}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
