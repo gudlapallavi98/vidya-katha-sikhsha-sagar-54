@@ -1,3 +1,4 @@
+
 import React from "react";
 import { BookOpen, Calendar, Clock, Users, Video, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,9 +113,9 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
                     </div>
                     <div className="flex items-center text-xs text-muted-foreground">
                       <Clock className="mr-1 h-3 w-3" /> 
-                      Requested for {new Date(request.start_time).toLocaleDateString('en-US', {
+                      Requested for {new Date(request.proposed_date).toLocaleDateString('en-US', {
                         month: 'short', day: 'numeric',
-                      })} at {new Date(request.start_time).toLocaleTimeString('en-US', {
+                      })} at {new Date(request.proposed_date).toLocaleTimeString('en-US', {
                         hour: '2-digit', minute: '2-digit',
                       })}
                     </div>
@@ -287,8 +288,8 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
                     <TableCell>{request.proposed_title}</TableCell>
                     <TableCell>{request.course?.title}</TableCell>
                     <TableCell>
-                      {new Date(request.start_time).toLocaleDateString()} at{" "}
-                      {new Date(request.start_time).toLocaleTimeString(undefined, {
+                      {new Date(request.proposed_date).toLocaleDateString()} at{" "}
+                      {new Date(request.proposed_date).toLocaleTimeString(undefined, {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
