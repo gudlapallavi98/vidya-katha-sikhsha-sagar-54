@@ -2,6 +2,7 @@
 import React from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import DashboardTiles from "./components/DashboardTiles";
 import TeacherOverview from "./TeacherOverview";
 import TeacherCourses from "./TeacherCourses";
 import TeacherSessionRequests from "./TeacherSessionRequests";
@@ -45,6 +46,16 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
   handleRejectSession,
   handleStartClass,
 }) => {
+  // Show dashboard tiles if we're on the overview tab
+  if (activeTab === "overview") {
+    return (
+      <div className="w-full md:w-3/4">
+        <h1 className="font-sanskrit text-3xl font-bold mb-6">Teacher Dashboard</h1>
+        <DashboardTiles activeTab={activeTab} />
+      </div>
+    );
+  }
+  
   return (
     <div className="w-full md:w-3/4">
       <Tabs value={activeTab} className="w-full">

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
@@ -10,6 +11,7 @@ import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import TeacherSidebar from "@/components/teacher/dashboard/TeacherSidebar";
 import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
+import DashboardView from "@/components/teacher/dashboard/DashboardView";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client"; 
 import { useSessionAcceptance } from "@/hooks/use-session-acceptance";
@@ -185,22 +187,33 @@ const TeacherDashboard = () => {
         <TeacherSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
 
         {/* Main content */}
-        <TeacherDashboardContent
-          activeTab={activeTab}
-          teacherCourses={teacherCourses}
-          coursesLoading={coursesLoading}
-          sessionRequests={sessionRequests}
-          requestsLoading={requestsLoading}
-          teacherSessions={teacherSessions}
-          upcomingSessions={upcomingSessions}
-          sessionsLoading={sessionsLoading}
-          totalSessions={totalSessions}
-          searchQuery={searchQuery}
-          handleSearch={handleSearch}
-          handleAcceptSession={handleAcceptSession}
-          handleRejectSession={handleRejectSession}
-          handleStartClass={handleStartClass}
-        />
+        {activeTab === "overview" ? (
+          <div className="w-full md:w-3/4">
+            <DashboardView 
+              activeTab={activeTab} 
+              totalCourses={teacherCourses.length}
+              totalRequests={sessionRequests.filter(r => r.status === 'pending').length}
+              completedSessions={totalSessions.completed}
+            />
+          </div>
+        ) : (
+          <TeacherDashboardContent
+            activeTab={activeTab}
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            teacherSessions={teacherSessions}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            searchQuery={searchQuery}
+            handleSearch={handleSearch}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
+          />
+        )}
       </div>
     </div>
   );
