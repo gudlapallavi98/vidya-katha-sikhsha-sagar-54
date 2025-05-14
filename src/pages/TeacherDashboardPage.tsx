@@ -5,13 +5,14 @@ import {
   useSessionRequests, 
   useTeacherSessions
 } from "@/hooks/use-dashboard-data";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
+
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TeacherDashboardSidebar from "@/components/teacher/dashboard/TeacherDashboardSidebar";
 import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -118,7 +119,7 @@ const TeacherDashboard = () => {
           setActiveTab={handleTabChange} 
         />
       }
-      content={
+      children={
         <TeacherDashboardContent
           activeTab={activeTab}
           teacherCourses={teacherCourses}
@@ -136,8 +137,6 @@ const TeacherDashboard = () => {
           handleStartClass={handleStartClass}
         />
       }
-      activeTab={activeTab}
-      className="bg-gray-50"
     />
   );
 };

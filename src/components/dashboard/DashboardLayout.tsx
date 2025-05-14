@@ -1,35 +1,31 @@
 
 import React from "react";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   sidebar: React.ReactNode;
-  content: React.ReactNode;
-  activeTab: string;
+  children: React.ReactNode;
   className?: string;
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   sidebar,
-  content,
-  activeTab,
+  children,
   className,
 }) => {
   return (
-    <div className={cn("container py-12", className)}>
-      <div className="flex flex-col md:flex-row items-start gap-8">
-        {/* Sidebar */}
-        <div className="w-full md:w-1/4">
+    <div className={cn("flex min-h-screen bg-background", className)}>
+      {/* Sidebar */}
+      <div className="hidden border-r bg-muted/10 md:block md:w-64 lg:w-72">
+        <div className="sticky top-0 h-screen overflow-y-auto p-4">
           {sidebar}
         </div>
-
-        {/* Main content */}
-        <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} className="w-full">
-            {content}
-          </Tabs>
+      </div>
+      
+      {/* Main content */}
+      <div className="flex-1 overflow-x-hidden">
+        <div className="container py-6 md:py-8 lg:py-10">
+          {children}
         </div>
       </div>
     </div>

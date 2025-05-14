@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { joinSession } from "@/api/dashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
@@ -12,9 +12,10 @@ import {
   useStudentProgress, 
   useStudentAchievements 
 } from "@/hooks/use-dashboard-data";
+
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StudentDashboardSidebar from "@/components/student/dashboard/StudentDashboardSidebar";
 import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -71,7 +72,7 @@ const StudentDashboard = () => {
           setActiveTab={handleTabChange} 
         />
       }
-      content={
+      children={
         <StudentDashboardContent 
           activeTab={activeTab}
           enrolledCourses={enrolledCourses}
@@ -82,8 +83,6 @@ const StudentDashboard = () => {
           handleJoinClass={handleJoinClass}
         />
       }
-      activeTab={activeTab}
-      className="bg-gray-50"
     />
   );
 };
