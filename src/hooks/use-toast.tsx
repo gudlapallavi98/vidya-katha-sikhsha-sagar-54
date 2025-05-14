@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ToastActionElement, ToastProps } from "@/components/ui/toast"
@@ -142,7 +143,7 @@ interface Toast extends Omit<ToasterToast, "id"> {}
 function toast({ ...props }: Toast) {
   const id = genId()
 
-  const update = (props: ToasterToast) =>
+  const update = (props: Partial<ToasterToast>) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },

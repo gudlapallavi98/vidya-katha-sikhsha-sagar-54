@@ -1,3 +1,4 @@
+
 export interface Course {
   id: string;
   title: string;
@@ -56,10 +57,12 @@ export interface Session {
   start_time: string;
   end_time: string;
   meeting_link: string | null;
-  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | string; // Added string to handle any other status values
   course?: {
     title: string;
   };
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface SessionRequestStudent {
