@@ -38,6 +38,7 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
   sessionRequests,
   requestsLoading,
   upcomingSessions,
+  teacherSessions,
   sessionsLoading,
   totalSessions,
   searchQuery,

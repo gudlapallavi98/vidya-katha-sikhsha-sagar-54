@@ -16,9 +16,6 @@ interface DashboardTilesProps {
 }
 
 const DashboardTiles: React.FC<DashboardTilesProps> = ({ activeTab }) => {
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  
   const navigationItems = [
     { 
       icon: Home, 
