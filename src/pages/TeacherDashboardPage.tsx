@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   useTeacherCourses, 
@@ -7,9 +8,10 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import TeacherSidebar from "@/components/teacher/dashboard/TeacherSidebar";
-import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
+import TeacherDashboardSidebar from "@/components/teacher/dashboard/TeacherDashboardSidebar";
+import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -109,12 +111,14 @@ const TeacherDashboard = () => {
   };
 
   return (
-    <div className="container py-12">
-      <div className="flex flex-col md:flex-row items-start gap-8">
-        {/* Sidebar */}
-        <TeacherSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
-
-        {/* Main content */}
+    <DashboardLayout
+      sidebar={
+        <TeacherDashboardSidebar 
+          activeTab={activeTab} 
+          setActiveTab={handleTabChange} 
+        />
+      }
+      content={
         <TeacherDashboardContent
           activeTab={activeTab}
           teacherCourses={teacherCourses}
@@ -131,8 +135,10 @@ const TeacherDashboard = () => {
           handleRejectSession={handleRejectSession}
           handleStartClass={handleStartClass}
         />
-      </div>
-    </div>
+      }
+      activeTab={activeTab}
+      className="bg-gray-50"
+    />
   );
 };
 
