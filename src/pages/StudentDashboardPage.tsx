@@ -27,6 +27,9 @@ const queryClient = new QueryClient({
   },
 });
 
+// Import these before they are used to avoid reference errors
+import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
+
 // Wrapper component to provide React Query context
 const StudentDashboardWithQueryClient = () => {
   return (
@@ -95,8 +98,8 @@ const StudentDashboard = () => {
     return session.display_status === 'attended' || session.display_status === 'missed';
   });
   
-  // Memoize tab content to prevent unnecessary rerenders
-  const studentTabs = useMemo(() => [
+  // Define tabs outside of the component render function to avoid hooks issues
+  const studentTabs = [
     {
       value: "overview",
       label: "Overview",
@@ -181,16 +184,7 @@ const StudentDashboard = () => {
         </>
       )
     }
-  ], [
-    dashboard.enrollments.data,
-    dashboard.enrollments.isLoading,
-    upcomingSessionsList,
-    completedSessionsList,
-    dashboard.upcomingSessions.isLoading,
-    dashboard.pastSessions.data,
-    dashboard.pastSessions.isLoading,
-    handleJoinClass
-  ]);
+  ];
 
   return (
     <div className="container py-12">
@@ -217,8 +211,5 @@ const StudentDashboard = () => {
     </div>
   );
 };
-
-// Import these at the top but definition is here to avoid reference errors
-import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
 
 export default StudentDashboardWithQueryClient;
