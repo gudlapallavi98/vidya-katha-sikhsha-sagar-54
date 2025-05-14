@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -86,7 +85,6 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const currentPath = location.pathname;
   
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -107,14 +105,15 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
     };
   }, [isOpen]);
 
-  // Get current tab from URL
+  // Get current path and tab from URL
+  const currentPath = location.pathname;
   const searchParams = new URLSearchParams(location.search);
   const currentTab = searchParams.get('tab') || "overview";
 
   return (
     <div
       className={cn(
-        "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] radial-menu-container", // Centered in screen
+        "fixed bottom-10 right-10 z-[1000] radial-menu-container", // Position at bottom right
         className
       )}
     >
@@ -141,7 +140,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
               if (item.onClick) {
                 item.onClick();
               }
-              setIsOpen(false);
+              // Don't close the menu after clicking - keep it open
             }}
             index={index}
             totalItems={items.length}
