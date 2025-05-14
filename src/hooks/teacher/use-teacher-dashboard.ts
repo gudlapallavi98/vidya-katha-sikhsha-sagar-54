@@ -8,7 +8,7 @@ import { useSessionRequests, useTeacherSessions } from "./use-teacher-sessions";
  * Custom hook to centralize teacher dashboard data and state management
  */
 export const useTeacherDashboard = () => {
-  // Using the tabs hook
+  // Using the tabs hook with proper default tab
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const [searchQuery, setSearchQuery] = useState("");
 

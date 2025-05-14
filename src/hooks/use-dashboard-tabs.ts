@@ -26,6 +26,8 @@ export const useDashboardTabs = (defaultTab: string = "overview") => {
     setActiveTab(tab);
     const params = new URLSearchParams(location.search);
     params.set('tab', tab);
+    
+    // Use replace instead of push to avoid creating new history entries
     navigate({
       pathname: location.pathname,
       search: params.toString()

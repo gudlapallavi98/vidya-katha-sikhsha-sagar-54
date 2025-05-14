@@ -42,7 +42,11 @@ const HorizontalNavigation: React.FC<HorizontalNavigationProps> = ({
         {items.map((item) => (
           <li key={item.id} className="inline-block">
             <button
-              onClick={() => onTabChange(item.id)}
+              type="button" 
+              onClick={(e) => {
+                e.preventDefault();
+                onTabChange(item.id);
+              }}
               className={cn(getActiveStyles(activeTab === item.id))}
             >
               <item.icon className="w-4 h-4 mr-2" />
