@@ -1,12 +1,6 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { 
-  NavigationMenu,
-  NavigationMenuList,
-  NavigationMenuItem,
-  NavigationMenuLink,
-} from "@/components/ui/navigation-menu";
 
 interface NavigationItemProps {
   id: string;
@@ -43,10 +37,10 @@ const HorizontalNavigation: React.FC<HorizontalNavigationProps> = ({
   };
 
   return (
-    <NavigationMenu className="max-w-none w-full justify-start mb-6 border-b pb-1">
-      <NavigationMenuList className="space-x-2 flex-wrap">
+    <nav className="max-w-none w-full mb-6 border-b pb-1">
+      <ul className="space-x-2 flex flex-wrap">
         {items.map((item) => (
-          <NavigationMenuItem key={item.id}>
+          <li key={item.id} className="inline-block">
             <button
               onClick={() => onTabChange(item.id)}
               className={cn(getActiveStyles(activeTab === item.id))}
@@ -54,10 +48,10 @@ const HorizontalNavigation: React.FC<HorizontalNavigationProps> = ({
               <item.icon className="w-4 h-4 mr-2" />
               {item.label}
             </button>
-          </NavigationMenuItem>
+          </li>
         ))}
-      </NavigationMenuList>
-    </NavigationMenu>
+      </ul>
+    </nav>
   );
 };
 
