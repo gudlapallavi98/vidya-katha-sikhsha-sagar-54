@@ -4,7 +4,6 @@ import {
   Toast,
   ToastClose,
   ToastDescription,
-  ToastProvider,
   ToastTitle,
   ToastViewport,
   type ToastProps,
@@ -149,7 +148,7 @@ type Toast = Omit<ToasterToast, "id">;
 function toast({ ...props }: Toast) {
   const id = genId();
 
-  const update = (props: Omit<ToasterToast, "id">) =>
+  const update = (props: Partial<ToasterToast>) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
@@ -200,7 +199,7 @@ const ToasterProvider = ({ children }: { children: React.ReactNode }) => {
   const { toasts } = useToast();
 
   return (
-    <ToastProvider>
+    <React.Fragment>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
@@ -217,7 +216,7 @@ const ToasterProvider = ({ children }: { children: React.ReactNode }) => {
       })}
       <ToastViewport />
       {children}
-    </ToastProvider>
+    </React.Fragment>
   );
 };
 
