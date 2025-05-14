@@ -1,6 +1,5 @@
 
-import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useCallback } from "react";
 import { useDashboardTabs } from "../use-dashboard-tabs";
 import { useTeacherCourses } from "./use-teacher-data";
 import { useSessionRequests, useTeacherSessions } from "./use-teacher-sessions";
@@ -9,6 +8,7 @@ import { useSessionRequests, useTeacherSessions } from "./use-teacher-sessions";
  * Custom hook to centralize teacher dashboard data and state management
  */
 export const useTeacherDashboard = () => {
+  // Using the tabs hook
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const [searchQuery, setSearchQuery] = useState("");
 

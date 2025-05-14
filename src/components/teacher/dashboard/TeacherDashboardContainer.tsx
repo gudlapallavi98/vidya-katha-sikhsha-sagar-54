@@ -25,15 +25,17 @@ import { Button } from "@/components/ui/button";
  * Handles data fetching and business logic
  */
 const TeacherDashboardContainer = () => {
-  // Use our improved dashboard tabs hook
+  // Ensure all hooks are called in the same order on every render
+  const { user } = useAuth();
+  const { toast } = useToast();
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const { collapsed, toggleSidebar } = useSidebarState();
-  const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
-  const { user } = useAuth();
   const { handleSessionAccepted } = useSessionAcceptance();
   
-  // Force synchronous loading to prevent flashes between tab changes
+  // State hooks
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Data fetching hooks
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
@@ -51,6 +53,7 @@ const TeacherDashboardContainer = () => {
     upcoming: upcomingSessions.length
   };
 
+  // Handler functions
   const handleAcceptSession = async (sessionId: string) => {
     try {
       const result = await acceptSessionRequest(sessionId);

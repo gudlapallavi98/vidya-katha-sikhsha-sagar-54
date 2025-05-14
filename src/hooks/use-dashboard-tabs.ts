@@ -21,6 +21,8 @@ export const useDashboardTabs = (defaultTab: string = "overview") => {
   
   // Update URL when tab changes
   const handleTabChange = (tab: string) => {
+    if (tab === activeTab) return; // Don't update if it's the same tab
+    
     setActiveTab(tab);
     const params = new URLSearchParams(location.search);
     params.set('tab', tab);

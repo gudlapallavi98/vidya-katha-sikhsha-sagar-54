@@ -35,7 +35,7 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({
 }) => {
   return (
     <>
-      <h1 className="font-sanskrit text-3xl font-bold mb-6">Teacher Dashboard</h1>
+      {/* Removed the duplicate h1 "Teacher Dashboard" title here */}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="bg-gradient-to-br from-indian-blue/10 to-indian-blue/5">
