@@ -25,7 +25,7 @@ const TeacherDashboardWithQueryClient = () => {
 };
 
 const TeacherDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,15 +36,11 @@ const TeacherDashboard = () => {
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
   
   useEffect(() => {
+    // Only update activeTab if tabFromUrl changes and is not null
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
-
-  useEffect(() => {
-    // Update URL when tab changes
-    setSearchParams({ tab: activeTab });
-  }, [activeTab, setSearchParams]);
   
   // Calculate metrics from sessions data
   const upcomingSessions = teacherSessions.filter(s => {
@@ -122,11 +118,23 @@ const TeacherDashboard = () => {
     setSearchQuery(query);
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    
+    // Create a new URLSearchParams object based on the current params
+    const newParams = new URLSearchParams(searchParams);
+    // Update the tab parameter
+    newParams.set("tab", tab);
+    
+    // Update the URL without causing a page refresh
+    window.history.replaceState(null, '', `?${newParams.toString()}`);
+  };
+
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
         {/* Sidebar */}
-        <TeacherSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <TeacherSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
 
         {/* Main content */}
         <TeacherDashboardContent

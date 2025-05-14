@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Video, Calendar, BookOpen, User, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,7 +31,7 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const { user } = useAuth();
@@ -43,15 +44,11 @@ const StudentDashboard = () => {
   const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
 
   useEffect(() => {
+    // Only update activeTab if tabFromUrl changes and is not null
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
-
-  useEffect(() => {
-    // Update URL when tab changes
-    setSearchParams({ tab: activeTab });
-  }, [activeTab, setSearchParams]);
 
   // Calculate completed sessions from progress data
   const completedSessions = progress.filter(p => p.completed).length;
@@ -84,6 +81,18 @@ const StudentDashboard = () => {
     navigate('/courses');
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    
+    // Create a new URLSearchParams object based on the current params
+    const newParams = new URLSearchParams(searchParams);
+    // Update the tab parameter
+    newParams.set("tab", tab);
+    
+    // Update the URL without causing a page refresh
+    window.history.replaceState(null, '', `?${newParams.toString()}`);
+  };
+
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
@@ -106,35 +115,35 @@ const StudentDashboard = () => {
                 <Button 
                   variant={activeTab === "overview" ? "default" : "ghost"} 
                   className={activeTab === "overview" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-                  onClick={() => setActiveTab("overview")}
+                  onClick={() => handleTabChange("overview")}
                 >
                   Dashboard
                 </Button>
                 <Button 
                   variant={activeTab === "courses" ? "default" : "ghost"} 
                   className={activeTab === "courses" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-                  onClick={() => setActiveTab("courses")}
+                  onClick={() => handleTabChange("courses")}
                 >
                   My Courses
                 </Button>
                 <Button 
                   variant={activeTab === "sessions" ? "default" : "ghost"} 
                   className={activeTab === "sessions" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-                  onClick={() => setActiveTab("sessions")}
+                  onClick={() => handleTabChange("sessions")}
                 >
                   Upcoming Sessions
                 </Button>
                 <Button 
                   variant={activeTab === "request-session" ? "default" : "ghost"} 
                   className={activeTab === "request-session" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-                  onClick={() => setActiveTab("request-session")}
+                  onClick={() => handleTabChange("request-session")}
                 >
                   Request Session
                 </Button>
                 <Button 
                   variant={activeTab === "profile" ? "default" : "ghost"} 
                   className={activeTab === "profile" ? "bg-indian-saffron w-full justify-start" : "w-full justify-start"}
-                  onClick={() => setActiveTab("profile")}
+                  onClick={() => handleTabChange("profile")}
                 >
                   <Settings className="h-4 w-4 mr-2" />
                   Profile Settings
@@ -146,7 +155,7 @@ const StudentDashboard = () => {
 
         {/* Main content */}
         <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} className="w-full">
             <TabsContent value="overview" className="m-0">
               <h1 className="font-sanskrit text-3xl font-bold mb-6">Student Dashboard</h1>
               
