@@ -3,8 +3,7 @@ import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Calendar, Clock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { User } from "lucide-react";
 
 interface TeacherProfileCardProps {
   id: string;
@@ -14,8 +13,6 @@ interface TeacherProfileCardProps {
   experience?: string;
   avatarUrl?: string;
   subjects?: string[];
-  availableDate?: string;
-  availableTime?: string;
   onBookSession: (teacherId: string) => void;
 }
 
@@ -27,8 +24,6 @@ const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({
   experience,
   avatarUrl,
   subjects,
-  availableDate,
-  availableTime,
   onBookSession,
 }) => {
   return (
@@ -38,7 +33,7 @@ const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({
           {avatarUrl ? (
             <AvatarImage src={avatarUrl} alt={`${firstName} ${lastName}`} />
           ) : (
-            <AvatarFallback className="bg-muted">
+            <AvatarFallback>
               <User className="h-10 w-10" />
             </AvatarFallback>
           )}
@@ -65,20 +60,6 @@ const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({
           </div>
         )}
         
-        {availableDate && availableTime && (
-          <div className="mb-4 p-3 bg-muted/50 rounded-md border border-muted">
-            <h4 className="text-sm font-medium mb-2">Next Available</h4>
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs">{availableDate}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs">{availableTime}</span>
-            </div>
-          </div>
-        )}
-        
         {experience && (
           <div className="mb-4">
             <h4 className="text-sm font-medium mb-1">Experience</h4>
@@ -99,9 +80,7 @@ const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({
         
         <Button 
           onClick={() => onBookSession(id)} 
-          className={cn("mt-auto w-full", 
-            !availableDate ? "bg-muted text-muted-foreground hover:bg-muted/80" : ""
-          )}
+          className="mt-auto w-full"
         >
           Book Session
         </Button>

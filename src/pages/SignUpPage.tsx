@@ -7,7 +7,6 @@ import SignUpForm from "@/components/auth/signup/SignUpForm";
 
 const SignUpPage = () => {
   const [captchaValue, setCaptchaValue] = useState({ num1: 0, num2: 0 });
-  const [refreshKey, setRefreshKey] = useState(0);
   
   // Generate a simple math captcha
   useEffect(() => {
@@ -18,12 +17,7 @@ const SignUpPage = () => {
     };
     
     generateCaptcha();
-  }, [refreshKey]);
-  
-  // Function to refresh the CAPTCHA
-  const refreshCaptcha = () => {
-    setRefreshKey(prev => prev + 1);
-  };
+  }, []);
 
   return (
     <div className="container max-w-md py-12">
@@ -37,7 +31,7 @@ const SignUpPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <SignUpForm captchaValue={captchaValue} onValidationError={refreshCaptcha} />
+          <SignUpForm captchaValue={captchaValue} />
         </CardContent>
         <CardFooter>
           <p className="text-sm text-muted-foreground text-center w-full">

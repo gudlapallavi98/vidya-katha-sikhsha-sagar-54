@@ -6,134 +6,80 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import SignUpFormFields, { SignUpFormData } from "./SignUpFormFields";
 import OTPVerification from "./OTPVerification";
-import { useSignupOTP } from "@/hooks/use-signup-otp";
 
 interface SignUpFormProps {
   captchaValue: {
     num1: number;
     num2: number;
   };
-  onValidationError?: () => void;
 }
 
-const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError }) => {
+const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationName, setVerificationName] = useState("");
   const [formValues, setFormValues] = useState<Partial<SignUpFormData> | null>(null);
+  const [sentOtp, setSentOtp] = useState("");
   const navigate = useNavigate();
   
-  // Use our custom OTP hook
-  const { createOTP, verifyOTP, markOTPAsUsed } = useSignupOTP();
-  
   const handleFormSubmit = async (data: SignUpFormData) => {
-    // Validate CAPTCHA
-    const captchaAnswer = Number(data.captcha);
-    if (captchaAnswer !== captchaValue.num1 + captchaValue.num2) {
-      toast({
-        variant: "destructive",
-        title: "Invalid CAPTCHA",
-        description: "The CAPTCHA answer is incorrect. Please try again.",
-      });
-      if (onValidationError) onValidationError();
-      return;
-    }
+    setFormValues(data);
+    setVerificationEmail(data.email);
+    setVerificationName(`${data.firstName} ${data.lastName}`);
     
     try {
-      setIsLoading(true);
-      setFormValues(data);
-      setVerificationEmail(data.email);
-      setVerificationName(`${data.firstName} ${data.lastName}`);
-      
-      // Create OTP using our custom hook
-      const generatedOTP = await createOTP(data.email, {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        role: data.role
+      // Use the Supabase Edge Function to send a real email with OTP
+      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          name: `${data.firstName} ${data.lastName}`,
+          type: "signup"
+        })
       });
       
-      if (!generatedOTP) {
-        throw new Error("Failed to initiate signup process. Please try again.");
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || "Failed to send verification email");
       }
       
-      console.log("SignUp - Generated OTP:", generatedOTP);
-      
-      try {
-        // Direct call to the send-email edge function
-        const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: data.email,
-            name: `${data.firstName} ${data.lastName}`,
-            type: "signup",
-            otp: generatedOTP
-          })
-        });
-        
-        const responseData = await response.json();
-        console.log("SignUp - Edge function response:", responseData);
-        
-        if (!response.ok) {
-          const errorMessage = responseData.error || "Failed to send verification email";
-          console.error("Send OTP error response:", errorMessage);
-          throw new Error(errorMessage);
-        }
-        
-        // Open verification dialog
-        setVerificationOpen(true);
-      } catch (error) {
-        console.error("Error sending OTP:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error instanceof Error ? error.message : "Something went wrong",
-        });
-        if (onValidationError) onValidationError();
+      // Store the OTP from the server response
+      if (responseData.otp) {
+        setSentOtp(responseData.otp);
       }
+      
+      // Open verification dialog
+      setVerificationOpen(true);
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : "Something went wrong",
       });
-      if (onValidationError) onValidationError();
-    } finally {
-      setIsLoading(false);
     }
   };
   
   const handleVerify = async (otp: string) => {
-    console.log("Verifying OTP - Entered:", otp);
+    if (otp !== sentOtp) {
+      toast({
+        variant: "destructive",
+        title: "Invalid OTP",
+        description: "The verification code is incorrect",
+      });
+      return;
+    }
+    
+    if (!formValues) return;
     
     setIsLoading(true);
     
     try {
-      // Verify OTP using our custom hook
-      const { isValid, userData } = await verifyOTP(verificationEmail, otp);
-
-      if (!isValid) {
-        toast({
-          variant: "destructive",
-          title: "Invalid OTP",
-          description: "The verification code is incorrect or expired",
-        });
-        return;
-      }
-      
-      if (!formValues) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Form data lost. Please try signing up again.",
-        });
-        return;
-      }
-      
       // Sign up with Supabase
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formValues.email,
@@ -153,9 +99,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         });
         
         if (profileError) throw profileError;
-        
-        // Mark OTP as used
-        await markOTPAsUsed(verificationEmail, otp);
       }
       
       // Success message
@@ -173,7 +116,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         title: "Registration failed",
         description: error instanceof Error ? error.message : "Failed to create account",
       });
-      if (onValidationError) onValidationError();
     } finally {
       setIsLoading(false);
     }
@@ -182,26 +124,9 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
   const handleResendOtp = async () => {
     if (!verificationEmail) return;
     
-    setIsLoading(true);
-    
     try {
-      // Generate a new OTP using our custom hook
-      const userData = formValues ? {
-        firstName: formValues.firstName,
-        lastName: formValues.lastName,
-        role: formValues.role
-      } : undefined;
-      
-      const generatedOTP = await createOTP(verificationEmail, userData);
-      
-      if (!generatedOTP) {
-        throw new Error("Failed to resend verification code. Please try again.");
-      }
-      
-      console.log("SignUp Resend - Generated OTP:", generatedOTP);
-      
-      // Direct call to the send-email edge function
-      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email", {
+      // Use the Supabase Edge Function to send a real email with OTP
+      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -209,18 +134,19 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         body: JSON.stringify({
           email: verificationEmail,
           name: verificationName,
-          type: "signup",
-          otp: generatedOTP
+          type: "signup"
         })
       });
       
-      const responseData = await response.json();
-      console.log("SignUp Resend - Edge function response:", responseData);
+      const data = await response.json();
       
       if (!response.ok) {
-        const errorMessage = responseData.error || "Failed to resend verification email";
-        console.error("Resend OTP error:", errorMessage);
-        throw new Error(errorMessage);
+        throw new Error(data.error || "Failed to send verification email");
+      }
+      
+      // Store the OTP from the server response
+      if (data.otp) {
+        setSentOtp(data.otp);
       }
       
       toast({
@@ -228,14 +154,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         description: "A new verification code has been sent to your email",
       });
     } catch (error) {
-      console.error("Error resending OTP:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to resend verification code",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -245,7 +168,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue, onValidationError
         captchaValue={captchaValue}
         isLoading={isLoading}
         onSubmit={handleFormSubmit}
-        onCaptchaRefresh={onValidationError}
       />
       
       {/* OTP Verification Dialog */}

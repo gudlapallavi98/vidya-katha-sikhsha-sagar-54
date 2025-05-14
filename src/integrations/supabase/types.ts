@@ -36,45 +36,6 @@ export type Database = {
         }
         Relationships: []
       }
-      chatbot_requests: {
-        Row: {
-          city: string | null
-          created_at: string
-          description: string | null
-          email: string
-          id: string
-          name: string
-          phone: string | null
-          request_id: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          city?: string | null
-          created_at?: string
-          description?: string | null
-          email: string
-          id?: string
-          name: string
-          phone?: string | null
-          request_id: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          city?: string | null
-          created_at?: string
-          description?: string | null
-          email?: string
-          id?: string
-          name?: string
-          phone?: string | null
-          request_id?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       contact_messages: {
         Row: {
           created_at: string
@@ -246,36 +207,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      password_reset_otps: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          otp: string
-          used: boolean | null
-          verified: boolean | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          otp: string
-          used?: boolean | null
-          verified?: boolean | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          otp?: string
-          used?: boolean | null
-          verified?: boolean | null
-        }
-        Relationships: []
       }
       profiles: {
         Row: {
@@ -586,39 +517,6 @@ export type Database = {
           },
         ]
       }
-      signup_otps: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          otp: string
-          used: boolean | null
-          user_data: Json | null
-          verified: boolean | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          otp: string
-          used?: boolean | null
-          user_data?: Json | null
-          verified?: boolean | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          otp?: string
-          used?: boolean | null
-          user_data?: Json | null
-          verified?: boolean | null
-        }
-        Relationships: []
-      }
       student_achievements: {
         Row: {
           achievement_id: string | null
@@ -729,10 +627,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_request_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

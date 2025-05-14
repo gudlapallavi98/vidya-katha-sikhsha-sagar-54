@@ -1,8 +1,9 @@
 
 import React from "react";
-import { Home, Settings } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Calendar, Settings, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TeacherSidebarProps {
   activeTab: string;
@@ -10,58 +11,71 @@ interface TeacherSidebarProps {
 }
 
 const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ activeTab, setActiveTab }) => {
-  // Simplified navigation items
-  const navigationItems = [
-    { 
-      icon: Home, 
-      label: "Dashboard", 
-      value: "overview"
-    },
-    { 
-      icon: Settings, 
-      label: "Profile", 
-      value: "profile"
-    },
-  ];
+  const { user } = useAuth();
 
   return (
-    <div className="w-full md:w-1/4 bg-white rounded-lg border shadow-sm p-6 sticky top-20 mb-6 md:mb-0">
-      <div className="flex flex-col items-center mb-6">
-        <div className="w-20 h-20 bg-gradient-to-br from-indian-blue to-indian-blue/60 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4">
-          TE
-        </div>
-        <h2 className="text-xl font-medium">Teacher</h2>
-        <p className="text-muted-foreground text-sm mt-2 mb-6">
-          Dashboard Navigation
-        </p>
-      </div>
-      
-      {/* Navigation Menu - Simplified */}
-      <nav className="space-y-2">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.value;
-          
-          return (
-            <button
-              key={item.value}
-              onClick={() => setActiveTab(item.value)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
-                isActive 
-                  ? "bg-gradient-to-br from-indian-blue/20 to-indian-blue/10 text-indian-blue" 
-                  : "text-gray-600 hover:text-indian-blue hover:bg-indian-blue/10"
-              )}
+    <div className="w-full md:w-1/4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 rounded-full bg-indian-blue/20 flex items-center justify-center">
+              <User className="h-8 w-8 text-indian-blue" />
+            </div>
+            <div>
+              <CardTitle>{user?.user_metadata?.first_name || "Teacher"} {user?.user_metadata?.last_name || ""}</CardTitle>
+              <CardDescription>Teacher</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <nav className="space-y-2">
+            <Button 
+              variant={activeTab === "overview" ? "default" : "ghost"} 
+              className={activeTab === "overview" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
+              onClick={() => setActiveTab("overview")}
             >
-              <Icon className={cn(
-                "h-5 w-5",
-                isActive ? "text-indian-blue" : ""
-              )} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+              Dashboard
+            </Button>
+            <Button 
+              variant={activeTab === "courses" ? "default" : "ghost"} 
+              className={activeTab === "courses" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
+              onClick={() => setActiveTab("courses")}
+            >
+              My Courses
+            </Button>
+            <Button 
+              variant={activeTab === "sessions" ? "default" : "ghost"} 
+              className={activeTab === "sessions" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
+              onClick={() => setActiveTab("sessions")}
+            >
+              Session Requests
+            </Button>
+            <Button 
+              variant={activeTab === "schedule" ? "default" : "ghost"} 
+              className={activeTab === "schedule" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
+              onClick={() => setActiveTab("schedule")}
+            >
+              My Schedule
+            </Button>
+            <Button 
+              variant={activeTab === "availability" ? "default" : "ghost"} 
+              className={activeTab === "availability" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
+              onClick={() => setActiveTab("availability")}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Set Availability
+            </Button>
+            <Button 
+              variant={activeTab === "profile" ? "default" : "ghost"} 
+              className={activeTab === "profile" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
+              onClick={() => setActiveTab("profile")}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Profile Settings
+            </Button>
+          </nav>
+        </CardContent>
+      </Card>
     </div>
   );
 };
