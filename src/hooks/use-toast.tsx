@@ -1,20 +1,22 @@
 
 import * as React from "react"
-import { useState, useEffect } from "react"
+import * as ToastPrimitives from "@radix-ui/react-toast"
+import { Cross2Icon } from "@radix-ui/react-icons"
+import { cva, type VariantProps } from "class-variance-authority"
 
-import type {
-  ToastActionElement,
-  ToastProps,
-} from "@/components/ui/toast"
+import { cn } from "@/lib/utils"
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = ToastProps & {
+type ToasterToast = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
-  action?: ToastActionElement
+  action?: React.ReactNode
+  variant?: "default" | "destructive"
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 const actionTypes = {
@@ -128,22 +130,14 @@ function dispatch(action: Action) {
   })
 }
 
-interface Toast {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  action?: ToastActionElement
-  variant?: "default" | "destructive"
-}
-
 export type ToastType = {
   title?: React.ReactNode
   description?: React.ReactNode
-  action?: ToastActionElement
+  action?: React.ReactNode
   variant?: "default" | "destructive"
 }
 
-function toast(props: ToastType): Toast {
+function toast(props: ToastType) {
   const id = genId()
 
   const update = (props: ToastType) =>
@@ -163,7 +157,7 @@ function toast(props: ToastType): Toast {
       onOpenChange: (open: boolean) => {
         if (!open) dismiss()
       },
-    },
+    } as ToasterToast,
   })
 
   return {
@@ -174,9 +168,9 @@ function toast(props: ToastType): Toast {
 }
 
 function useToast() {
-  const [state, setState] = useState<State>(memoryState)
+  const [state, setState] = React.useState<State>(memoryState)
 
-  useEffect(() => {
+  React.useEffect(() => {
     listeners.push(setState)
     return () => {
       const index = listeners.indexOf(setState)
@@ -193,4 +187,12 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+interface ToastProviderProps {
+  children: React.ReactNode
+}
+
+function ToastProvider({ children }: ToastProviderProps) {
+  return <>{children}</>
+}
+
+export { useToast, toast, ToastProvider }
