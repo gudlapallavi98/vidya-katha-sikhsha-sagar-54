@@ -22,7 +22,7 @@ const NavigationTile: React.FC<NavigationTileProps> = ({
   
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate(path);
+    navigate(path, { replace: true });
   };
   
   return (

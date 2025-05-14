@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { 
   useTeacherCourses, 
   useSessionRequests, 
@@ -29,9 +28,10 @@ const TeacherDashboardWithQueryClient = () => {
 };
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  const tabFromUrl = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
@@ -41,6 +41,7 @@ const TeacherDashboard = () => {
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
   
+  // Update active tab when URL changes
   useEffect(() => {
     if (tabFromUrl) {
       setActiveTab(tabFromUrl);
@@ -62,10 +63,8 @@ const TeacherDashboard = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Use history.replaceState to update URL without causing a reload
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", value);
-    window.history.replaceState(null, '', url);
+    // Update URL without causing a page reload
+    navigate(`/teacher-dashboard?tab=${value}`, { replace: true });
   };
 
   const handleAcceptSession = async (sessionId: string) => {
