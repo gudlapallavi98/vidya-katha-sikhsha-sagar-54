@@ -1,5 +1,5 @@
 
 // Re-export from the hooks folder
-import { useToast, toast, ToasterProvider } from "@/hooks/use-toast";
+import { useToast, toast } from "@/hooks/use-toast";
 
-export { useToast, toast, ToasterProvider };
+export { useToast, toast };

@@ -5,15 +5,15 @@ import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from './components/ui/toaster';
-import { ToasterProvider } from './hooks/use-toast';
+import { ToastProvider } from '@radix-ui/react-toast';
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
-    <ToasterProvider>
+    <ToastProvider>
       <AuthProvider>
         <App />
         <Toaster />
       </AuthProvider>
-    </ToasterProvider>
+    </ToastProvider>
   </BrowserRouter>
 );
