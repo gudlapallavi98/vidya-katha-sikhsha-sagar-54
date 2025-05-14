@@ -31,7 +31,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
       onValueChange={onTabChange}
       defaultValue={activeTab}
     >
-      {/* Visible tabs navigation */}
+      {/* Hidden TabsList - critical for Radix UI's internal state management */}
       <TabsList className="hidden">
         {tabs.map((tab) => (
           <TabsTrigger key={tab.value} value={tab.value}>

@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useStudentDashboard } from "@/hooks/use-student-dashboard";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { useMemo } from "react";
+import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
 
 // Create a persistent QueryClient instance with consistent configuration
 const queryClient = new QueryClient({
@@ -27,8 +27,99 @@ const queryClient = new QueryClient({
   },
 });
 
-// Import these before they are used to avoid reference errors
-import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
+// Define tabs outside of the component render function to avoid hooks issues
+const createStudentTabs = (
+  enrollments,
+  upcomingSessions,
+  completedSessions,
+  loadingStates,
+  handleJoinClass
+) => [
+  {
+    value: "overview",
+    label: "Overview",
+    content: (
+      <StudentDashboardOverview 
+        enrolledCourses={enrollments}
+        upcomingSessionsList={upcomingSessions}
+        completedSessionsList={completedSessions}
+        coursesLoading={loadingStates.enrollments}
+        sessionsLoading={loadingStates.sessions}
+        getStatusBadgeClass={getStatusBadgeClass}
+        getStatusText={getStatusText}
+        handleJoinClass={handleJoinClass}
+      />
+    )
+  },
+  {
+    value: "courses",
+    label: "Courses",
+    content: (
+      <>
+        <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
+        <StudentCoursesList 
+          enrolledCourses={enrollments}
+          coursesLoading={loadingStates.enrollments}
+        />
+      </>
+    )
+  },
+  {
+    value: "sessions",
+    label: "Sessions",
+    content: (
+      <>
+        <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
+        <StudentUpcomingSessions 
+          sessions={upcomingSessions}
+          sessionsLoading={loadingStates.sessions}
+          getStatusBadgeClass={getStatusBadgeClass}
+          getStatusText={getStatusText}
+          handleJoinClass={handleJoinClass}
+        />
+      </>
+    )
+  },
+  {
+    value: "past-sessions",
+    label: "Past Sessions",
+    content: (
+      <>
+        <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
+        <StudentPastSessions 
+          sessions={completedSessions}
+          sessionsLoading={loadingStates.pastSessions}
+          getStatusBadgeClass={getStatusBadgeClass}
+          getStatusText={getStatusText}
+        />
+      </>
+    )
+  },
+  {
+    value: "request-session",
+    label: "Request Session",
+    content: (
+      <>
+        <h1 className="font-sanskrit text-3xl font-bold mb-6">Request a Session</h1>
+        <SessionRequestForm />
+      </>
+    )
+  },
+  {
+    value: "profile",
+    label: "Profile Settings",
+    content: (
+      <>
+        <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
+        <Card>
+          <CardContent className="p-6">
+            <ProfileSettingsForm role="student" />
+          </CardContent>
+        </Card>
+      </>
+    )
+  }
+];
 
 // Wrapper component to provide React Query context
 const StudentDashboardWithQueryClient = () => {
@@ -97,94 +188,21 @@ const StudentDashboard = () => {
   const completedSessionsList = dashboard.pastSessions.data.filter(session => {
     return session.display_status === 'attended' || session.display_status === 'missed';
   });
+
+  const loadingStates = {
+    enrollments: dashboard.enrollments.isLoading,
+    sessions: dashboard.upcomingSessions.isLoading,
+    pastSessions: dashboard.pastSessions.isLoading
+  };
   
-  // Define tabs outside of the component render function to avoid hooks issues
-  const studentTabs = [
-    {
-      value: "overview",
-      label: "Overview",
-      content: (
-        <StudentDashboardOverview 
-          enrolledCourses={dashboard.enrollments.data}
-          upcomingSessionsList={upcomingSessionsList}
-          completedSessionsList={completedSessionsList}
-          coursesLoading={dashboard.enrollments.isLoading}
-          sessionsLoading={dashboard.upcomingSessions.isLoading}
-          getStatusBadgeClass={getStatusBadgeClass}
-          getStatusText={getStatusText}
-          handleJoinClass={handleJoinClass}
-        />
-      )
-    },
-    {
-      value: "courses",
-      label: "Courses",
-      content: (
-        <>
-          <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
-          <StudentCoursesList 
-            enrolledCourses={dashboard.enrollments.data}
-            coursesLoading={dashboard.enrollments.isLoading}
-          />
-        </>
-      )
-    },
-    {
-      value: "sessions",
-      label: "Sessions",
-      content: (
-        <>
-          <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
-          <StudentUpcomingSessions 
-            sessions={upcomingSessionsList}
-            sessionsLoading={dashboard.upcomingSessions.isLoading}
-            getStatusBadgeClass={getStatusBadgeClass}
-            getStatusText={getStatusText}
-            handleJoinClass={handleJoinClass}
-          />
-        </>
-      )
-    },
-    {
-      value: "past-sessions",
-      label: "Past Sessions",
-      content: (
-        <>
-          <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
-          <StudentPastSessions 
-            sessions={dashboard.pastSessions.data}
-            sessionsLoading={dashboard.pastSessions.isLoading}
-            getStatusBadgeClass={getStatusBadgeClass}
-            getStatusText={getStatusText}
-          />
-        </>
-      )
-    },
-    {
-      value: "request-session",
-      label: "Request Session",
-      content: (
-        <>
-          <h1 className="font-sanskrit text-3xl font-bold mb-6">Request a Session</h1>
-          <SessionRequestForm />
-        </>
-      )
-    },
-    {
-      value: "profile",
-      label: "Profile Settings",
-      content: (
-        <>
-          <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
-          <Card>
-            <CardContent className="p-6">
-              <ProfileSettingsForm role="student" />
-            </CardContent>
-          </Card>
-        </>
-      )
-    }
-  ];
+  // Create tabs with stable reference
+  const studentTabs = createStudentTabs(
+    dashboard.enrollments.data,
+    upcomingSessionsList,
+    dashboard.pastSessions.data,
+    loadingStates,
+    handleJoinClass
+  );
 
   return (
     <div className="container py-12">
