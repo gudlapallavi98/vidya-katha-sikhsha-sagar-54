@@ -3,8 +3,8 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Menu, User, Settings, Home, Book, Calendar, Clock, MessageSquare } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Menu } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface RadialMenuItemProps {
   icon: React.ReactNode;
@@ -36,11 +36,10 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
   isOpen,
   isActive,
 }) => {
-  // Calculate position in a semicircle on the left side
-  const radius = 150; // Increased radius for better visibility
-  // Distribute items in a semicircle on the left side (from -90° to 90°)
-  const angle = (index * Math.PI) / (totalItems - 1) - Math.PI / 2;
-  const x = -radius * Math.cos(angle); // Negative to go to the left
+  // Calculate position in a full circle
+  const radius = 150; // Large radius for better visibility
+  const angle = (index * (2 * Math.PI)) / totalItems;
+  const x = radius * Math.cos(angle);
   const y = radius * Math.sin(angle);
 
   return (
@@ -56,21 +55,23 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
             }
           : { scale: 0, x: 0, y: 0 }
       }
-      className="absolute z-[1000]" // Increased z-index to ensure visibility
+      className="absolute z-[1000]" // High z-index for visibility
     >
       <Button
         onClick={onClick}
         variant="default"
         size="icon"
         className={cn(
-          "rounded-full shadow-lg h-14 w-14 flex flex-col items-center justify-center",
+          "rounded-full shadow-lg h-16 w-16 flex flex-col items-center justify-center",
           isActive 
             ? "bg-blue-500 hover:bg-blue-600" 
             : "bg-primary hover:bg-primary/90"
         )}
         title={label}
       >
-        {icon}
+        <div className="h-8 w-8 flex items-center justify-center">
+          {icon}
+        </div>
         <span className="sr-only">{label}</span>
       </Button>
     </motion.div>
@@ -80,10 +81,11 @@ const RadialMenuItem: React.FC<RadialMenuItemProps> = ({
 export const RadialMenu: React.FC<RadialMenuProps> = ({
   items = [],
   className,
-  triggerIcon = <Menu className="h-6 w-6" />,
+  triggerIcon = <Menu className="h-8 w-8" />,
 }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
   
   const toggleMenu = () => {
@@ -112,7 +114,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
   return (
     <div
       className={cn(
-        "fixed left-10 top-1/2 -translate-y-1/2 z-[1000] radial-menu-container", // Repositioned to left-middle of screen
+        "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000] radial-menu-container", // Centered in screen
         className
       )}
     >
@@ -133,6 +135,9 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
             icon={item.icon}
             label={item.label}
             onClick={() => {
+              if (item.path) {
+                navigate(item.path);
+              }
               if (item.onClick) {
                 item.onClick();
               }
@@ -155,7 +160,7 @@ export const RadialMenu: React.FC<RadialMenuProps> = ({
         variant="default"
         size="icon"
         className={cn(
-          "rounded-full h-16 w-16 shadow-lg bg-blue-500 hover:bg-blue-600 z-[1001] transition-transform",
+          "rounded-full h-20 w-20 shadow-lg bg-blue-500 hover:bg-blue-600 z-[1001] transition-transform",
           isOpen ? "rotate-45" : ""
         )}
       >
