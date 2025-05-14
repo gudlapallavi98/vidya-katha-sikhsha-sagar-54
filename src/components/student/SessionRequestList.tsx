@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTeacherSearch } from "@/hooks/useTeacherSearch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +20,6 @@ import { DateRange } from "react-day-picker";
 import { addDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 
 interface SessionRequestListProps {
   onSelectTeacher: (teacherId: string) => void;
@@ -28,11 +27,10 @@ interface SessionRequestListProps {
 
 const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState<string>("all");
-  const [selectedExperience, setSelectedExperience] = useState<string>("any");
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedExperience, setSelectedExperience] = useState<string>("");
   const [date, setDate] = useState<DateRange | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>("date");
-  const { toast } = useToast();
   
   const { teachers, isLoading, error } = useTeacherSearch({
     searchQuery,
@@ -44,18 +42,9 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
   
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch teachers. Please try again later."
-      });
-    }
-  }, [error, toast]);
-
   // List of subjects - in a real app, you might fetch this from an API
   const subjects = [
+    { id: "all", name: "All Subjects" },
     { id: "math", name: "Mathematics" },
     { id: "sci", name: "Science" },
     { id: "eng", name: "English" },
@@ -64,14 +53,10 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
 
   const handleResetFilters = () => {
     setSearchQuery("");
-    setSelectedSubject("all");
-    setSelectedExperience("any");
+    setSelectedSubject("");
+    setSelectedExperience("");
     setDate(undefined);
     setSortBy("date");
-  };
-
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
   };
 
   return (
@@ -83,7 +68,7 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
             placeholder="Search teachers by name or subject..."
             className="pl-10"
             value={searchQuery}
-            onChange={handleSearchInputChange}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       
@@ -96,7 +81,7 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
                 <SelectValue placeholder="Filter by subject" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
+                <SelectItem value="">All Subjects</SelectItem>
                 {subjects.map((subject) => (
                   <SelectItem key={subject.id} value={subject.id}>
                     {subject.name}
@@ -179,25 +164,9 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <span className="ml-3">Loading teachers...</span>
-        </div>
+        <div className="text-center py-8">Loading teachers...</div>
       ) : error ? (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <div className="text-center py-4 text-red-500">
-              <p>An error occurred while fetching teachers</p>
-              <Button 
-                variant="outline" 
-                className="mt-2" 
-                onClick={() => window.location.reload()}
-              >
-                Try Again
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center py-8 text-red-500">Error: {error}</div>
       ) : teachers.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {teachers.map((teacher) => (
@@ -223,7 +192,7 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
           </CardHeader>
           <CardContent>
             <p className="text-center text-muted-foreground">
-              {searchQuery || selectedSubject !== "all" || date || selectedExperience !== "any"
+              {searchQuery || selectedSubject || date || selectedExperience
                 ? "No teachers match your search criteria. Try different filters."
                 : "There are no teachers available at the moment."}
             </p>

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -28,6 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Card } from "@/components/ui/card";
 import SessionRequestList from "./SessionRequestList";
 import { useTeacherProfile } from "@/hooks/use-teacher-data";
@@ -36,7 +42,10 @@ import { useTeacherProfile } from "@/hooks/use-teacher-data";
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   message: z.string().optional(),
-  availabilityId: z.string().min(1, "Please select an available time slot"),
+  courseId: z.string().optional(),
+  date: z.date({
+    required_error: "Please select a date",
+  }),
   duration: z.coerce
     .number()
     .min(30, "Session must be at least 30 minutes")
@@ -49,7 +58,6 @@ const SessionRequestForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<"select-teacher" | "request-form">("select-teacher");
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
-  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   
   const { data: teacherProfile } = useTeacherProfile(selectedTeacherId);
 
@@ -58,46 +66,10 @@ const SessionRequestForm = () => {
     defaultValues: {
       title: "",
       message: "",
-      availabilityId: "",
+      courseId: undefined,
       duration: 60,
     },
   });
-
-  // Fetch available slots when teacher is selected
-  useEffect(() => {
-    if (selectedTeacherId) {
-      fetchAvailableSlots();
-    }
-  }, [selectedTeacherId]);
-
-  const fetchAvailableSlots = async () => {
-    if (!selectedTeacherId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from("teacher_availability")
-        .select(`
-          id, 
-          available_date, 
-          start_time, 
-          end_time,
-          subject:subjects(name)
-        `)
-        .eq("teacher_id", selectedTeacherId)
-        .eq("status", "available")
-        .order("available_date", { ascending: true });
-        
-      if (error) throw error;
-      setAvailableSlots(data || []);
-    } catch (error) {
-      console.error("Error fetching available slots:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load available time slots",
-      });
-    }
-  };
 
   const handleSelectTeacher = (teacherId: string) => {
     setSelectedTeacherId(teacherId);
@@ -109,21 +81,14 @@ const SessionRequestForm = () => {
 
     setIsLoading(true);
     try {
-      // Find the selected availability slot
-      const selectedSlot = availableSlots.find(slot => slot.id === values.availabilityId);
-      
-      if (!selectedSlot) {
-        throw new Error("Selected time slot not found");
-      }
-      
       // Create session request in Supabase
       const { error } = await supabase.from("session_requests").insert({
         proposed_title: values.title,
         request_message: values.message,
         student_id: user.id,
         teacher_id: selectedTeacherId,
-        availability_id: values.availabilityId,
-        proposed_date: `${selectedSlot.available_date}T${selectedSlot.start_time}`,
+        course_id: values.courseId || null,
+        proposed_date: values.date.toISOString(),
         proposed_duration: values.duration,
         status: "pending",
       });
@@ -218,70 +183,90 @@ const SessionRequestForm = () => {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="availabilityId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select Available Time Slot</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an available time slot" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableSlots.length === 0 ? (
-                          <SelectItem value="none" disabled>No available slots</SelectItem>
-                        ) : (
-                          availableSlots.map((slot) => (
-                            <SelectItem key={slot.id} value={slot.id}>
-                              {format(new Date(slot.available_date), 'MMM dd, yyyy')} • {slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)} • {slot.subject?.name || 'General'}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Choose from available time slots set by the teacher
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={`pl-3 text-left font-normal ${
+                                !field.value && "text-muted-foreground"
+                              }`}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) =>
+                              date < new Date() ||
+                              date >
+                                new Date(
+                                  new Date().setMonth(new Date().getMonth() + 3)
+                                )
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Choose a date for your session.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="duration"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Duration (minutes)</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      defaultValue={field.value.toString()}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select duration" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="30">30 minutes</SelectItem>
-                        <SelectItem value="45">45 minutes</SelectItem>
-                        <SelectItem value="60">1 hour</SelectItem>
-                        <SelectItem value="90">1.5 hours</SelectItem>
-                        <SelectItem value="120">2 hours</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Select how long you need with the teacher.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="duration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Duration (minutes)</FormLabel>
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(parseInt(value))
+                        }
+                        defaultValue={field.value.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select duration" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="30">30 minutes</SelectItem>
+                          <SelectItem value="45">45 minutes</SelectItem>
+                          <SelectItem value="60">1 hour</SelectItem>
+                          <SelectItem value="90">1.5 hours</SelectItem>
+                          <SelectItem value="120">2 hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select how long you need with the teacher.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              <Button type="submit" disabled={isLoading || availableSlots.length === 0}>
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? "Submitting..." : "Request Session"}
               </Button>
             </form>

@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import TeacherOverview from "./TeacherOverview";
 import TeacherCourses from "./TeacherCourses";
@@ -11,7 +12,6 @@ import { SessionRequest, Session } from "@/hooks/types";
 
 interface TeacherDashboardContentProps {
   activeTab: string;
-  handleTabChange: (tab: string) => void;
   teacherCourses: any[];
   coursesLoading: boolean;
   sessionRequests: SessionRequest[];
@@ -30,26 +30,25 @@ interface TeacherDashboardContentProps {
   handleStartClass: (sessionId: string) => Promise<void>;
 }
 
-const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = (props) => {
-  const {
-    activeTab,
-    teacherCourses,
-    coursesLoading,
-    sessionRequests,
-    requestsLoading,
-    upcomingSessions,
-    sessionsLoading,
-    totalSessions,
-    handleAcceptSession,
-    handleRejectSession,
-    handleStartClass,
-  } = props;
-
-  // Render the appropriate content based on active tab
-  const renderContent = () => {
-    switch (activeTab) {
-      case "overview":
-        return (
+const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
+  activeTab,
+  teacherCourses,
+  coursesLoading,
+  sessionRequests,
+  requestsLoading,
+  upcomingSessions,
+  sessionsLoading,
+  totalSessions,
+  searchQuery,
+  handleSearch,
+  handleAcceptSession,
+  handleRejectSession,
+  handleStartClass,
+}) => {
+  return (
+    <div className="w-full md:w-3/4">
+      <Tabs value={activeTab} className="w-full">
+        <TabsContent value="overview" className="m-0">
           <TeacherOverview
             teacherCourses={teacherCourses}
             coursesLoading={coursesLoading}
@@ -62,52 +61,43 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = (props) 
             handleRejectSession={handleRejectSession}
             handleStartClass={handleStartClass}
           />
-        );
-      case "courses":
-        return (
+        </TabsContent>
+        
+        <TabsContent value="courses">
           <TeacherCourses
             teacherCourses={teacherCourses}
             coursesLoading={coursesLoading}
           />
-        );
-      case "sessions":
-        return <TeacherSessionRequests />;
-      case "schedule":
-        return (
+        </TabsContent>
+        
+        <TabsContent value="sessions">
+          <TeacherSessionRequests />
+        </TabsContent>
+        
+        <TabsContent value="schedule">
           <TeacherSchedule
             upcomingSessions={upcomingSessions}
             sessionsLoading={sessionsLoading}
             handleStartClass={handleStartClass}
           />
-        );
-      case "availability":
-        return (
-          <>
-            <h2 className="font-sanskrit text-2xl font-bold mb-6">Set Your Availability</h2>
-            <AvailabilityScheduler />
-          </>
-        );
-      case "profile":
-        return (
-          <>
-            <h2 className="font-sanskrit text-2xl font-bold mb-6">Profile Settings</h2>
-            <Card className="mb-8">
-              <CardContent className="p-6">
-                <ProfileSettingsForm role="teacher" />
-              </CardContent>
-            </Card>
-          </>
-        );
-      default:
-        return <p>Select an option from the navigation</p>;
-    }
-  };
+        </TabsContent>
 
-  return (
-    <div className="w-full">
-      {renderContent()}
+        <TabsContent value="availability">
+          <h1 className="font-sanskrit text-3xl font-bold mb-6">Set Your Availability</h1>
+          <AvailabilityScheduler />
+        </TabsContent>
+        
+        <TabsContent value="profile">
+          <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
+          <Card className="mb-8">
+            <CardContent className="p-6">
+              <ProfileSettingsForm role="teacher" />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
 
-export default React.memo(TeacherDashboardContent);
+export default TeacherDashboardContent;

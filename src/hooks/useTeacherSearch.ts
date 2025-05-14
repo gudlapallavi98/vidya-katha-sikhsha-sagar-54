@@ -1,121 +1,140 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
-interface TeacherSearchParams {
-  searchQuery?: string;
-  subjectId?: string;
-  dateRange?: { from: Date; to?: Date } | undefined;
-  experienceLevel?: "beginner" | "intermediate" | "advanced";
-  sortBy?: "date" | "name";
+interface Teacher {
+  id: string;
+  first_name: string;
+  last_name: string;
+  subjects_interested?: string[];
+  bio?: string;
 }
 
-export const useTeacherSearch = ({
-  searchQuery = '',
-  subjectId = '',
-  dateRange,
-  experienceLevel,
-  sortBy = 'date'
-}: TeacherSearchParams) => {
-  const [teachers, setTeachers] = useState<any[]>([]);
+interface TeacherAvailability {
+  id: string;
+  teacher_id: string;
+  subject_id: string;
+  available_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  subject: {
+    id: string;
+    name: string;
+  };
+  teacher: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    bio?: string;
+    experience?: string;
+    avatar_url?: string;
+  };
+}
+
+interface FilterOptions {
+  searchQuery?: string;
+  subjectId?: string;
+  dateRange?: { 
+    from?: Date;
+    to?: Date;
+  };
+  experienceLevel?: 'beginner' | 'intermediate' | 'advanced';
+  sortBy?: 'name' | 'date';
+}
+
+export const useTeacherSearch = (filterOptions: FilterOptions = {}) => {
+  const [teachers, setTeachers] = useState<TeacherAvailability[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTeachers = async () => {
       setIsLoading(true);
       setError(null);
+
       try {
-        // Build the base query
         let query = supabase
           .from('teacher_availability')
           .select(`
-            id,
-            teacher_id,
-            available_date,
-            start_time,
-            end_time,
-            subject_id,
-            subject:subjects(name),
-            teacher:profiles(id, first_name, last_name, bio, avatar_url, experience)
+            *,
+            subject:subjects(id, name),
+            teacher:profiles(id, first_name, last_name, bio, experience, avatar_url)
           `)
-          .eq('status', 'available');
+          .eq('status', 'available')
+          .gte('available_date', new Date().toISOString().split('T')[0]);
+
+        // Apply search query filter
+        if (filterOptions.searchQuery && filterOptions.searchQuery.trim() !== '') {
+          const searchTerm = `%${filterOptions.searchQuery}%`;
+          query = query.or(`teacher.first_name.ilike.${searchTerm},teacher.last_name.ilike.${searchTerm},subject.name.ilike.${searchTerm}`);
+        }
 
         // Apply subject filter
-        if (subjectId) {
-          query = query.eq('subject_id', subjectId);
+        if (filterOptions.subjectId && filterOptions.subjectId.trim() !== '') {
+          query = query.eq('subject_id', filterOptions.subjectId);
         }
 
         // Apply date range filter
-        if (dateRange?.from) {
-          const fromDateStr = dateRange.from.toISOString().split('T')[0];
-          query = query.gte('available_date', fromDateStr);
+        if (filterOptions.dateRange) {
+          if (filterOptions.dateRange.from) {
+            const fromDate = filterOptions.dateRange.from.toISOString().split('T')[0];
+            query = query.gte('available_date', fromDate);
+          }
           
-          if (dateRange.to) {
-            const toDateStr = dateRange.to.toISOString().split('T')[0];
-            query = query.lte('available_date', toDateStr);
+          if (filterOptions.dateRange.to) {
+            const toDate = filterOptions.dateRange.to.toISOString().split('T')[0];
+            query = query.lte('available_date', toDate);
           }
         }
 
-        // Handle search query - apply filtering after the data is retrieved
-        let { data, error: fetchError } = await query;
-
-        if (fetchError) throw fetchError;
-
-        // Filter by search query after data is retrieved
-        if (searchQuery && data) {
-          const lowerSearchQuery = searchQuery.toLowerCase();
-          data = data.filter(item => 
-            item.teacher.first_name.toLowerCase().includes(lowerSearchQuery) ||
-            item.teacher.last_name.toLowerCase().includes(lowerSearchQuery) ||
-            item.subject.name.toLowerCase().includes(lowerSearchQuery)
-          );
+        // Apply sorting
+        if (filterOptions.sortBy === 'name') {
+          query = query.order('teacher(last_name)', { ascending: true });
+        } else {
+          // Default sorting by date
+          query = query.order('available_date', { ascending: true });
         }
 
-        // Filter by experience level
-        if (experienceLevel && data) {
-          data = data.filter(item => item.teacher.experience === experienceLevel);
-        }
+        const { data, error } = await query;
 
-        // Sort the data
-        if (data) {
-          if (sortBy === 'name') {
-            data.sort((a, b) => 
-              `${a.teacher.first_name} ${a.teacher.last_name}`.localeCompare(
-                `${b.teacher.first_name} ${b.teacher.last_name}`
-              )
-            );
-          } else {
-            // Default sort by date
-            data.sort((a, b) => 
-              new Date(a.available_date).getTime() - new Date(b.available_date).getTime()
-            );
-          }
+        if (error) throw error;
+        
+        // Filter by experience level if needed
+        let filteredData = data || [];
+        if (filterOptions.experienceLevel && filteredData.length > 0) {
+          filteredData = filteredData.filter(item => {
+            if (!item.teacher?.experience) return false;
+            
+            const experience = item.teacher.experience.toLowerCase();
+            
+            switch(filterOptions.experienceLevel) {
+              case 'beginner':
+                return experience.includes('beginner') || experience.includes('new') || 
+                      experience.includes('1 year') || experience.includes('one year');
+              case 'intermediate':
+                return experience.includes('intermediate') || experience.includes('2 year') ||
+                      experience.includes('two year') || experience.includes('3 year');
+              case 'advanced':
+                return experience.includes('advanced') || experience.includes('expert') ||
+                      experience.includes('senior') || experience.includes('5 year');
+              default:
+                return true;
+            }
+          });
         }
-
-        setTeachers(data || []);
-      } catch (err: any) {
-        console.error("Error fetching teachers:", err);
-        setError(err);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to fetch teachers. Please try again later."
-        });
+        
+        setTeachers(filteredData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred while fetching teachers');
+        console.error('Error fetching teachers:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Add some debounce for search queries
-    const timeoutId = setTimeout(() => {
-      fetchTeachers();
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, subjectId, dateRange, experienceLevel, sortBy, toast]);
+    fetchTeachers();
+  }, [filterOptions]);
 
   return { teachers, isLoading, error };
 };

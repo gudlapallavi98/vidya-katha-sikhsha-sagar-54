@@ -1,33 +1,33 @@
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
-import { useStudentDashboard } from "@/hooks/use-student-dashboard";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Calendar,
-  Clock,
-  Users,
-  Settings
-} from "lucide-react";
-import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
-import HorizontalNavigation from "@/components/dashboard/HorizontalNavigation";
+import { 
+  useStudentEnrollments, 
+  useStudentUpcomingSessions, 
+  useStudentProgress, 
+  useStudentAchievements, 
+  useStudentPastSessions 
+} from "@/hooks/use-dashboard-data";
+import { useToast } from "@/hooks/use-toast";
+import { joinSession } from "@/api/dashboard";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
+import SessionRequestForm from "@/components/student/SessionRequestForm";
+import StudentDashboardOverview from "@/components/student/dashboard/StudentDashboardOverview";
+import StudentCoursesList from "@/components/student/dashboard/StudentCoursesList";
+import StudentUpcomingSessions from "@/components/student/dashboard/StudentUpcomingSessions";
+import StudentPastSessions from "@/components/student/dashboard/StudentPastSessions";
+import StudentSidebar from "@/components/student/dashboard/StudentSidebar";
+import { Tabs } from "@/components/ui/tabs";
+import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
 
-// Create a persistent QueryClient instance
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
-    },
-  },
-});
+// Create a client
+const queryClient = new QueryClient();
 
 // Wrapper component to provide React Query context
-const StudentDashboardPage = () => {
+const StudentDashboardWithQueryClient = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <StudentDashboard />
@@ -36,88 +36,134 @@ const StudentDashboardPage = () => {
 };
 
 const StudentDashboard = () => {
-  // Use our improved dashboard tabs hook
-  const { activeTab, handleTabChange } = useDashboardTabs("overview");
-  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const { user } = useAuth();
+  const { toast } = useToast();
   
-  // Get all dashboard data using our custom hook
-  const dashboard = useStudentDashboard();
-  
-  // Handle joining a class
+  const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrollments();
+  const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
+  const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
+  const { data: pastSessions = [], isLoading: pastSessionsLoading } = useStudentPastSessions();
+  const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
+
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
+
+  useEffect(() => {
+    // Update URL when tab changes
+    setSearchParams({ tab: activeTab });
+  }, [activeTab, setSearchParams]);
+
+  // Calculate completed sessions from progress data
+  const completedSessions = progress.filter(p => p.completed).length;
+
   const handleJoinClass = async (sessionId: string) => {
     try {
       if (!user) return;
       
-      // Just a placeholder for the join class action
-      toast({
-        title: "Session Joined",
-        description: "You've successfully joined the class.",
-      });
+      const meetingLink = await joinSession(sessionId, user.id);
       
-      // Here we would normally redirect to a class room
-      window.open(`https://meet.google.com/demo-class-${sessionId.substring(0, 6)}`, '_blank');
+      if (meetingLink) {
+        window.open(meetingLink, '_blank');
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Meeting link not available yet. Try again in a few minutes.",
+        });
+      }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to join class",
+        title: "Error joining class",
         description: error instanceof Error ? error.message : "Something went wrong",
       });
     }
   };
 
-  // Filter upcoming sessions (in the next 30 days)
-  const upcomingSessionsList = dashboard.upcomingSessions.data?.filter(session => {
-    const sessionDate = new Date(session.start_time);
-    const today = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(today.getDate() + 30);
-    return sessionDate <= thirtyDaysFromNow && sessionDate >= today;
-  }) || [];
-
-  // Filter completed sessions
-  const completedSessionsList = dashboard.pastSessions.data?.filter(session => {
-    return session.status === 'completed';
-  }) || [];
-
-  // Prepare loading states for child components
-  const loadingStates = {
-    enrollments: dashboard.enrollments.isLoading,
-    upcomingSessions: dashboard.upcomingSessions.isLoading,
-    pastSessions: dashboard.pastSessions.isLoading
-  };
-
-  // Navigation items
-  const navItems = [
-    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
-    { id: "courses", label: "My Courses", icon: BookOpen },
-    { id: "sessions", label: "Upcoming Sessions", icon: Calendar },
-    { id: "past-sessions", label: "Past Sessions", icon: Clock },
-    { id: "request-session", label: "Request Session", icon: Users },
-    { id: "profile", label: "Profile Settings", icon: Settings },
-  ];
+  // Filter sessions by status for display
+  const upcomingSessionsList = upcomingSessions.filter(session => {
+    return !session.display_status || session.display_status === 'upcoming';
+  });
   
-  return (
-    <div className="container p-6">
-      <h1 className="text-2xl font-bold font-sanskrit mb-6">Student Dashboard</h1>
-      
-      <HorizontalNavigation
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        items={navItems}
-        variant="student"
-      />
+  const completedSessionsList = upcomingSessions.filter(session => {
+    return session.display_status && session.display_status !== 'upcoming';
+  });
 
-      <StudentDashboardContent
-        activeTab={activeTab}
-        enrollments={dashboard.enrollments.data || []}
-        upcomingSessions={upcomingSessionsList}
-        pastSessions={completedSessionsList}
-        loadingStates={loadingStates}
-        handleJoinClass={handleJoinClass}
-      />
+  return (
+    <div className="container py-12">
+      <div className="flex flex-col md:flex-row items-start gap-8">
+        {/* Sidebar */}
+        <div className="w-full md:w-1/4">
+          <StudentSidebar 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            firstName={user?.user_metadata?.first_name}
+            lastName={user?.user_metadata?.last_name}
+          />
+        </div>
+
+        {/* Main content */}
+        <div className="w-full md:w-3/4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsContent value="overview" className="m-0">
+              <StudentDashboardOverview 
+                enrolledCourses={enrolledCourses}
+                upcomingSessionsList={upcomingSessionsList}
+                completedSessionsList={completedSessionsList}
+                coursesLoading={coursesLoading}
+                sessionsLoading={sessionsLoading}
+                getStatusBadgeClass={getStatusBadgeClass}
+                getStatusText={getStatusText}
+                handleJoinClass={handleJoinClass}
+              />
+            </TabsContent>
+            
+            <TabsContent value="courses" className="m-0">
+              <StudentCoursesList 
+                enrolledCourses={enrolledCourses}
+                coursesLoading={coursesLoading}
+              />
+            </TabsContent>
+            
+            <TabsContent value="sessions" className="m-0">
+              <StudentUpcomingSessions 
+                sessions={upcomingSessionsList}
+                sessionsLoading={sessionsLoading}
+                getStatusBadgeClass={getStatusBadgeClass}
+                getStatusText={getStatusText}
+                handleJoinClass={handleJoinClass}
+              />
+            </TabsContent>
+            
+            <TabsContent value="past-sessions" className="m-0">
+              <StudentPastSessions 
+                sessions={pastSessions}
+                sessionsLoading={pastSessionsLoading}
+                getStatusBadgeClass={getStatusBadgeClass}
+                getStatusText={getStatusText}
+              />
+            </TabsContent>
+            
+            <TabsContent value="request-session" className="m-0">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">Request a Session</h1>
+              <SessionRequestForm />
+            </TabsContent>
+            
+            <TabsContent value="profile" className="m-0">
+              <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
+              <ProfileSettingsForm role="student" />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default StudentDashboardPage;
+export default StudentDashboardWithQueryClient;
