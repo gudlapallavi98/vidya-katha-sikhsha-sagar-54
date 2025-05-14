@@ -1,9 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export const useTabNavigation = (defaultTab: string = "overview") => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab);
 
@@ -22,8 +23,8 @@ export const useTabNavigation = (defaultTab: string = "overview") => {
     // Update the tab parameter
     newParams.set("tab", tab);
     
-    // Update the URL without causing a page refresh
-    window.history.replaceState(null, '', `?${newParams.toString()}`);
+    // Use React Router's navigate to update the URL without a full page reload
+    navigate(`?${newParams.toString()}`, { replace: true });
   };
 
   return { activeTab, handleTabChange };

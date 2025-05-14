@@ -25,6 +25,12 @@ const DashboardNav: React.FC<DashboardNavProps> = ({
   onTabChange,
   className,
 }) => {
+  // Handle tab change with explicit event prevention
+  const handleTabClick = (id: string) => (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent default anchor behavior
+    onTabChange(id);
+  };
+
   return (
     <nav className={cn("flex flex-col space-y-1.5", className)}>
       {items.map((item) => (
@@ -35,7 +41,7 @@ const DashboardNav: React.FC<DashboardNavProps> = ({
             "justify-start",
             activeTab === item.id && "bg-secondary font-medium"
           )}
-          onClick={() => onTabChange(item.id)}
+          onClick={handleTabClick(item.id)}
         >
           {item.icon && <span className="mr-2">{item.icon}</span>}
           {item.label}

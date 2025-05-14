@@ -18,7 +18,14 @@ import StudentDashboardSidebar from "@/components/student/dashboard/StudentDashb
 import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // Prevent unnecessary refetches
+      retry: 1, // Limit retries to avoid excessive API calls
+    },
+  },
+});
 
 // Wrapper component to provide React Query context
 const StudentDashboardWithQueryClient = () => {

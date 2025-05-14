@@ -1,5 +1,6 @@
 
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { BookOpen, Calendar, Settings, Video, GraduationCap } from "lucide-react";
 import DashboardNav from "@/components/dashboard/DashboardNav";
 import ProfileCard from "@/components/dashboard/ProfileCard";
@@ -13,6 +14,15 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
   activeTab,
   setActiveTab,
 }) => {
+  const navigate = useNavigate();
+  
+  // Updated to use the navigate function directly
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Use the navigate function to update the URL without a full page reload
+    navigate(`/student-dashboard?tab=${tab}`, { replace: true });
+  };
+  
   const navItems = [
     { id: "overview", label: "Dashboard", icon: <GraduationCap className="h-4 w-4" /> },
     { id: "courses", label: "My Courses", icon: <BookOpen className="h-4 w-4" /> },
@@ -30,7 +40,7 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
         <DashboardNav
           items={navItems}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
         />
       </div>
     </div>

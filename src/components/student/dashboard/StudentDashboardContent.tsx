@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { BookOpen, Calendar, GraduationCap, Award, Clock, BookOpenCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,12 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
 
   const handleNavigateToCourses = () => {
     navigate('/courses');
+  };
+
+  // Helper to prevent page reloads when changing tabs
+  const handleTabNavigation = (tab: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(`/student-dashboard?tab=${tab}`);
   };
 
   if (activeTab === "overview") {
@@ -82,7 +88,11 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
             description="Your scheduled tutoring sessions"
             isLoading={sessionsLoading}
             headerAction={
-              <Button variant="outline" size="sm" onClick={() => navigate('/student-dashboard?tab=sessions')}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/student-dashboard?tab=sessions')}
+              >
                 View all
               </Button>
             }
@@ -118,7 +128,11 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
               <div className="flex h-[150px] flex-col items-center justify-center space-y-2 rounded-lg border border-dashed">
                 <Calendar className="h-10 w-10 text-muted-foreground/60" />
                 <p className="text-sm text-muted-foreground">No upcoming sessions</p>
-                <Button variant="outline" size="sm" onClick={() => navigate('/student-dashboard?tab=request-session')}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate('/student-dashboard?tab=request-session')}
+                >
                   Request a Session
                 </Button>
               </div>
@@ -130,7 +144,11 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
             description="Your enrolled courses"
             isLoading={coursesLoading}
             headerAction={
-              <Button variant="outline" size="sm" onClick={() => navigate('/student-dashboard?tab=courses')}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/student-dashboard?tab=courses')}
+              >
                 View all
               </Button>
             }
@@ -154,7 +172,12 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
                         <Progress value={courseProgress} className="h-2 w-full" />
                         <span className="ml-2 text-xs font-medium">{courseProgress}%</span>
                       </div>
-                      <Button variant="ghost" size="sm" className="ml-auto flex items-center">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="ml-auto flex items-center"
+                        onClick={() => navigate(`/courses/${course.id}`)}
+                      >
                         Continue <ArrowRight className="ml-1 h-3 w-3" />
                       </Button>
                     </div>
