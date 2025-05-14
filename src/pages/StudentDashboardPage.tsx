@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -36,9 +36,10 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
+  const tabFromUrl = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -53,8 +54,6 @@ const StudentDashboard = () => {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
-
-  // Removed the effect that was updating URL when tab changes to prevent reload cycles
 
   // Calculate completed sessions from progress data
   const completedSessions = progress.filter(p => p.completed).length;
@@ -94,10 +93,8 @@ const StudentDashboard = () => {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Use history.replaceState to update URL without causing a reload
-    const url = new URL(window.location.href);
-    url.searchParams.set("tab", value);
-    window.history.replaceState(null, '', url);
+    // Update URL without causing a page reload
+    navigate(`/student-dashboard?tab=${value}`, { replace: true });
   };
 
   return (
@@ -107,7 +104,7 @@ const StudentDashboard = () => {
         <div className="w-full md:w-1/4">
           <StudentSidebar 
             activeTab={activeTab} 
-            setActiveTab={handleTabChange} // Changed to use handleTabChange
+            setActiveTab={handleTabChange}
             firstName={user?.user_metadata?.first_name}
             lastName={user?.user_metadata?.last_name}
           />
