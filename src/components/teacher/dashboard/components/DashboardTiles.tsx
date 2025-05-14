@@ -9,7 +9,6 @@ import {
   Settings 
 } from "lucide-react";
 import NavigationTile from "./NavigationTile";
-import { useLocation } from "react-router-dom";
 
 interface DashboardTilesProps {
   activeTab: string;
@@ -50,7 +49,7 @@ const DashboardTiles: React.FC<DashboardTilesProps> = ({ activeTab }) => {
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {navigationItems.map((item) => {
         const itemTab = new URLSearchParams(item.path.split('?')[1]).get('tab');
         const isActive = itemTab === activeTab;
