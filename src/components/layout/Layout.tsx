@@ -4,6 +4,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import Chatbot from "../chatbot/Chatbot";
 import { Toaster } from "@/components/ui/toaster";
+import { RadialMenu } from "@/components/ui/radial-menu";
 
 const Layout = () => {
   return (
@@ -12,6 +13,7 @@ const Layout = () => {
       <main className="flex-1">
         <Outlet />
       </main>
+      <RadialMenu />
       <Footer />
       <Chatbot />
       <Toaster />
