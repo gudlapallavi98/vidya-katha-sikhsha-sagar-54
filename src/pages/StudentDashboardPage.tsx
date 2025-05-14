@@ -36,7 +36,7 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const { user } = useAuth();
@@ -54,10 +54,7 @@ const StudentDashboard = () => {
     }
   }, [tabFromUrl]);
 
-  useEffect(() => {
-    // Update URL when tab changes
-    setSearchParams({ tab: activeTab });
-  }, [activeTab, setSearchParams]);
+  // Removed the effect that was updating URL when tab changes to prevent reload cycles
 
   // Calculate completed sessions from progress data
   const completedSessions = progress.filter(p => p.completed).length;
@@ -95,6 +92,14 @@ const StudentDashboard = () => {
     return session.display_status && session.display_status !== 'upcoming';
   });
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Use history.replaceState to update URL without causing a reload
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", value);
+    window.history.replaceState(null, '', url);
+  };
+
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
@@ -102,7 +107,7 @@ const StudentDashboard = () => {
         <div className="w-full md:w-1/4">
           <StudentSidebar 
             activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
+            setActiveTab={handleTabChange} // Changed to use handleTabChange
             firstName={user?.user_metadata?.first_name}
             lastName={user?.user_metadata?.last_name}
           />
@@ -110,7 +115,7 @@ const StudentDashboard = () => {
 
         {/* Main content */}
         <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsContent value="overview" className="m-0">
               <StudentDashboardOverview 
                 enrolledCourses={enrolledCourses}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { 
@@ -27,7 +28,7 @@ const TeacherDashboardWithQueryClient = () => {
 };
 
 const TeacherDashboard = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || "overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,10 +46,7 @@ const TeacherDashboard = () => {
     }
   }, [tabFromUrl]);
 
-  useEffect(() => {
-    // Update URL when tab changes
-    setSearchParams({ tab: activeTab });
-  }, [activeTab, setSearchParams]);
+  // Removed the effect that was updating URL when tab changes to prevent reload cycles
   
   // Calculate metrics from sessions data
   const upcomingSessions = teacherSessions.filter(s => {
@@ -61,6 +59,14 @@ const TeacherDashboard = () => {
   const totalSessions = {
     completed: teacherSessions.filter(s => s.status === 'completed').length,
     upcoming: upcomingSessions.length
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Use history.replaceState to update URL without causing a reload
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", value);
+    window.history.replaceState(null, '', url);
   };
 
   const handleAcceptSession = async (sessionId: string) => {
@@ -179,7 +185,7 @@ const TeacherDashboard = () => {
     <div className="container py-12">
       <div className="flex flex-col md:flex-row items-start gap-8">
         {/* Sidebar */}
-        <TeacherSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <TeacherSidebar activeTab={activeTab} setActiveTab={handleTabChange} />
 
         {/* Main content */}
         <TeacherDashboardContent

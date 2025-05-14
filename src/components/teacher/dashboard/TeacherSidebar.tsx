@@ -1,81 +1,116 @@
 
-import React from "react";
-import { Calendar, Settings, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  User, 
+  Graduation, 
+  Calendar, 
+  Inbox, 
+  Clock, 
+  Settings 
+} from "lucide-react";
 
 interface TeacherSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
-const TeacherSidebar: React.FC<TeacherSidebarProps> = ({ activeTab, setActiveTab }) => {
-  const { user } = useAuth();
+const TeacherSidebar = ({ activeTab, setActiveTab }: TeacherSidebarProps) => {
+  const handleTabClick = (tab: string, event: React.MouseEvent) => {
+    // Prevent default to avoid full page navigation
+    event.preventDefault();
+    setActiveTab(tab);
+  };
 
   return (
-    <div className="w-full md:w-1/4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-indian-blue/20 flex items-center justify-center">
-              <User className="h-8 w-8 text-indian-blue" />
-            </div>
-            <div>
-              <CardTitle>{user?.user_metadata?.first_name || "Teacher"} {user?.user_metadata?.last_name || ""}</CardTitle>
-              <CardDescription>Teacher</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <nav className="space-y-2">
-            <Button 
-              variant={activeTab === "overview" ? "default" : "ghost"} 
-              className={activeTab === "overview" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => setActiveTab("overview")}
-            >
-              Dashboard
-            </Button>
-            <Button 
-              variant={activeTab === "courses" ? "default" : "ghost"} 
-              className={activeTab === "courses" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => setActiveTab("courses")}
-            >
-              My Courses
-            </Button>
-            <Button 
-              variant={activeTab === "sessions" ? "default" : "ghost"} 
-              className={activeTab === "sessions" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => setActiveTab("sessions")}
-            >
-              Session Requests
-            </Button>
-            <Button 
-              variant={activeTab === "schedule" ? "default" : "ghost"} 
-              className={activeTab === "schedule" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => setActiveTab("schedule")}
-            >
-              My Schedule
-            </Button>
-            <Button 
-              variant={activeTab === "availability" ? "default" : "ghost"} 
-              className={activeTab === "availability" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => setActiveTab("availability")}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Set Availability
-            </Button>
-            <Button 
-              variant={activeTab === "profile" ? "default" : "ghost"} 
-              className={activeTab === "profile" ? "bg-indian-blue w-full justify-start" : "w-full justify-start"}
-              onClick={() => setActiveTab("profile")}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Profile Settings
-            </Button>
-          </nav>
-        </CardContent>
-      </Card>
+    <div className="w-full md:w-1/4 bg-white rounded-lg border shadow-sm p-6 sticky top-20 mb-6 md:mb-0">
+      <div className="flex flex-col items-center mb-6">
+        <div className="w-20 h-20 bg-gradient-to-br from-indian-blue to-indian-blue/60 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4">
+          TE
+        </div>
+        <h2 className="text-xl font-medium">Teacher</h2>
+      </div>
+
+      <nav className="space-y-1">
+        <TabsList className="flex flex-col w-full space-y-1 bg-transparent">
+          <TabsTrigger
+            value="overview"
+            className={`w-full justify-start ${
+              activeTab === "overview"
+                ? "bg-muted text-primary"
+                : "hover:bg-muted/50"
+            }`}
+            onClick={(e) => handleTabClick("overview", e)}
+          >
+            <User className="mr-2 h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          
+          <TabsTrigger
+            value="courses"
+            className={`w-full justify-start ${
+              activeTab === "courses"
+                ? "bg-muted text-primary"
+                : "hover:bg-muted/50"
+            }`}
+            onClick={(e) => handleTabClick("courses", e)}
+          >
+            <Graduation className="mr-2 h-4 w-4" />
+            My Courses
+          </TabsTrigger>
+          
+          <TabsTrigger
+            value="session-requests"
+            className={`w-full justify-start ${
+              activeTab === "session-requests"
+                ? "bg-muted text-primary"
+                : "hover:bg-muted/50"
+            }`}
+            onClick={(e) => handleTabClick("session-requests", e)}
+          >
+            <Inbox className="mr-2 h-4 w-4" />
+            Session Requests
+          </TabsTrigger>
+          
+          <TabsTrigger
+            value="schedule"
+            className={`w-full justify-start ${
+              activeTab === "schedule"
+                ? "bg-muted text-primary"
+                : "hover:bg-muted/50"
+            }`}
+            onClick={(e) => handleTabClick("schedule", e)}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            My Schedule
+          </TabsTrigger>
+          
+          <TabsTrigger
+            value="availability"
+            className={`w-full justify-start ${
+              activeTab === "availability"
+                ? "bg-muted text-primary"
+                : "hover:bg-muted/50"
+            }`}
+            onClick={(e) => handleTabClick("availability", e)}
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            Set Availability
+          </TabsTrigger>
+          
+          <TabsTrigger
+            value="profile"
+            className={`w-full justify-start ${
+              activeTab === "profile"
+                ? "bg-muted text-primary"
+                : "hover:bg-muted/50"
+            }`}
+            onClick={(e) => handleTabClick("profile", e)}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Profile Settings
+          </TabsTrigger>
+        </TabsList>
+      </nav>
     </div>
   );
 };
