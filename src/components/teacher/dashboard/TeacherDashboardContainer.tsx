@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client"; 
@@ -7,7 +7,6 @@ import { useSessionAcceptance } from "@/hooks/use-session-acceptance";
 import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
 import { 
   useTeacherCourses, 
-  useAllTeachers, 
   useTeacherProfile 
 } from "@/hooks/teacher/use-teacher-data";
 import {
@@ -23,7 +22,7 @@ import TeacherDashboardContent from "./TeacherDashboardContent";
  * Handles data fetching and business logic
  */
 const TeacherDashboardContainer = () => {
-  // Use our unified dashboard tabs hook
+  // Use our improved dashboard tabs hook
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
@@ -159,6 +158,7 @@ const TeacherDashboardContainer = () => {
         {/* Main content */}
         <TeacherDashboardContent
           activeTab={activeTab}
+          handleTabChange={handleTabChange}
           teacherCourses={teacherCourses}
           coursesLoading={coursesLoading}
           sessionRequests={sessionRequests}

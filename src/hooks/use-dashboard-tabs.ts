@@ -3,8 +3,8 @@ import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 /**
- * Custom hook to manage dashboard tab state with optimized navigation
- * preventing unnecessary reloads and re-renders
+ * Custom hook to manage dashboard tab state with URL synchronization
+ * This hook ensures tab state is preserved during navigation without causing reloads
  */
 export const useDashboardTabs = (defaultTab = "overview") => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,7 +13,7 @@ export const useDashboardTabs = (defaultTab = "overview") => {
   // Initialize with URL param if available, otherwise use default
   const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab);
 
-  // Sync state with URL params when the component mounts or URL changes directly
+  // Sync state with URL when URL changes directly (browser navigation)
   useEffect(() => {
     const currentTab = searchParams.get("tab");
     if (currentTab && currentTab !== activeTab) {
@@ -24,14 +24,14 @@ export const useDashboardTabs = (defaultTab = "overview") => {
     }
   }, [searchParams, activeTab, defaultTab, setSearchParams]);
 
-  // Memoized tab change handler to prevent recreating function on every render
+  // Tab change handler that prevents recreating function on every render
   const handleTabChange = useCallback((tab: string) => {
     if (tab === activeTab) return; // Prevent unnecessary updates
     
     // Update local state immediately for faster UI response
     setActiveTab(tab);
     
-    // Critical: Use replace:true to prevent adding to browser history stack
+    // CRITICAL: Use replace:true to prevent adding to browser history stack
     // and to avoid triggering full page reloads
     setSearchParams({ tab }, { replace: true });
   }, [activeTab, setSearchParams]);

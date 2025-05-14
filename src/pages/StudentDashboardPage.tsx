@@ -10,11 +10,12 @@ import StudentCoursesList from "@/components/student/dashboard/StudentCoursesLis
 import StudentUpcomingSessions from "@/components/student/dashboard/StudentUpcomingSessions";
 import StudentPastSessions from "@/components/student/dashboard/StudentPastSessions";
 import StudentSidebar from "@/components/student/dashboard/StudentSidebar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
 import { useDashboardTabs } from "@/hooks/use-dashboard-tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStudentDashboard } from "@/hooks/use-student-dashboard";
+import DashboardTabs from "@/components/dashboard/DashboardTabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { useMemo } from "react";
 
 // Create a persistent QueryClient instance with consistent configuration
 const queryClient = new QueryClient({
@@ -36,7 +37,7 @@ const StudentDashboardWithQueryClient = () => {
 };
 
 const StudentDashboard = () => {
-  // Use our unified dashboard tabs hook
+  // Use our improved dashboard tabs hook
   const { activeTab, handleTabChange } = useDashboardTabs("overview");
   const { user } = useAuth();
   const { toast } = useToast();
@@ -93,6 +94,103 @@ const StudentDashboard = () => {
   const completedSessionsList = dashboard.pastSessions.data.filter(session => {
     return session.display_status === 'attended' || session.display_status === 'missed';
   });
+  
+  // Memoize tab content to prevent unnecessary rerenders
+  const studentTabs = useMemo(() => [
+    {
+      value: "overview",
+      label: "Overview",
+      content: (
+        <StudentDashboardOverview 
+          enrolledCourses={dashboard.enrollments.data}
+          upcomingSessionsList={upcomingSessionsList}
+          completedSessionsList={completedSessionsList}
+          coursesLoading={dashboard.enrollments.isLoading}
+          sessionsLoading={dashboard.upcomingSessions.isLoading}
+          getStatusBadgeClass={getStatusBadgeClass}
+          getStatusText={getStatusText}
+          handleJoinClass={handleJoinClass}
+        />
+      )
+    },
+    {
+      value: "courses",
+      label: "Courses",
+      content: (
+        <>
+          <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
+          <StudentCoursesList 
+            enrolledCourses={dashboard.enrollments.data}
+            coursesLoading={dashboard.enrollments.isLoading}
+          />
+        </>
+      )
+    },
+    {
+      value: "sessions",
+      label: "Sessions",
+      content: (
+        <>
+          <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
+          <StudentUpcomingSessions 
+            sessions={upcomingSessionsList}
+            sessionsLoading={dashboard.upcomingSessions.isLoading}
+            getStatusBadgeClass={getStatusBadgeClass}
+            getStatusText={getStatusText}
+            handleJoinClass={handleJoinClass}
+          />
+        </>
+      )
+    },
+    {
+      value: "past-sessions",
+      label: "Past Sessions",
+      content: (
+        <>
+          <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
+          <StudentPastSessions 
+            sessions={dashboard.pastSessions.data}
+            sessionsLoading={dashboard.pastSessions.isLoading}
+            getStatusBadgeClass={getStatusBadgeClass}
+            getStatusText={getStatusText}
+          />
+        </>
+      )
+    },
+    {
+      value: "request-session",
+      label: "Request Session",
+      content: (
+        <>
+          <h1 className="font-sanskrit text-3xl font-bold mb-6">Request a Session</h1>
+          <SessionRequestForm />
+        </>
+      )
+    },
+    {
+      value: "profile",
+      label: "Profile Settings",
+      content: (
+        <>
+          <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
+          <Card>
+            <CardContent className="p-6">
+              <ProfileSettingsForm role="student" />
+            </CardContent>
+          </Card>
+        </>
+      )
+    }
+  ], [
+    dashboard.enrollments.data,
+    dashboard.enrollments.isLoading,
+    upcomingSessionsList,
+    completedSessionsList,
+    dashboard.upcomingSessions.isLoading,
+    dashboard.pastSessions.data,
+    dashboard.pastSessions.isLoading,
+    handleJoinClass
+  ]);
 
   return (
     <div className="container py-12">
@@ -109,74 +207,18 @@ const StudentDashboard = () => {
 
         {/* Main content */}
         <div className="w-full md:w-3/4">
-          <Tabs value={activeTab} className="w-full" defaultValue={activeTab}>
-            {/* Hidden TabsList - critical for Radix UI's internal state management */}
-            <TabsList className="hidden">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="courses">Courses</TabsTrigger>
-              <TabsTrigger value="sessions">Sessions</TabsTrigger>
-              <TabsTrigger value="past-sessions">Past Sessions</TabsTrigger>
-              <TabsTrigger value="request-session">Request Session</TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-            </TabsList>
-            
-            {/* Tab content sections */}
-            <TabsContent value="overview" className="m-0 focus:outline-none">
-              <StudentDashboardOverview 
-                enrolledCourses={dashboard.enrollments.data}
-                upcomingSessionsList={upcomingSessionsList}
-                completedSessionsList={completedSessionsList}
-                coursesLoading={dashboard.enrollments.isLoading}
-                sessionsLoading={dashboard.upcomingSessions.isLoading}
-                getStatusBadgeClass={getStatusBadgeClass}
-                getStatusText={getStatusText}
-                handleJoinClass={handleJoinClass}
-              />
-            </TabsContent>
-            
-            <TabsContent value="courses" className="m-0 focus:outline-none">
-              <h1 className="font-sanskrit text-3xl font-bold mb-6">My Courses</h1>
-              <StudentCoursesList 
-                enrolledCourses={dashboard.enrollments.data}
-                coursesLoading={dashboard.enrollments.isLoading}
-              />
-            </TabsContent>
-            
-            <TabsContent value="sessions" className="m-0 focus:outline-none">
-              <h1 className="font-sanskrit text-3xl font-bold mb-6">Upcoming Sessions</h1>
-              <StudentUpcomingSessions 
-                sessions={upcomingSessionsList}
-                sessionsLoading={dashboard.upcomingSessions.isLoading}
-                getStatusBadgeClass={getStatusBadgeClass}
-                getStatusText={getStatusText}
-                handleJoinClass={handleJoinClass}
-              />
-            </TabsContent>
-            
-            <TabsContent value="past-sessions" className="m-0 focus:outline-none">
-              <h1 className="font-sanskrit text-3xl font-bold mb-6">Past Sessions</h1>
-              <StudentPastSessions 
-                sessions={dashboard.pastSessions.data}
-                sessionsLoading={dashboard.pastSessions.isLoading}
-                getStatusBadgeClass={getStatusBadgeClass}
-                getStatusText={getStatusText}
-              />
-            </TabsContent>
-            
-            <TabsContent value="request-session" className="m-0 focus:outline-none">
-              <h1 className="font-sanskrit text-3xl font-bold mb-6">Request a Session</h1>
-              <SessionRequestForm />
-            </TabsContent>
-            
-            <TabsContent value="profile" className="m-0 focus:outline-none">
-              <h1 className="font-sanskrit text-3xl font-bold mb-6">Profile Settings</h1>
-              <ProfileSettingsForm role="student" />
-            </TabsContent>
-          </Tabs>
+          <DashboardTabs
+            tabs={studentTabs}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
         </div>
       </div>
     </div>
   );
 };
+
+// Import these at the top but definition is here to avoid reference errors
+import { getStatusBadgeClass, getStatusText } from "@/components/student/dashboard/StudentDashboardUtils";
 
 export default StudentDashboardWithQueryClient;
