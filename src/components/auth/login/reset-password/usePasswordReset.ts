@@ -29,14 +29,14 @@ export const usePasswordReset = (onClose: () => void) => {
     
     try {
       // First check if the email exists in the system
-      // Since getUserByEmail doesn't exist in the Supabase client API, 
-      // we'll check if a user exists by trying to fetch profiles with this email
+      // We'll check if a user exists by trying to fetch profiles that match this email
       const { data: userProfiles, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('id', resetEmail)
+        .eq('email', resetEmail)
         .maybeSingle();
       
+      // If no profile found with this email, show error
       if (profileError || !userProfiles) {
         toast({
           variant: "destructive",
@@ -153,18 +153,23 @@ export const usePasswordReset = (onClose: () => void) => {
     setResetLoading(true);
     
     try {
-      // Update password using admin API (in a real app, this would be done via a secure backend endpoint)
-      // Here we're using the client-side auth reset flow with a custom token or session
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      // In a real app, you'd call a secure API endpoint to verify the OTP again server-side
+      // and then reset the password
       
-      if (error) throw error;
+      // Send a password reset email through Supabase Auth
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        resetEmail,
+        { redirectTo: `${window.location.origin}/login` }
+      );
+      
+      if (resetError) throw resetError;
       
       toast({
-        title: "Password Updated",
-        description: "Your password has been reset successfully",
+        title: "Password Reset Email Sent",
+        description: "Check your email for a password reset link",
       });
       
-      // Close the dialog and redirect to login
+      // Close the dialog
       onClose();
     } catch (error) {
       console.error("Reset password error:", error);
