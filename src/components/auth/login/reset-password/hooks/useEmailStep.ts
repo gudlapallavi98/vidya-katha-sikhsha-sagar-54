@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { verifyEmailExists, sendOtpToEmail } from "../api/emailVerification";
+import { ResetStep } from "../types";
 
 export const useEmailStep = (
   resetEmail: string,
-  setResetPasswordStep: (step: string) => void,
+  setResetPasswordStep: (step: ResetStep) => void,
   setSentOtp: (otp: string) => void
 ) => {
   const [isLoading, setIsLoading] = useState(false);

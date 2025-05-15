@@ -1,11 +1,12 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { ResetStep } from "../types";
 
 export const useOtpStep = (
   resetOtp: string,
   sentOtp: string,
-  setResetPasswordStep: (step: string) => void,
+  setResetPasswordStep: (step: ResetStep) => void,
   handleSendResetOtp: () => Promise<void>
 ) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -50,9 +51,13 @@ export const useOtpStep = (
     }
   };
 
+  const handleResendOtp = async () => {
+    await handleSendResetOtp();
+  };
+
   return {
     isLoading,
     handleVerifyOtp,
-    handleResendOtp: handleSendResetOtp
+    handleResendOtp
   };
 };

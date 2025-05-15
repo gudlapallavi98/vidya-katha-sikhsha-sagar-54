@@ -5,18 +5,27 @@ import { supabase } from "@/integrations/supabase/client";
  * Verifies if an email exists in the profiles table
  */
 export const verifyEmailExists = async (email: string) => {
-  const { data: profileData, error: profileError } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('email', email)
-    .limit(1);
-  
-  if (profileError) {
-    console.error("Error checking email:", profileError);
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .limit(1)
+      .single();
+    
+    if (error) {
+      throw new Error("Failed to verify email");
+    }
+    
+    return { exists: !!data, profileData: data };
+  } catch (error) {
+    console.error("Error checking email:", error);
+    // If error is "No rows matched the query" it means the email doesn't exist
+    if (error instanceof Error && error.message.includes("No rows matched")) {
+      return { exists: false, profileData: null };
+    }
     throw new Error("Failed to verify email");
   }
-  
-  return { exists: profileData && profileData.length > 0, profileData };
 };
 
 /**
