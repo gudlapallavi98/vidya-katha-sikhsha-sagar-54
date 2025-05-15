@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,27 +28,23 @@ export const usePasswordReset = (onClose: () => void) => {
     setResetLoading(true);
     
     try {
-      // Completely refactored to avoid the deep type instantiation issue
-      let profiles;
+      // Instead of using the complex query chain that's causing type issues,
+      // we'll use a more direct approach with explicit error handling
       
-      try {
-        // Using a simplified approach to query profiles
-        profiles = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', resetEmail);
-      } catch (err) {
-        console.error("Error in profiles query:", err);
-        throw new Error("Failed to verify email");
-      }
+      // First, check if the email exists in profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', resetEmail)
+        .limit(1);
       
-      if (profiles.error) {
-        console.error("Error checking email:", profiles.error);
+      if (profileError) {
+        console.error("Error checking email:", profileError);
         throw new Error("Failed to verify email");
       }
       
       // If no profile found with this email
-      if (!profiles.data || profiles.data.length === 0) {
+      if (!profileData || profileData.length === 0) {
         toast({
           variant: "destructive",
           title: "Email Not Found",
