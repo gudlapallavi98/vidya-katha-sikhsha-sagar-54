@@ -28,12 +28,12 @@ export const usePasswordReset = (onClose: () => void) => {
     setResetLoading(true);
     
     try {
-      // Check if email exists by querying the profiles table
+      // Instead of using complex query chaining that causes TypeScript issues,
+      // use a simpler approach - just get the profiles matching the email
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
-        .eq('email', resetEmail)
-        .maybeSingle();
+        .eq('email', resetEmail);
       
       if (error) {
         console.error("Error checking email:", error);
@@ -41,7 +41,7 @@ export const usePasswordReset = (onClose: () => void) => {
       }
       
       // If no profile found with this email
-      if (!data) {
+      if (!data || data.length === 0) {
         toast({
           variant: "destructive",
           title: "Email Not Found",

@@ -206,5 +206,3 @@ export function useToast() {
 }
 
 export type Toast = ToastType;
-
-export { ToastProvider };
