@@ -27,11 +27,11 @@ const StudentDashboard = () => {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const { isAuthenticated, isChecking } = useAuthStatus();
 
-  const { data: studentCourses = [], isLoading: coursesLoading } = useStudentCourses();
-  const { data: studentSessions = [], isLoading: sessionsLoading } = useStudentSessions();
+  const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentCourses();
+  const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentSessions();
 
   // Calculate upcoming sessions
-  const upcomingSessions = studentSessions.filter(session => 
+  const filteredSessions = upcomingSessions.filter(session => 
     session.status === 'scheduled' || session.status === 'in_progress'
   );
 
@@ -54,14 +54,12 @@ const StudentDashboard = () => {
       children={
         <StudentDashboardContent 
           activeTab={activeTab}
-          studentCourses={studentCourses}
+          enrolledCourses={enrolledCourses}
           coursesLoading={coursesLoading}
-          upcomingSessions={upcomingSessions}
+          upcomingSessions={filteredSessions}
           sessionsLoading={sessionsLoading}
-          selectedTeacherId={selectedTeacherId}
-          setSelectedTeacherId={setSelectedTeacherId}
-          selectedCourseId={selectedCourseId}
-          setSelectedCourseId={setSelectedCourseId}
+          progress={[]}  // This will need to be fetched from an API or provided from parent
+          handleJoinClass={(sessionId) => Promise.resolve()}  // Placeholder implementation
         />
       }
     />
