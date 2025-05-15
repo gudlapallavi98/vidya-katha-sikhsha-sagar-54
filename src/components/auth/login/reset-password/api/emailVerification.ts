@@ -6,12 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const verifyEmailExists = async (email: string) => {
   try {
+    // Simplified query that avoids the deep type instantiation
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
       .eq('email', email)
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (error) {
       throw new Error("Failed to verify email");
