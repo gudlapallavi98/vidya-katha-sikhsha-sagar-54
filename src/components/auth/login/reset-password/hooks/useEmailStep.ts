@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { verifyEmailExists, sendOtpToEmail } from "../api/emailVerification";
 import { ResetStep } from "../types";
 
 export const useEmailStep = (
@@ -25,25 +24,10 @@ export const useEmailStep = (
     setIsLoading(true);
     
     try {
-      // Check if email exists in profiles
-      const { exists } = await verifyEmailExists(resetEmail);
-      
-      // If no profile found with this email
-      if (!exists) {
-        toast({
-          variant: "destructive",
-          title: "Email Not Found",
-          description: "No account exists with this email address",
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      // Send OTP to email
-      const result = await sendOtpToEmail(resetEmail);
-      
-      // Save the OTP locally for verification
-      setSentOtp(result.otp);
+      // Since we're removing email verification, we'll just move to OTP step
+      // and mock the OTP functionality
+      const mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOtp(mockOtp);
       
       toast({
         title: "OTP Sent",

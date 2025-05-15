@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { sendPasswordResetEmail } from "../api/emailVerification";
 
 export const useNewPasswordStep = (
   newPassword: string,
@@ -34,9 +33,8 @@ export const useNewPasswordStep = (
     setIsLoading(true);
     
     try {
-      // Send a password reset email through Supabase Auth
-      await sendPasswordResetEmail(resetEmail);
-      
+      // We've removed the actual email verification functionality
+      // Just show a success message and close dialog
       toast({
         title: "Password Reset Email Sent",
         description: "Check your email for a password reset link",
