@@ -28,12 +28,20 @@ export const usePasswordReset = (onClose: () => void) => {
     setResetLoading(true);
     
     try {
-      // Instead of using complex query chaining that causes TypeScript issues,
-      // use a simpler approach - just get the profiles matching the email
-      const { data, error } = await supabase
+      // The deep type instantiation issue is happening in this query
+      // Let's rewrite it to avoid the complex type inference
+      const response = await supabase
         .from('profiles')
         .select('id')
-        .eq('email', resetEmail);
+        .eq('email', resetEmail)
+        .then(result => {
+          return {
+            data: result.data, 
+            error: result.error
+          };
+        });
+      
+      const { data, error } = response;
       
       if (error) {
         console.error("Error checking email:", error);
@@ -52,7 +60,7 @@ export const usePasswordReset = (onClose: () => void) => {
       }
       
       // Use our edge function to send OTP
-      const response = await fetch(
+      const otpResponse = await fetch(
         "https://nxdsszdobgbikrnqqrue.functions.supabase.co/send-email/send-otp",
         {
           method: "POST",
@@ -66,12 +74,12 @@ export const usePasswordReset = (onClose: () => void) => {
         }
       );
       
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!otpResponse.ok) {
+        const errorData = await otpResponse.json();
         throw new Error(errorData.error || "Failed to send OTP");
       }
       
-      const result = await response.json();
+      const result = await otpResponse.json();
       
       // Save the OTP locally for verification
       setSentOtp(result.otp);
