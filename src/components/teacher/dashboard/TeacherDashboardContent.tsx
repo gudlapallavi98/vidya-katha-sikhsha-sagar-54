@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BookOpen, Calendar, Clock, Users, Video, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -390,17 +389,6 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
         <DashboardHeader heading="Set Your Availability" />
         <DashboardCard>
           <AvailabilityScheduler />
-        </DashboardCard>
-      </DashboardShell>
-    );
-  }
-  
-  if (activeTab === "profile") {
-    return (
-      <DashboardShell>
-        <DashboardHeader heading="Profile Settings" />
-        <DashboardCard>
-          <ProfileSettingsForm role="teacher" />
         </DashboardCard>
       </DashboardShell>
     );

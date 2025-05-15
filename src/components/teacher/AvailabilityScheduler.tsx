@@ -1,29 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { CalendarIcon, BookOpen, ClockIcon, History } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import AvailabilityForm from "./availability/AvailabilityForm";
+import { AvailabilityList } from "./availability/AvailabilityList";
+import { toast } from "@/components/ui/use-toast";
 
 interface Subject {
   id: string;
@@ -38,38 +19,46 @@ interface Availability {
   start_time: string;
   end_time: string;
   status: string;
+  auto_cancel_at?: string;
 }
 
 export function AvailabilityScheduler() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubjectId, setSelectedSubjectId] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check if profile is complete
   useEffect(() => {
     const checkProfile = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("profile_completed")
-        .eq("id", user.id)
-        .single();
-        
-      if (error) {
-        console.error("Error checking profile:", error);
+      if (!user) {
+        setIsLoading(false);
         return;
       }
       
-      setIsProfileComplete(data?.profile_completed || false);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("profile_completed")
+          .eq("id", user.id)
+          .single();
+          
+        if (error) {
+          console.error("Error checking profile:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not check profile status"
+          });
+        } else {
+          setIsProfileComplete(data?.profile_completed || false);
+        }
+      } catch (err) {
+        console.error("Error in profile check:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     checkProfile();
@@ -80,44 +69,48 @@ export function AvailabilityScheduler() {
     const fetchTeacherSubjects = async () => {
       if (!user) return;
 
-      // Get teacher's interested subjects
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("subjects_interested")
-        .eq("id", user.id)
-        .single();
+      try {
+        // Get teacher's interested subjects
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("subjects_interested")
+          .eq("id", user.id)
+          .single();
 
-      if (profileError) {
-        console.error("Error fetching profile subjects:", profileError);
-        return;
+        if (profileError) {
+          console.error("Error fetching profile subjects:", profileError);
+          return;
+        }
+
+        const subjectNames = profileData?.subjects_interested || [];
+
+        if (subjectNames.length === 0) return;
+
+        // Get subject details
+        const { data, error } = await supabase
+          .from("subjects")
+          .select("*")
+          .in("name", subjectNames);
+
+        if (error) {
+          console.error("Error fetching subjects:", error);
+          return;
+        }
+
+        setSubjects(data || []);
+      } catch (err) {
+        console.error("Error fetching subjects:", err);
       }
-
-      const subjectNames = profileData?.subjects_interested || [];
-
-      if (subjectNames.length === 0) return;
-
-      // Get subject details
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("*")
-        .in("name", subjectNames);
-
-      if (error) {
-        console.error("Error fetching subjects:", error);
-        return;
-      }
-
-      setSubjects(data || []);
     };
 
     fetchTeacherSubjects();
   }, [user]);
 
   // Fetch existing availabilities
-  useEffect(() => {
-    const fetchAvailabilities = async () => {
-      if (!user) return;
+  const fetchAvailabilities = async () => {
+    if (!user) return;
 
+    try {
       const { data, error } = await supabase
         .from("teacher_availability")
         .select(`
@@ -132,335 +125,82 @@ export function AvailabilityScheduler() {
       }
 
       setAvailabilities(data || []);
-    };
+    } catch (err) {
+      console.error("Error in fetchAvailabilities:", err);
+    }
+  };
 
-    fetchAvailabilities();
+  // Initial fetch of availabilities
+  useEffect(() => {
+    if (user) {
+      fetchAvailabilities();
+    }
   }, [user]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !date || !startTime || !endTime || !selectedSubjectId) {
-      toast({
-        variant: "destructive",
-        title: "Missing information",
-        description: "Please fill all required fields",
-      });
-      return;
-    }
-
-    if (!isProfileComplete) {
-      toast({
-        variant: "destructive", 
-        title: "Profile incomplete",
-        description: "Please complete your profile before scheduling availability"
-      });
-      return;
-    }
+  // Auto-cancel check at regular intervals
+  useEffect(() => {
+    const checkForAutoCancellations = async () => {
+      if (!user) return;
+      
+      try {
+        const now = new Date().toISOString();
+        
+        // Find availabilities that should be auto-cancelled
+        const toCancelAvailabilities = availabilities.filter(avail => 
+          avail.auto_cancel_at && avail.auto_cancel_at <= now && avail.status === "available"
+        );
+        
+        if (toCancelAvailabilities.length > 0) {
+          // Update status of expired availabilities
+          for (const avail of toCancelAvailabilities) {
+            await supabase
+              .from("teacher_availability")
+              .update({ status: "cancelled" })
+              .eq("id", avail.id)
+              .eq("teacher_id", user.id);
+          }
+          
+          // Refresh availabilities list after cancellations
+          fetchAvailabilities();
+        }
+      } catch (err) {
+        console.error("Error in auto-cancel check:", err);
+      }
+    };
     
-    setIsSubmitting(true);
+    // Check every minute
+    const intervalId = setInterval(checkForAutoCancellations, 60000);
+    
+    // Initial check
+    checkForAutoCancellations();
+    
+    return () => clearInterval(intervalId);
+  }, [availabilities, user]);
 
-    try {
-      // Format date for database
-      const formattedDate = format(date, "yyyy-MM-dd");
-
-      // Add availability
-      const { error } = await supabase
-        .from("teacher_availability")
-        .insert([
-          {
-            teacher_id: user.id,
-            subject_id: selectedSubjectId,
-            available_date: formattedDate,
-            start_time: startTime,
-            end_time: endTime,
-            status: "available",
-          },
-        ]);
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Availability Scheduled",
-        description: "Your availability has been successfully scheduled",
-      });
-
-      // Reset form
-      setDate(new Date());
-      setStartTime("");
-      setEndTime("");
-      setSelectedSubjectId("");
-
-      // Refresh availabilities
-      const { data: newAvailabilities, error: fetchError } = await supabase
-        .from("teacher_availability")
-        .select(`
-          *,
-          subject:subjects(id, name)
-        `)
-        .eq("teacher_id", user.id);
-
-      if (!fetchError) {
-        setAvailabilities(newAvailabilities || []);
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
-      console.error("Error scheduling availability:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+  // Handler for when a new availability is added
+  const handleAvailabilityAdded = () => {
+    fetchAvailabilities();
   };
 
-  const removeAvailability = async (id: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("teacher_availability")
-        .delete()
-        .eq("id", id)
-        .eq("teacher_id", user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      // Update local state
-      setAvailabilities(availabilities.filter((a) => a.id !== id));
-
-      toast({
-        title: "Availability Removed",
-        description: "Your availability slot has been removed",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
-    }
+  // Handler for when an availability is removed
+  const handleAvailabilityRemoved = () => {
+    fetchAvailabilities();
   };
 
-  // Filter availabilities based on selected tab
-  const filteredAvailabilities = availabilities.filter(availability => {
-    const availableDate = new Date(availability.available_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate date comparison
-    
-    if (activeTab === "upcoming") {
-      return availableDate >= today;
-    } else {
-      return availableDate < today;
-    }
-  });
-
-  if (!isProfileComplete) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-center">Complete Your Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center space-y-4">
-            <p>Please complete your profile before scheduling availability.</p>
-            <Button onClick={() => window.location.href = "/teacher-dashboard?tab=profile"}>
-              Go to Profile Settings
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
+  if (isLoading) {
+    return <div className="p-4 text-center">Loading...</div>;
   }
 
   return (
     <div className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Schedule Your Availability</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Subject</label>
-              <Select 
-                value={selectedSubjectId} 
-                onValueChange={setSelectedSubjectId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    disabled={(date) =>
-                      date < new Date(new Date().setHours(0, 0, 0, 0))
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Start Time</label>
-                <Input 
-                  type="time" 
-                  value={startTime} 
-                  onChange={(e) => setStartTime(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">End Time</label>
-                <Input 
-                  type="time" 
-                  value={endTime} 
-                  onChange={(e) => setEndTime(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isSubmitting || !date || !startTime || !endTime || !selectedSubjectId}
-            >
-              {isSubmitting ? "Scheduling..." : "Schedule Availability"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Scheduled Availabilities</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-            <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="upcoming" className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                Upcoming
-              </TabsTrigger>
-              <TabsTrigger value="past" className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Past
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <TabsContent value="upcoming" className="mt-0">
-            {filteredAvailabilities.length > 0 ? (
-              <div className="space-y-4">
-                {filteredAvailabilities.map((availability) => (
-                  <div 
-                    key={availability.id} 
-                    className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-indian-saffron" />
-                        <span className="font-medium">{(availability.subject as Subject).name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                        <span>{new Date(availability.available_date).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {availability.start_time.substring(0, 5)} - {availability.end_time.substring(0, 5)}
-                        </span>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="mt-2 md:mt-0 text-red-500 border-red-500"
-                      onClick={() => removeAvailability(availability.id)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                You don't have any upcoming availability scheduled.
-              </p>
-            )}
-          </TabsContent>
-
-          <TabsContent value="past" className="mt-0">
-            {filteredAvailabilities.length > 0 ? (
-              <div className="space-y-4">
-                {filteredAvailabilities.map((availability) => (
-                  <div 
-                    key={availability.id} 
-                    className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-gray-50"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-gray-500" />
-                        <span className="font-medium">{(availability.subject as Subject).name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                        <span>{new Date(availability.available_date).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {availability.start_time.substring(0, 5)} - {availability.end_time.substring(0, 5)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                You don't have any past availability slots.
-              </p>
-            )}
-          </TabsContent>
-        </CardContent>
-      </Card>
+      <AvailabilityForm 
+        subjects={subjects} 
+        onAvailabilityCreated={handleAvailabilityAdded}
+      />
+      <AvailabilityList 
+        availabilities={availabilities} 
+        onAvailabilityRemoved={handleAvailabilityRemoved} 
+      />
     </div>
   );
 }
