@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import LoginHeader from "@/components/auth/login/LoginHeader";
 import LoginForm from "@/components/auth/login/LoginForm";
+import { Toaster } from "@/components/ui/toaster";
 
 const LoginPage = () => {
   return (
@@ -35,6 +36,9 @@ const LoginPage = () => {
           </CardFooter>
         </Card>
       </div>
+      
+      {/* Make sure toasts are visible on this page */}
+      <Toaster />
     </div>
   );
 };
