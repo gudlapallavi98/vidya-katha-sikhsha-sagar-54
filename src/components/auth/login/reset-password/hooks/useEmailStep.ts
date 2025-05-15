@@ -1,17 +1,25 @@
 
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { verifyEmailExists, sendOtpToEmail } from "../api/emailVerification";
 import { ResetStep } from "../types";
 
 export const useEmailStep = (
   resetEmail: string,
-  setResetPasswordStep: (step: ResetStep) => void,
+  setResetEmail: (email: string) => void,
+  setCurrentStep: (step: ResetStep) => void,
   setSentOtp: (otp: string) => void
 ) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-
-  const handleSendResetOtp = async () => {
+  
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setResetEmail(e.target.value);
+  };
+  
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!resetEmail || !resetEmail.includes('@')) {
       toast({
         variant: "destructive",
@@ -20,36 +28,51 @@ export const useEmailStep = (
       });
       return;
     }
-
+    
     setIsLoading(true);
     
     try {
-      // Since we're removing email verification, we'll just move to OTP step
-      // and mock the OTP functionality
-      const mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtp(mockOtp);
+      // Check if email exists in profiles
+      const { exists } = await verifyEmailExists(resetEmail);
+      
+      // If no profile found with this email
+      if (!exists) {
+        toast({
+          variant: "destructive",
+          title: "Email Not Found",
+          description: "No account exists with this email address",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Send OTP to email
+      const result = await sendOtpToEmail(resetEmail);
+      
+      // Save the OTP locally for verification
+      setSentOtp(result.otp);
       
       toast({
         title: "OTP Sent",
         description: "Please check your email for the verification code",
       });
       
-      // Move to OTP verification step
-      setResetPasswordStep("otp");
+      setCurrentStep("otp");
     } catch (error) {
-      console.error("Reset password error:", error);
+      console.error("Email verification error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send OTP",
+        title: "Failed to Send OTP",
+        description: "An error occurred. Please try again.",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
+  
   return {
     isLoading,
-    handleSendResetOtp
+    handleEmailChange,
+    handleEmailSubmit,
   };
 };
