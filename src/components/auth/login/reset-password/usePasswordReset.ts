@@ -1,195 +1,48 @@
 
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-
-type ResetStep = "email" | "otp" | "newPassword";
+import { useEmailStep } from "./hooks/useEmailStep";
+import { useOtpStep } from "./hooks/useOtpStep";
+import { useNewPasswordStep } from "./hooks/useNewPasswordStep";
+import { ResetStep } from "./types";
 
 export const usePasswordReset = (onClose: () => void) => {
+  // State management
   const [resetEmail, setResetEmail] = useState("");
   const [resetPasswordStep, setResetPasswordStep] = useState<ResetStep>("email");
   const [resetOtp, setResetOtp] = useState("");
   const [sentOtp, setSentOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetLoading, setResetLoading] = useState(false);
-  const { toast } = useToast();
 
-  const handleSendResetOtp = async () => {
-    if (!resetEmail || !resetEmail.includes('@')) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-      });
-      return;
-    }
+  // Step-specific hooks
+  const { isLoading: emailLoading, handleSendResetOtp } = useEmailStep(
+    resetEmail,
+    setResetPasswordStep,
+    setSentOtp
+  );
 
-    setResetLoading(true);
-    
-    try {
-      // Instead of using the complex query chain that's causing type issues,
-      // we'll use a more direct approach with explicit error handling
-      
-      // First, check if the email exists in profiles
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', resetEmail)
-        .limit(1);
-      
-      if (profileError) {
-        console.error("Error checking email:", profileError);
-        throw new Error("Failed to verify email");
-      }
-      
-      // If no profile found with this email
-      if (!profileData || profileData.length === 0) {
-        toast({
-          variant: "destructive",
-          title: "Email Not Found",
-          description: "No account exists with this email address",
-        });
-        setResetLoading(false);
-        return;
-      }
-      
-      // Use our edge function to send OTP
-      const otpResponse = await fetch(
-        "https://nxdsszdobgbikrnqqrue.functions.supabase.co/send-email/send-otp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: resetEmail,
-            type: "password-reset"
-          }),
-        }
-      );
-      
-      if (!otpResponse.ok) {
-        const errorData = await otpResponse.json();
-        throw new Error(errorData.error || "Failed to send OTP");
-      }
-      
-      const result = await otpResponse.json();
-      
-      // Save the OTP locally for verification
-      setSentOtp(result.otp);
-      
-      toast({
-        title: "OTP Sent",
-        description: "Please check your email for the verification code",
-      });
-      
-      // Move to OTP verification step
-      setResetPasswordStep("otp");
-    } catch (error) {
-      console.error("Reset password error:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send OTP",
-      });
-    } finally {
-      setResetLoading(false);
-    }
-  };
+  const { isLoading: otpLoading, handleVerifyOtp, handleResendOtp } = useOtpStep(
+    resetOtp,
+    sentOtp,
+    setResetPasswordStep,
+    handleSendResetOtp
+  );
 
-  const handleVerifyOtp = () => {
-    if (resetOtp.length !== 6) {
-      toast({
-        variant: "destructive",
-        title: "Invalid OTP",
-        description: "Please enter the 6-digit verification code",
-      });
-      return;
-    }
+  const { isLoading: newPasswordLoading, handleResetPassword } = useNewPasswordStep(
+    newPassword,
+    confirmPassword,
+    resetEmail,
+    onClose
+  );
 
-    setResetLoading(true);
-    
-    try {
-      // Verify OTP (in production this should be server-side)
-      if (resetOtp === sentOtp) {
-        // Move to new password step
-        setResetPasswordStep("newPassword");
-        toast({
-          title: "OTP Verified",
-          description: "Please set your new password",
-        });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Invalid OTP",
-          description: "The code you entered is incorrect",
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Verification Failed",
-        description: error instanceof Error ? error.message : "Failed to verify OTP",
-      });
-    } finally {
-      setResetLoading(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (newPassword !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Passwords Don't Match",
-        description: "Please make sure both passwords match",
-      });
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      toast({
-        variant: "destructive",
-        title: "Weak Password",
-        description: "Password should be at least 8 characters long",
-      });
-      return;
-    }
-
-    setResetLoading(true);
-    
-    try {
-      // In a real app, you'd call a secure API endpoint to verify the OTP again server-side
-      // and then reset the password
-      
-      // Send a password reset email through Supabase Auth
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        resetEmail,
-        { redirectTo: `${window.location.origin}/login` }
-      );
-      
-      if (resetError) throw resetError;
-      
-      toast({
-        title: "Password Reset Email Sent",
-        description: "Check your email for a password reset link",
-      });
-      
-      // Close the dialog
-      onClose();
-    } catch (error) {
-      console.error("Reset password error:", error);
-      toast({
-        variant: "destructive",
-        title: "Password Reset Failed",
-        description: "Please try the forgot password process again",
-      });
-    } finally {
-      setResetLoading(false);
-    }
-  };
+  // Determine current loading state based on active step
+  const resetLoading = 
+    resetPasswordStep === "email" ? emailLoading : 
+    resetPasswordStep === "otp" ? otpLoading : 
+    newPasswordLoading;
 
   return {
+    // State variables
     resetEmail,
     setResetEmail,
     resetPasswordStep,
@@ -201,8 +54,11 @@ export const usePasswordReset = (onClose: () => void) => {
     confirmPassword,
     setConfirmPassword,
     resetLoading,
+    
+    // Actions
     handleSendResetOtp,
     handleVerifyOtp,
-    handleResetPassword
+    handleResetPassword,
+    handleResendOtp
   };
 };
