@@ -1,15 +1,15 @@
+
 import * as React from "react";
 import { 
-  Toast as ShadcnToast, 
+  Toast, 
   ToastActionElement, 
-  ToastProps as ShadcnToastProps, 
-  ToastProvider as ShadcnToastProvider,
+  ToastProps 
 } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 5;
 const TOAST_REMOVE_DELAY = 1000000;
 
-type ToastType = ShadcnToastProps & {
+type ToastType = ToastProps & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -74,8 +74,7 @@ function toastReducer(state: State, action: Action): State {
     case "DISMISS_TOAST": {
       const { toastId } = action;
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
+      // Side effects
       if (toastId) {
         setTimeout(() => {
           dispatchStore({
@@ -190,7 +189,6 @@ export function ToastProvider({
       }}
     >
       {children}
-      <ShadcnToastProvider />
     </ToastContext.Provider>
   );
 }
@@ -209,7 +207,4 @@ export function useToast() {
 
 export type Toast = ToastType;
 
-export const toast = (props: Omit<ToastType, "id">) => {
-  const { addToast } = useToast();
-  return addToast(props);
-};
+export { ToastProvider };

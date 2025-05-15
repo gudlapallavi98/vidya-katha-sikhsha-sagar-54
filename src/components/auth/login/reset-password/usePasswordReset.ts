@@ -28,17 +28,20 @@ export const usePasswordReset = (onClose: () => void) => {
     setResetLoading(true);
     
     try {
-      // First check if the email exists in the system
-      // We'll check if a user exists by trying to fetch profiles that match this email
-      const { data: userProfile, error: profileError } = await supabase
+      // Check if email exists by querying the profiles table
+      const { data, error } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', resetEmail)
-        .limit(1)
-        .single();
+        .maybeSingle();
       
-      // If no profile found with this email, show error
-      if (profileError || !userProfile) {
+      if (error) {
+        console.error("Error checking email:", error);
+        throw new Error("Failed to verify email");
+      }
+      
+      // If no profile found with this email
+      if (!data) {
         toast({
           variant: "destructive",
           title: "Email Not Found",
@@ -55,7 +58,6 @@ export const usePasswordReset = (onClose: () => void) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.SUPABASE_ANON_KEY || ''}`,
           },
           body: JSON.stringify({
             email: resetEmail,
@@ -64,14 +66,14 @@ export const usePasswordReset = (onClose: () => void) => {
         }
       );
       
-      const result = await response.json();
-      
       if (!response.ok) {
-        throw new Error(result.error || "Failed to send OTP");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to send OTP");
       }
       
+      const result = await response.json();
+      
       // Save the OTP locally for verification
-      // In production, this should be handled securely on the server
       setSentOtp(result.otp);
       
       toast({
