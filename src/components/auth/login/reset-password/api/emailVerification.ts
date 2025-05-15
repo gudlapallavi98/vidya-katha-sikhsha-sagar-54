@@ -6,19 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export const verifyEmailExists = async (email: string) => {
   try {
-    // Simplified query that avoids the deep type instantiation
+    // Use a simpler query approach to avoid deep type instantiation
     const { data, error } = await supabase
       .from('profiles')
       .select('id')
       .eq('email', email)
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
     
     if (error) {
       throw new Error("Failed to verify email");
     }
     
-    return { exists: !!data, profileData: data };
+    return { exists: data && data.length > 0, profileData: data?.[0] || null };
   } catch (error) {
     console.error("Error checking email:", error);
     // If error is "No rows matched the query" it means the email doesn't exist
