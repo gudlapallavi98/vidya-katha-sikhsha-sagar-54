@@ -183,7 +183,7 @@ function useToast() {
   }
 }
 
-export { useToast, toast, type ToastType, type Toast }
+export { useToast, toast, type Toast }
 export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>
 }

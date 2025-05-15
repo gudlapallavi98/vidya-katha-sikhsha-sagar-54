@@ -1,10 +1,17 @@
 
+import { useState } from "react";
 import SignUpForm from "@/components/auth/signup/SignUpForm";
 import SignUpHeader from "@/components/auth/signup/SignUpHeader";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 
 const SignUpPage = () => {
+  // Generate random numbers for captcha
+  const [captchaValue] = useState({
+    num1: Math.floor(Math.random() * 10),
+    num2: Math.floor(Math.random() * 10)
+  });
+
   return (
     <div className="relative min-h-screen bg-orange-50">
       {/* Animated background elements */}
@@ -26,7 +33,7 @@ const SignUpPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SignUpForm />
+            <SignUpForm captchaValue={captchaValue} />
           </CardContent>
           <CardFooter>
             <p className="text-sm text-muted-foreground text-center w-full">
