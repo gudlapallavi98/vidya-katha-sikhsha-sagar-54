@@ -26,6 +26,7 @@ const PasswordResetForm = ({ onClose }: PasswordResetFormProps) => {
     handleResetPassword
   } = usePasswordReset(onClose);
 
+  // Render appropriate step based on current password reset step
   if (resetPasswordStep === "email") {
     return (
       <EmailStep

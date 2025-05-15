@@ -1,3 +1,12 @@
+
+# Allow crawling of the entire site
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://etutorss.com/sitemap.xml
+
+# Specific rules for major search engines
 User-agent: Googlebot
 Allow: /
 
@@ -8,7 +17,4 @@ User-agent: Twitterbot
 Allow: /
 
 User-agent: facebookexternalhit
-Allow: /
-
-User-agent: *
 Allow: /
