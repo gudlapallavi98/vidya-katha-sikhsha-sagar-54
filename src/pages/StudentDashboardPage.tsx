@@ -1,31 +1,16 @@
 
 import { useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { joinSession } from "@/api/dashboard";
-import { useAuth } from "@/contexts/AuthContext";
+import { useStudentCourses, useStudentSessions } from "@/hooks/use-dashboard-data";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
-import { 
-  useStudentEnrollments, 
-  useStudentUpcomingSessions, 
-  useStudentProgress, 
-  useStudentAchievements 
-} from "@/hooks/use-dashboard-data";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useAuthStatus } from "@/hooks/use-auth-status";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StudentDashboardSidebar from "@/components/student/dashboard/StudentDashboardSidebar";
 import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
 
 // Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false, // Prevent unnecessary refetches
-      retry: 1, // Limit retries to avoid excessive API calls
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 // Wrapper component to provide React Query context
 const StudentDashboardWithQueryClient = () => {
@@ -38,38 +23,25 @@ const StudentDashboardWithQueryClient = () => {
 
 const StudentDashboard = () => {
   const { activeTab, handleTabChange } = useTabNavigation("overview");
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  
-  const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentEnrollments();
-  const { data: progress = [], isLoading: progressLoading } = useStudentProgress();
-  const { data: upcomingSessions = [], isLoading: sessionsLoading } = useStudentUpcomingSessions();
-  const { data: achievements = [], isLoading: achievementsLoading } = useStudentAchievements();
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const { isAuthenticated, isChecking } = useAuthStatus();
 
-  const handleJoinClass = async (sessionId: string) => {
-    try {
-      if (!user) return;
-      
-      const meetingLink = await joinSession(sessionId, user.id);
-      
-      if (meetingLink) {
-        window.open(meetingLink, '_blank');
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Meeting link not available yet. Try again in a few minutes.",
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error joining class",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
-    }
-  };
+  const { data: studentCourses = [], isLoading: coursesLoading } = useStudentCourses();
+  const { data: studentSessions = [], isLoading: sessionsLoading } = useStudentSessions();
+
+  // Calculate upcoming sessions
+  const upcomingSessions = studentSessions.filter(session => 
+    session.status === 'scheduled' || session.status === 'in_progress'
+  );
+
+  if (isChecking) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return null; // Will redirect in useAuthStatus
+  }
 
   return (
     <DashboardLayout
@@ -82,12 +54,14 @@ const StudentDashboard = () => {
       children={
         <StudentDashboardContent 
           activeTab={activeTab}
-          enrolledCourses={enrolledCourses}
+          studentCourses={studentCourses}
           coursesLoading={coursesLoading}
           upcomingSessions={upcomingSessions}
           sessionsLoading={sessionsLoading}
-          progress={progress}
-          handleJoinClass={handleJoinClass}
+          selectedTeacherId={selectedTeacherId}
+          setSelectedTeacherId={setSelectedTeacherId}
+          selectedCourseId={selectedCourseId}
+          setSelectedCourseId={setSelectedCourseId}
         />
       }
     />

@@ -28,42 +28,26 @@ export const usePasswordReset = (onClose: () => void) => {
     setResetLoading(true);
     
     try {
-      // Use the Supabase Edge Function to send an email with OTP
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: resetEmail,
-          type: "password-reset"
-        })
+      // Use Supabase's password reset functionality
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: window.location.origin + '/login',
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error("Email sending error:", data);
-        throw new Error(data.error || "Failed to send password reset email");
-      }
-      
-      // Use the OTP from the server response
-      if (data.otp) {
-        setSentOtp(data.otp);
-      }
+      if (error) throw error;
       
       toast({
-        title: "Password Reset Code Sent",
-        description: "Please check your email for the verification code",
+        title: "Password Reset Email Sent",
+        description: "Please check your email for the password reset link",
       });
       
-      setResetPasswordStep("otp");
+      // Close the dialog after sending reset link
+      onClose();
     } catch (error) {
       console.error("Reset password error:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send reset code",
+        description: error instanceof Error ? error.message : "Failed to send reset email",
       });
     } finally {
       setResetLoading(false);
@@ -71,114 +55,11 @@ export const usePasswordReset = (onClose: () => void) => {
   };
 
   const handleVerifyOtp = () => {
-    if (resetOtp.length !== 6) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Code",
-        description: "Please enter the complete 6-digit verification code",
-      });
-      return;
-    }
-
-    setResetLoading(true);
-    
-    try {
-      if (resetOtp !== sentOtp) {
-        setResetLoading(false);
-        toast({
-          variant: "destructive",
-          title: "Invalid Code",
-          description: "The verification code is incorrect. Please try again",
-        });
-        return;
-      }
-      
-      setResetPasswordStep("newPassword");
-    } catch (error) {
-      console.error("OTP verification error:", error);
-      toast({
-        variant: "destructive",
-        title: "Verification Failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
-    } finally {
-      setResetLoading(false);
-    }
+    // This is now handled by Supabase directly via email link
   };
 
   const handleResetPassword = async () => {
-    // Check password strength
-    const hasUppercase = /[A-Z]/.test(newPassword);
-    const hasNumber = /[0-9]/.test(newPassword);
-    const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
-    const isLongEnough = newPassword.length >= 8;
-    
-    if (!isLongEnough) {
-      toast({
-        variant: "destructive",
-        title: "Password Too Short",
-        description: "Password must be at least 8 characters long",
-      });
-      return;
-    }
-    
-    if (!(hasUppercase && hasNumber) && !hasSpecial) {
-      toast({
-        variant: "destructive",
-        title: "Password Too Weak",
-        description: "Password must contain at least an uppercase letter and a number, or a special character",
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Passwords Do Not Match",
-        description: "Please ensure both passwords match",
-      });
-      return;
-    }
-
-    setResetLoading(true);
-
-    try {
-      // Create a session with OTP before updating password
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: resetEmail,
-        token: resetOtp,
-        type: 'email'
-      });
-
-      if (error) {
-        console.error("Verify OTP error:", error);
-        throw error;
-      }
-
-      // Now we have a valid session, update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-      
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Password Reset Successful",
-        description: "Your password has been reset successfully. Please log in with your new password.",
-      });
-
-      // Reset all states and close dialog
-      onClose();
-    } catch (error) {
-      console.error("Password reset error:", error);
-      toast({
-        variant: "destructive",
-        title: "Password Reset Failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
-    } finally {
-      setResetLoading(false);
-    }
+    // This is now handled by Supabase directly via email link
   };
 
   return {

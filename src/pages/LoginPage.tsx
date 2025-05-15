@@ -54,7 +54,7 @@ const LoginPage = () => {
             <DialogHeader>
               <DialogTitle>Reset Password</DialogTitle>
               <DialogDescription>
-                Enter your email to receive a verification code.
+                Enter your email to receive a password reset link.
               </DialogDescription>
             </DialogHeader>
             

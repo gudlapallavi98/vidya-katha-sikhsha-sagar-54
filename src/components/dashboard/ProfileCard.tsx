@@ -35,6 +35,14 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ role }) => {
     setShowProfileSettings(true);
   };
 
+  const goToDashboard = () => {
+    if (role === "teacher") {
+      navigate("/teacher-dashboard");
+    } else {
+      navigate("/student-dashboard");
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-3">
       <div className="flex items-center space-x-3">
@@ -61,7 +69,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ role }) => {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem onClick={() => navigate(`/${role}-dashboard`)}>
+          <DropdownMenuItem onClick={goToDashboard}>
             <div className="flex items-center">
               Dashboard
             </div>

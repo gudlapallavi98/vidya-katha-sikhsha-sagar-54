@@ -9,8 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
-import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useAuthStatus } from "@/hooks/use-auth-status";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TeacherDashboardSidebar from "@/components/teacher/dashboard/TeacherDashboardSidebar";
@@ -32,15 +32,8 @@ const TeacherDashboard = () => {
   const { activeTab, handleTabChange } = useTabNavigation("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
-  const { user, loading } = useAuth();
   const navigate = useNavigate();
-  
-  // Ensure user is authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
-    }
-  }, [user, loading, navigate]);
+  const { isAuthenticated, isChecking } = useAuthStatus();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
@@ -122,12 +115,12 @@ const TeacherDashboard = () => {
     setSearchQuery(query);
   };
 
-  if (loading) {
+  if (isChecking) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  if (!user) {
-    return null; // Will redirect in useEffect
+  if (!isAuthenticated) {
+    return null; // Will redirect in useAuthStatus
   }
 
   return (

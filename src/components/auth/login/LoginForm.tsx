@@ -43,6 +43,7 @@ const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
       }
     } catch (error) {
       // Error is handled in signIn function
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
