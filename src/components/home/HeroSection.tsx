@@ -141,8 +141,8 @@ const HeroSection = ({ heroImages }: HeroSectionProps) => {
           {/* Content */}
           <div className="container relative z-10 flex h-[600px] flex-col items-center justify-center text-center px-4">
             <h1 className="font-sanskrit text-4xl md:text-5xl lg:text-6xl font-bold mb-8 max-w-3xl animate-text-reveal">
-              Unlock Your Potential with <span className="text-indian-saffron animate-color-pulse">Vidya</span>{" "}
-              <span className="text-white animate-text-shimmer">Katha</span>
+              Unlock Your Potential with <span className="text-indian-saffron animate-color-pulse">Etutors</span>
+              <span className="text-green-500">s</span>
             </h1>
             <p className="max-w-2xl text-lg mb-10 animate-fade-in opacity-0" style={{ animationDelay: "0.5s", animationFillMode: "forwards" }}>
               Traditional wisdom meets modern education. Learn from expert teachers in a personalized environment.

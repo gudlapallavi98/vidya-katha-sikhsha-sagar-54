@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, MapPin, Check, Bot, MessageSquare } from "lucide-react";
+import { Mail, Check, Bot, MessageSquare } from "lucide-react";
 import { useContactMessages, ContactFormData } from "@/hooks/use-contact-messages";
 import { motion } from "framer-motion";
 
@@ -145,43 +146,6 @@ const ContactUsPage = () => {
                   <div>
                     <h3 className="font-medium mb-1">Email Us</h3>
                     <p className="text-muted-foreground">info@etutorss.com</p>
-                    <p className="text-muted-foreground">support@etutorss.com</p>
-                  </div>
-                </motion.div>
-                
-                <motion.div 
-                  className="flex gap-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.7 }}
-                >
-                  <div className="h-12 w-12 rounded-full bg-indian-blue/10 flex items-center justify-center">
-                    <Phone className="h-5 w-5 text-indian-blue" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-1">Call Us</h3>
-                    <p className="text-muted-foreground">+91 98765 43210</p>
-                    <p className="text-muted-foreground">+91 98765 43211</p>
-                  </div>
-                </motion.div>
-                
-                <motion.div 
-                  className="flex gap-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.7 }}
-                >
-                  <div className="h-12 w-12 rounded-full bg-indian-green/10 flex items-center justify-center">
-                    <MapPin className="h-5 w-5 text-indian-green" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-1">Visit Us</h3>
-                    <p className="text-muted-foreground">
-                      etutorss Educational Services Pvt. Ltd.<br />
-                      123, Knowledge Park, Sector 62<br />
-                      Noida, Uttar Pradesh - 201309<br />
-                      India
-                    </p>
                   </div>
                 </motion.div>
               </div>
@@ -376,44 +340,6 @@ const ContactUsPage = () => {
         {/* Background decorations */}
         <div className="absolute top-20 left-10 w-32 h-32 rounded-full bg-indian-saffron/5 animate-pulse"></div>
         <div className="absolute bottom-20 right-10 w-24 h-24 rounded-full bg-indian-green/5 animate-pulse"></div>
-      </section>
-
-      {/* Map Section with Flag-themed Design */}
-      <section className="py-16 bg-gradient-to-br from-indian-saffron/5 via-white to-indian-green/5">
-        <div className="container">
-          <motion.h2 
-            className="font-sanskrit text-2xl font-bold mb-6 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-          >
-            Our Location
-          </motion.h2>
-          <motion.div 
-            className="h-[400px] bg-white rounded-lg shadow relative overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-          >
-            <div className="h-full flex items-center justify-center bg-gray-100">
-              <p className="text-muted-foreground">Interactive map will be integrated here</p>
-            </div>
-            
-            {/* Flag-themed sidebar */}
-            <div className="absolute left-0 top-0 bottom-0 w-4 flex flex-col">
-              <div className="flex-1 bg-indian-saffron"></div>
-              <div className="flex-1 bg-white"></div>
-              <div className="flex-1 bg-indian-green"></div>
-            </div>
-            <div className="absolute right-0 top-0 bottom-0 w-4 flex flex-col">
-              <div className="flex-1 bg-indian-saffron"></div>
-              <div className="flex-1 bg-white"></div>
-              <div className="flex-1 bg-indian-green"></div>
-            </div>
-          </motion.div>
-        </div>
       </section>
 
       {/* FAQ Section with Indian Theme */}

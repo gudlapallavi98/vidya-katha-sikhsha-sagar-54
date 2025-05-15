@@ -20,7 +20,7 @@ const SignUpPage = () => {
   }, []);
 
   return (
-    <div className="container max-w-md py-12">
+    <div className="container max-w-md py-12 bg-orange-50">
       <SignUpHeader />
       
       <Card>

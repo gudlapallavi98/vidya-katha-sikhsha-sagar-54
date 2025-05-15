@@ -19,7 +19,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="container max-w-md py-12">
+    <div className="container max-w-md py-12 bg-orange-50">
       <LoginHeader />
 
       <Card>
