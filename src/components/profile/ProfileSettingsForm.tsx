@@ -1,6 +1,5 @@
-
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useUserProfile } from "@/hooks/use-profile-data";
 import { Progress } from "@/components/ui/progress";
@@ -59,21 +58,63 @@ function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
           <Progress value={progressPercentage} className="h-2" />
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div>
           <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8">
-            <TabsTrigger value="personal">Personal Information</TabsTrigger>
+            <TabsTrigger 
+              value="personal" 
+              onClick={() => setActiveTab("personal")}
+              className={activeTab === "personal" ? "data-[state=active]" : ""}
+            >
+              Personal Information
+            </TabsTrigger>
             
             {role === "student" ? (
               <>
-                <TabsTrigger value="education">Education</TabsTrigger>
-                <TabsTrigger value="preferences">Preferences</TabsTrigger>
-                <TabsTrigger value="exams">Exam History</TabsTrigger>
+                <TabsTrigger 
+                  value="education" 
+                  onClick={() => setActiveTab("education")}
+                  className={activeTab === "education" ? "data-[state=active]" : ""}
+                >
+                  Education
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="preferences" 
+                  onClick={() => setActiveTab("preferences")}
+                  className={activeTab === "preferences" ? "data-[state=active]" : ""}
+                >
+                  Preferences
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="exams" 
+                  onClick={() => setActiveTab("exams")}
+                  className={activeTab === "exams" ? "data-[state=active]" : ""}
+                >
+                  Exam History
+                </TabsTrigger>
               </>
             ) : (
               <>
-                <TabsTrigger value="experience">Teaching Experience</TabsTrigger>
-                <TabsTrigger value="subjects">Subjects</TabsTrigger>
-                <TabsTrigger value="certifications">Certifications</TabsTrigger>
+                <TabsTrigger 
+                  value="experience" 
+                  onClick={() => setActiveTab("experience")}
+                  className={activeTab === "experience" ? "data-[state=active]" : ""}
+                >
+                  Teaching Experience
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="subjects" 
+                  onClick={() => setActiveTab("subjects")}
+                  className={activeTab === "subjects" ? "data-[state=active]" : ""}
+                >
+                  Subjects
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="certifications" 
+                  onClick={() => setActiveTab("certifications")}
+                  className={activeTab === "certifications" ? "data-[state=active]" : ""}
+                >
+                  Certifications
+                </TabsTrigger>
               </>
             )}
           </TabsList>
@@ -83,7 +124,7 @@ function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
           ) : (
             <TeacherProfileForm activeTab={activeTab} onCompleted={onCompleted} />
           )}
-        </Tabs>
+        </div>
       </CardContent>
     </Card>
   );

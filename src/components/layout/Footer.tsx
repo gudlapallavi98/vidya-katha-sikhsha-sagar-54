@@ -13,7 +13,7 @@ const Footer = () => {
               <GraduationCap className="h-8 w-8 text-indian-saffron" />
               <h2 className="font-sanskrit text-2xl font-bold">
                 <span className="text-orange-500 text-3xl">E</span>
-                <span className="text-indian-blue">tutors</span>
+                <span className="text-indian-blue">tutor</span>
                 <span className="text-green-500">s</span>
               </h2>
             </Link>
@@ -72,7 +72,7 @@ const Footer = () => {
             <address className="not-italic text-muted-foreground space-y-2">
               <p className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                <a href="mailto:info@etutorss.com" className="hover:text-indian-blue">info@etutorss.com</a>
+                <a href="mailto:info@etutors.com" className="hover:text-indian-blue">info@etutors.com</a>
               </p>
             </address>
           </div>
@@ -81,7 +81,7 @@ const Footer = () => {
         <div className="mt-12 pt-8 border-t border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Etutorss. All rights reserved.
+              © {new Date().getFullYear()} Etutors. All rights reserved.
             </p>
             <div className="flex items-center space-x-4">
               <Link to="/terms" className="text-sm text-muted-foreground hover:text-indian-blue">

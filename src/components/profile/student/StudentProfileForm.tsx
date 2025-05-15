@@ -3,7 +3,6 @@ import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useProfileFormData } from "../hooks/useProfileFormData";
@@ -107,39 +106,45 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
     }
   };
 
+  // Use conditional rendering based on activeTab
+  const renderActiveTabContent = () => {
+    switch(activeTab) {
+      case "personal":
+        return (
+          <PersonalInfoTab 
+            form={form} 
+            avatarUrl={avatarUrl} 
+            setAvatarUrl={setAvatarUrl} 
+            userId={user?.id || ""}
+          />
+        );
+      case "education":
+        return <EducationTab form={form} />;
+      case "preferences":
+        return (
+          <PreferencesTab 
+            selectedSubjects={selectedSubjects} 
+            setSelectedSubjects={setSelectedSubjects} 
+            studyPreferences={studyPreferences}
+            setStudyPreferences={setStudyPreferences}
+          />
+        );
+      case "exams":
+        return (
+          <ExamsTab 
+            examHistory={examHistory} 
+            setExamHistory={setExamHistory} 
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs value={activeTab}>
-          <TabsContent value="personal">
-            <PersonalInfoTab 
-              form={form} 
-              avatarUrl={avatarUrl} 
-              setAvatarUrl={setAvatarUrl} 
-              userId={user?.id || ""}
-            />
-          </TabsContent>
-
-          <TabsContent value="education">
-            <EducationTab form={form} />
-          </TabsContent>
-
-          <TabsContent value="preferences">
-            <PreferencesTab 
-              selectedSubjects={selectedSubjects} 
-              setSelectedSubjects={setSelectedSubjects} 
-              studyPreferences={studyPreferences}
-              setStudyPreferences={setStudyPreferences}
-            />
-          </TabsContent>
-
-          <TabsContent value="exams">
-            <ExamsTab 
-              examHistory={examHistory} 
-              setExamHistory={setExamHistory} 
-            />
-          </TabsContent>
-        </Tabs>
+        {renderActiveTabContent()}
 
         <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? "Saving..." : "Save Profile"}
