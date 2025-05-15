@@ -29,11 +29,15 @@ export const usePasswordReset = (onClose: () => void) => {
     
     try {
       // First check if the email exists in the system
-      const { data: userExists } = await supabase.auth.admin
-        .getUserByEmail(resetEmail)
-        .catch(() => ({ data: null }));
+      // Since getUserByEmail doesn't exist in the Supabase client API, 
+      // we'll check if a user exists by trying to fetch profiles with this email
+      const { data: userProfiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', resetEmail)
+        .maybeSingle();
       
-      if (!userExists) {
+      if (profileError || !userProfiles) {
         toast({
           variant: "destructive",
           title: "Email Not Found",
