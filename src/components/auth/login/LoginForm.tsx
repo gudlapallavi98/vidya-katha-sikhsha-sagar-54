@@ -9,11 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface LoginFormProps {
-  onForgotPassword: () => void;
-}
-
-const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
+const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -68,20 +64,10 @@ const LoginForm = ({ onForgotPassword }: LoginFormProps) => {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Password
-            </Label>
-            <Button 
-              variant="link" 
-              className="p-0 h-auto text-xs text-indian-blue"
-              type="button"
-              onClick={onForgotPassword}
-            >
-              Forgot password?
-            </Button>
-          </div>
+          <Label htmlFor="password" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Password
+          </Label>
           <Input
             id="password"
             type="password"
