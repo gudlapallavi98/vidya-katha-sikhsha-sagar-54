@@ -15,20 +15,30 @@ export const usePasswordReset = (onClose: () => void) => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   // Step-specific hooks
-  const { isLoading: emailLoading, handleSendResetOtp } = useEmailStep(
+  const { 
+    isLoading: emailLoading, 
+    handleSendResetOtp 
+  } = useEmailStep(
     resetEmail,
     setResetPasswordStep,
     setSentOtp
   );
 
-  const { isLoading: otpLoading, handleVerifyOtp, handleResendOtp } = useOtpStep(
+  const { 
+    isLoading: otpLoading, 
+    handleVerifyOtp, 
+    handleResendOtp 
+  } = useOtpStep(
     resetOtp,
     sentOtp,
     setResetPasswordStep,
     handleSendResetOtp
   );
 
-  const { isLoading: newPasswordLoading, handleResetPassword } = useNewPasswordStep(
+  const { 
+    isLoading: newPasswordLoading, 
+    handleResetPassword 
+  } = useNewPasswordStep(
     newPassword,
     confirmPassword,
     resetEmail,

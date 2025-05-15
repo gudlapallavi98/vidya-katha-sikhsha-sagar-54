@@ -1,23 +1,22 @@
 
-import { useState } from "react";
+import { useState, ChangeEvent, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { verifyEmailExists, sendOtpToEmail } from "../api/emailVerification";
 import { ResetStep } from "../types";
 
 export const useEmailStep = (
   resetEmail: string,
-  setResetEmail: (email: string) => void,
-  setCurrentStep: (step: ResetStep) => void,
+  setResetPasswordStep: (step: ResetStep) => void,
   setSentOtp: (otp: string) => void
 ) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setResetEmail(e.target.value);
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+    // No implementation needed since the state is managed in the parent component
   };
   
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     if (!resetEmail || !resetEmail.includes('@')) {
@@ -57,7 +56,7 @@ export const useEmailStep = (
         description: "Please check your email for the verification code",
       });
       
-      setCurrentStep("otp");
+      setResetPasswordStep("otp");
     } catch (error) {
       console.error("Email verification error:", error);
       toast({
@@ -69,10 +68,17 @@ export const useEmailStep = (
       setIsLoading(false);
     }
   };
+
+  const handleSendResetOtp = async () => {
+    await handleEmailSubmit({
+      preventDefault: () => {}
+    } as FormEvent);
+  };
   
   return {
     isLoading,
     handleEmailChange,
     handleEmailSubmit,
+    handleSendResetOtp
   };
 };

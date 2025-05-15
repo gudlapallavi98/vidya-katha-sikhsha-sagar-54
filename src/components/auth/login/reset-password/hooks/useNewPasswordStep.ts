@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, ChangeEvent, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { sendPasswordResetEmail } from "../api/emailVerification";
 
@@ -7,22 +7,20 @@ export const useNewPasswordStep = (
   newPassword: string,
   confirmPassword: string,
   resetEmail: string,
-  setNewPassword: (password: string) => void,
-  setConfirmPassword: (password: string) => void,
   onSuccess: () => void,
 ) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  const handleNewPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewPassword(e.target.value);
+  const handleNewPasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    // No implementation needed since the state is managed in the parent component
   };
   
-  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfirmPassword(e.target.value);
+  const handleConfirmPasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    // No implementation needed since the state is managed in the parent component
   };
   
-  const handleSubmitNewPassword = async (e: React.FormEvent) => {
+  const handleSubmitNewPassword = async (e: FormEvent) => {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
@@ -66,11 +64,18 @@ export const useNewPasswordStep = (
       setIsLoading(false);
     }
   };
+
+  const handleResetPassword = () => {
+    handleSubmitNewPassword({
+      preventDefault: () => {}
+    } as FormEvent);
+  };
   
   return {
     isLoading,
     handleNewPasswordChange,
     handleConfirmPasswordChange,
     handleSubmitNewPassword,
+    handleResetPassword
   };
 };

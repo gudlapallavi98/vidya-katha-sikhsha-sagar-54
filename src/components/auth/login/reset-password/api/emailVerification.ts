@@ -4,20 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 // Verify if an email exists in the profiles table
 export async function verifyEmailExists(email: string): Promise<{ exists: boolean }> {
   try {
-    const { data: user, error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id')
       .eq('email', email)
       .single();
       
     // Alternative check directly with auth if profile doesn't have email
-    if (error || !user) {
-      const { data } = await supabase.auth.admin.listUsers();
-      const userExists = data && data.users && data.users.some(u => u.email === email);
-      return { exists: !!userExists };
+    if (error || !data) {
+      // Since we can't directly query auth users from client side,
+      // we'll rely on the profiles table only for simplicity
+      return { exists: false };
     }
     
-    return { exists: !!user };
+    return { exists: !!data };
   } catch (err) {
     console.error("Error verifying email:", err);
     return { exists: false };
