@@ -9,12 +9,15 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const ForgotPasswordForm = () => {
-  const [email, setEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [isResetting, setIsResetting] = useState(false);
+  const [email, setEmail] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [newPassword, setNewPassword] = useState<string>("");
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check if the URL has the access_token query parameter, which indicates
+  // the user has clicked on the reset password link in their email
+  const hasAccessToken = window.location.hash.includes('access_token');
 
   const handleSendResetLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,19 +34,15 @@ const ForgotPasswordForm = () => {
     setIsLoading(true);
     
     try {
-      // First, check if the email exists in the database
+      // Check if the email exists in the database
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', email)
-        .maybeSingle();
+        .single();
       
       if (userError) {
         console.error("Error checking email:", userError);
-        throw new Error(userError.message);
-      }
-      
-      if (!userData) {
         toast({
           variant: "destructive",
           title: "Email not found",
@@ -121,11 +120,7 @@ const ForgotPasswordForm = () => {
     }
   };
 
-  // Check if the URL has the access_token query parameter, which indicates
-  // the user has clicked on the reset password link in their email
-  const hasAccessToken = window.location.hash.includes('access_token');
-
-  if (hasAccessToken || isResetting) {
+  if (hasAccessToken) {
     return (
       <form onSubmit={handleResetPassword} className="space-y-4">
         <div className="space-y-2">

@@ -14,7 +14,7 @@ const TermsPage = () => {
         <section>
           <h2 className="font-sanskrit text-2xl font-bold mb-4">1. Introduction</h2>
           <p className="mb-4">
-            Welcome to Vidya Katha Online ("we," "our," or "us"). These Terms of Service ("Terms") govern your access to and use of the Vidya Katha Online website, mobile application, and services (collectively, the "Services").
+            Welcome to etutorss ("we," "our," or "us"). These Terms of Service ("Terms") govern your access to and use of the etutorss website, mobile application, and services (collectively, the "Services").
           </p>
           <p>
             By using our Services, you agree to these Terms. If you do not agree to these Terms, you may not access or use the Services.
@@ -70,7 +70,7 @@ const TermsPage = () => {
         <section>
           <h2 className="font-sanskrit text-2xl font-bold mb-4">5. Intellectual Property</h2>
           <p className="mb-4">
-            5.1. Our Content: The Services and their entire contents, features, and functionality (including but not limited to all information, software, text, displays, images, video, and audio, and the design, selection, and arrangement thereof) are owned by Vidya Katha Online, its licensors, or other providers and are protected by copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws.
+            5.1. Our Content: The Services and their entire contents, features, and functionality (including but not limited to all information, software, text, displays, images, video, and audio, and the design, selection, and arrangement thereof) are owned by etutorss, its licensors, or other providers and are protected by copyright, trademark, patent, trade secret, and other intellectual property or proprietary rights laws.
           </p>
           <p>
             5.2. User Content: By submitting content to our Services (such as forum posts, reviews, or assignments), you grant us a non-exclusive, royalty-free, worldwide, perpetual license to use, reproduce, modify, adapt, publish, translate, distribute, and display such content in connection with the Services.
@@ -87,7 +87,7 @@ const TermsPage = () => {
         <section>
           <h2 className="font-sanskrit text-2xl font-bold mb-4">7. Limitation of Liability</h2>
           <p>
-            To the maximum extent permitted by law, Vidya Katha Online shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including lost profits, arising out of or in any way connected with your access to or use of the Services, whether based on warranty, contract, tort (including negligence), or any other legal theory, even if we have been advised of the possibility of such damages.
+            To the maximum extent permitted by law, etutorss shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including lost profits, arising out of or in any way connected with your access to or use of the Services, whether based on warranty, contract, tort (including negligence), or any other legal theory, even if we have been advised of the possibility of such damages.
           </p>
         </section>
         
@@ -108,7 +108,7 @@ const TermsPage = () => {
         <section>
           <h2 className="font-sanskrit text-2xl font-bold mb-4">10. Contact Information</h2>
           <p>
-            If you have any questions about these Terms, please contact us at <a href="mailto:legal@vidyakatha.com" className="text-indian-blue hover:underline">legal@vidyakatha.com</a>.
+            If you have any questions about these Terms, please contact us at <a href="mailto:legal@etutorss.com" className="text-indian-blue hover:underline">legal@etutorss.com</a>.
           </p>
         </section>
       </div>

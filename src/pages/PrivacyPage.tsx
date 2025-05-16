@@ -11,7 +11,7 @@ const PrivacyPage = () => {
       </p>
       
       <p className="mb-8">
-        At Vidya Katha Online, we value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, mobile application, and services (collectively, the "Services").
+        At etutorss, we value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, mobile application, and services (collectively, the "Services").
       </p>
       
       <div className="space-y-8">
@@ -56,7 +56,7 @@ const PrivacyPage = () => {
             <li>Send you technical notices, updates, security alerts, and administrative messages;</li>
             <li>Communicate with you about products, services, offers, and events, and provide news and information we think will be of interest to you;</li>
             <li>Monitor and analyze trends, usage, and activities in connection with our Services;</li>
-            <li>Detect, investigate, and prevent fraudulent transactions and other illegal activities and protect the rights and property of Vidya Katha Online and others;</li>
+            <li>Detect, investigate, and prevent fraudulent transactions and other illegal activities and protect the rights and property of etutorss and others;</li>
             <li>Personalize your experience and deliver content and product and service offerings relevant to your interests.</li>
           </ul>
         </section>
@@ -71,7 +71,7 @@ const PrivacyPage = () => {
             <li>Teachers and other students as necessary for the operation of the Services, such as during live sessions or forum discussions;</li>
             <li>Comply with any court order, law, or legal process, including responding to any government or regulatory request;</li>
             <li>Enforce our Terms of Service and other agreements;</li>
-            <li>Protect the rights, property, or safety of Vidya Katha Online, our users, or others;</li>
+            <li>Protect the rights, property, or safety of etutorss, our users, or others;</li>
             <li>In connection with a merger, sale of company assets, financing, or acquisition of all or a portion of our business.</li>
           </ul>
         </section>
@@ -97,14 +97,14 @@ const PrivacyPage = () => {
             <li>Opt-out of marketing communications by following the unsubscribe link in any marketing email we send.</li>
           </ul>
           <p className="mt-4">
-            To exercise these rights, please contact us at <a href="mailto:privacy@vidyakatha.com" className="text-indian-blue hover:underline">privacy@vidyakatha.com</a>.
+            To exercise these rights, please contact us at <a href="mailto:privacy@etutorss.com" className="text-indian-blue hover:underline">privacy@etutorss.com</a>.
           </p>
         </section>
         
         <section>
           <h2 className="font-sanskrit text-2xl font-bold mb-4">7. Children's Privacy</h2>
           <p>
-            Our Services are not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If we learn we have collected or received personal information from a child under 13 without verification of parental consent, we will delete that information. If you believe we might have any information from or about a child under 13, please contact us at <a href="mailto:privacy@vidyakatha.com" className="text-indian-blue hover:underline">privacy@vidyakatha.com</a>.
+            Our Services are not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If we learn we have collected or received personal information from a child under 13 without verification of parental consent, we will delete that information. If you believe we might have any information from or about a child under 13, please contact us at <a href="mailto:privacy@etutorss.com" className="text-indian-blue hover:underline">privacy@etutorss.com</a>.
           </p>
         </section>
         
@@ -125,10 +125,10 @@ const PrivacyPage = () => {
         <section>
           <h2 className="font-sanskrit text-2xl font-bold mb-4">10. Contact Information</h2>
           <p>
-            If you have any questions about this Privacy Policy or our privacy practices, please contact us at <a href="mailto:privacy@vidyakatha.com" className="text-indian-blue hover:underline">privacy@vidyakatha.com</a> or at our mailing address:
+            If you have any questions about this Privacy Policy or our privacy practices, please contact us at <a href="mailto:privacy@etutorss.com" className="text-indian-blue hover:underline">privacy@etutorss.com</a> or at our mailing address:
           </p>
           <address className="mt-4 not-italic">
-            Vidya Katha Educational Services Pvt. Ltd.<br />
+            etutorss Educational Services Pvt. Ltd.<br />
             123, Knowledge Park, Sector 62<br />
             Noida, Uttar Pradesh - 201309<br />
             India
