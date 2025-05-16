@@ -180,8 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       
-      // Return successful login data
-      return data;
+      // No need to return data here as the onAuthStateChange listener will update state
     } catch (error) {
       toast({
         variant: "destructive",

@@ -38,7 +38,12 @@ const ForgotPasswordForm = () => {
         .eq('email', email)
         .maybeSingle();
       
-      if (userError || !userData?.id) {
+      if (userError) {
+        console.error("Error checking email:", userError);
+        throw new Error(userError.message);
+      }
+      
+      if (!userData) {
         toast({
           variant: "destructive",
           title: "Email not found",
