@@ -1,8 +1,8 @@
 
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { Suspense, lazy } from 'react';
-import { AuthProvider } from './contexts/AuthContext';
+import { Suspense, lazy, useEffect } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/layout/Layout';
 import HomePage from './pages/HomePage';
 import AboutUsPage from './pages/AboutUsPage';
@@ -28,6 +28,29 @@ const LoadingFallback = () => (
   </div>
 );
 
+// Auth redirect component
+const AuthRedirect = () => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <LoadingFallback />;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Redirect based on user role
+  if (user.role === 'student') {
+    return <Navigate to="/student-dashboard" replace />;
+  } else if (user.role === 'teacher') {
+    return <Navigate to="/teacher-dashboard" replace />;
+  }
+  
+  // Default fallback
+  return <Navigate to="/" replace />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -44,6 +67,7 @@ function App() {
             <Route path="signup" element={<SignUpPage />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="dashboard" element={<AuthRedirect />} />
             <Route 
               path="student-dashboard/*" 
               element={

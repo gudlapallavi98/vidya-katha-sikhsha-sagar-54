@@ -5,6 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import ForgotPasswordForm from "@/components/auth/forgot-password/ForgotPasswordForm";
 
 const ForgotPasswordPage = () => {
+  // Check if the URL has the access_token query parameter, which indicates
+  // the user has clicked on the reset password link in their email
+  const hasAccessToken = window.location.hash.includes('access_token');
+  
   return (
     <div className="relative min-h-screen bg-orange-50">
       {/* Animated background elements */}
@@ -23,9 +27,11 @@ const ForgotPasswordPage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Reset Password</CardTitle>
+            <CardTitle>{hasAccessToken ? "Set New Password" : "Reset Password"}</CardTitle>
             <CardDescription>
-              Enter your email to receive a verification code
+              {hasAccessToken 
+                ? "Enter your new password below" 
+                : "Enter your email to receive a reset link"}
             </CardDescription>
           </CardHeader>
           <CardContent>

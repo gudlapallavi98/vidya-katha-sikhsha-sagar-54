@@ -30,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const hasSetInitialSession = useRef(false);
   const profileFetchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isAuthChanging = useRef(false);
   
   // For preventing double profile fetches or infinite loops
   const isFetchingProfile = useRef(false);
@@ -45,14 +46,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching user profile:", error);
         return;
       }
 
-      if (data && user) {
+      // Only update user if we have profile data and the current user still exists
+      // This prevents updating a user that may have been cleared during logout
+      if (data && user && user.id === userId) {
         // Update the user with profile data
         const updatedUser: ExtendedUser = { 
           ...user, 
@@ -76,9 +79,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearTimeout(profileFetchTimeout.current);
     }
     
+    // Prevent running the effect multiple times during development with StrictMode
+    if (isAuthChanging.current) return;
+    
+    isAuthChanging.current = true;
+    
+    // Define auth state subscription first to prevent missing events
+    let authSubscription: { data: { subscription: { unsubscribe: () => void } } };
+    
     const setupAuthListener = async () => {
       try {
-        // First get current session
+        // Set up auth state change subscription FIRST before checking session
+        authSubscription = supabase.auth.onAuthStateChange((event, newSession) => {
+          console.log("Auth state changed:", event, newSession ? "session exists" : "no session");
+          
+          // Only process auth state changes after initial session is set
+          // This prevents duplicate processing during initialization
+          if (!hasSetInitialSession.current) return;
+          
+          setSession(newSession);
+          
+          if (newSession?.user) {
+            const extendedUser: ExtendedUser = {
+              ...newSession.user,
+              first_name: newSession.user.user_metadata?.first_name,
+              last_name: newSession.user.user_metadata?.last_name,
+              avatar_url: newSession.user.user_metadata?.avatar_url,
+              role: newSession.user.user_metadata?.role
+            };
+            setUser(extendedUser);
+            
+            // Debounce profile fetching to prevent rapid successive calls
+            if (profileFetchTimeout.current) {
+              clearTimeout(profileFetchTimeout.current);
+            }
+            
+            // Using setTimeout to prevent potential deadlocks
+            profileFetchTimeout.current = setTimeout(() => {
+              fetchUserProfile(newSession.user.id);
+            }, 100);
+          } else {
+            setUser(null);
+          }
+        });
+
+        // THEN check for existing session
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (currentSession) {
@@ -101,46 +146,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }, 100);
           }
         }
-      } catch (error) {
-        console.error("Error getting initial auth session:", error);
-      } finally {
+        
+        // Mark initialization as complete
         hasSetInitialSession.current = true;
+      } catch (error) {
+        console.error("Error setting up auth:", error);
+      } finally {
         setLoading(false);
+        isAuthChanging.current = false;
       }
     };
-
-    // Setup auth state change subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log("Auth state changed:", event, newSession ? "session exists" : "no session");
-      
-      // Only process auth state changes after initial session is set
-      // This prevents duplicate processing during initialization
-      if (!hasSetInitialSession.current) return;
-      
-      setSession(newSession);
-      
-      if (newSession?.user) {
-        const extendedUser: ExtendedUser = {
-          ...newSession.user,
-          first_name: newSession.user.user_metadata?.first_name,
-          last_name: newSession.user.user_metadata?.last_name,
-          avatar_url: newSession.user.user_metadata?.avatar_url,
-          role: newSession.user.user_metadata?.role
-        };
-        setUser(extendedUser);
-        
-        // Debounce profile fetching to prevent rapid successive calls
-        if (profileFetchTimeout.current) {
-          clearTimeout(profileFetchTimeout.current);
-        }
-        
-        profileFetchTimeout.current = setTimeout(() => {
-          fetchUserProfile(newSession.user.id);
-        }, 100);
-      } else {
-        setUser(null);
-      }
-    });
 
     // Initialize auth
     setupAuthListener();
@@ -149,18 +164,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profileFetchTimeout.current) {
         clearTimeout(profileFetchTimeout.current);
       }
-      subscription.unsubscribe();
+      // Unsubscribe from auth changes when component unmounts
+      if (authSubscription?.data?.subscription) {
+        authSubscription.data.subscription.unsubscribe();
+      }
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+      
+      // Return successful login data
+      return data;
     } catch (error) {
       toast({
         variant: "destructive",
@@ -174,6 +195,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      // Clear session and user state immediately to prevent flashing of authenticated content
+      setSession(null);
+      setUser(null);
+      
       toast({
         title: "Signed out successfully",
       });
