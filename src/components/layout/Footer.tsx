@@ -40,19 +40,19 @@ const Footer = () => {
             <h3 className="font-medium text-lg">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>Home</Link>
+                <Link to="/" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>Home</Link>
               </li>
               <li>
-                <Link to="/courses" className="text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>Courses</Link>
+                <Link to="/courses" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>Courses</Link>
               </li>
               <li>
-                <Link to="/about" className="text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>About Us</Link>
+                <Link to="/about" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>About Us</Link>
               </li>
               <li>
-                <Link to="/contact" className="text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>Contact Us</Link>
+                <Link to="/contact" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>Contact Us</Link>
               </li>
               <li>
-                <Link to="/signup" className="text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>Sign Up</Link>
+                <Link to="/signup" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>Sign Up</Link>
               </li>
             </ul>
           </div>
@@ -62,19 +62,16 @@ const Footer = () => {
             <h3 className="font-medium text-lg">Resources</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/terms" className="text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>Terms of Service</Link>
+                <Link to="/terms" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>Terms of Service</Link>
               </li>
               <li>
-                <Link to="/privacy" className="text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>Privacy Policy</Link>
+                <Link to="/privacy" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>Privacy Policy</Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-indian-blue">Blog</a>
+                <Link to="/faq" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>FAQ</Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-indian-blue">FAQ</a>
-              </li>
-              <li>
-                <a href="#" className="text-muted-foreground hover:text-indian-blue">Support</a>
+                <Link to="/support" className="text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>Support</Link>
               </li>
             </ul>
           </div>
@@ -83,9 +80,9 @@ const Footer = () => {
           <div className="space-y-4">
             <h3 className="font-medium text-lg">Contact Info</h3>
             <address className="not-italic text-muted-foreground space-y-2">
-              <p className="flex items-center gap-2">
+              <p className="flex items-center gap-2 hover:text-indian-blue transition-colors duration-300">
                 <Mail className="h-4 w-4" />
-                <a href="mailto:info@etutorss.com" className="hover:text-indian-blue">info@etutorss.com</a>
+                <a href="mailto:info@etutorss.com">info@etutorss.com</a>
               </p>
             </address>
           </div>
@@ -97,13 +94,13 @@ const Footer = () => {
               © {new Date().getFullYear()} Etutorss. All rights reserved.
             </p>
             <div className="flex items-center space-x-4">
-              <Link to="/terms" className="text-sm text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>
+              <Link to="/terms" className="text-sm text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>
                 Terms
               </Link>
-              <Link to="/privacy" className="text-sm text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>
+              <Link to="/privacy" className="text-sm text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>
                 Privacy
               </Link>
-              <Link to="/cookies" className="text-sm text-muted-foreground hover:text-indian-blue" onClick={handleLinkClick}>
+              <Link to="/cookies" className="text-sm text-muted-foreground hover:text-indian-blue transition-colors duration-300" onClick={handleLinkClick}>
                 Cookies
               </Link>
             </div>

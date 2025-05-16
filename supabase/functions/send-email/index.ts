@@ -61,9 +61,6 @@ const handler = async (req: Request): Promise<Response> => {
       // Generate a 6-digit OTP
       const otp = generateOTP();
       
-      // Store OTP in Supabase or another storage mechanism for verification
-      // Here you would typically store the OTP with an expiration time
-      
       // For demonstration, we'll just send the OTP via email
       const subject = type === "signup" 
         ? "Verify your etutorss account" 

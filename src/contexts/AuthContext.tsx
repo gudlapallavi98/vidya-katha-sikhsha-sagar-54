@@ -57,9 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Set up auth state listener first
+    let mounted = true;
+    
+    // Setup auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log("Auth state changed:", event, newSession ? "session exists" : "no session");
+      
+      if (!mounted) return;
+      
       setSession(newSession);
       
       // Cast the user to our extended type and set metadata properties
@@ -73,20 +78,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(extendedUser);
         
-        // Fetch additional user data in the next tick to avoid potential deadlocks
-        setTimeout(() => {
-          fetchUserProfile(newSession.user.id);
-        }, 0);
+        // Use setTimeout to avoid potential deadlock
+        if (mounted) {
+          setTimeout(() => {
+            if (mounted) {
+              fetchUserProfile(newSession.user.id);
+            }
+          }, 0);
+        }
       } else {
         setUser(null);
       }
       
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
-    // Then check for existing session
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Initial session check:", currentSession ? "session exists" : "no session");
+      
+      if (!mounted) return;
+      
       setSession(currentSession);
       
       // Cast the user to our extended type and set metadata properties
@@ -100,18 +114,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(extendedUser);
         
-        // Fetch additional user data in the next tick to avoid potential deadlocks
-        setTimeout(() => {
-          fetchUserProfile(currentSession.user.id);
-        }, 0);
+        // Use setTimeout to avoid potential deadlock
+        if (mounted) {
+          setTimeout(() => {
+            if (mounted) {
+              fetchUserProfile(currentSession.user.id);
+            }
+          }, 0);
+        }
       } else {
         setUser(null);
       }
       
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

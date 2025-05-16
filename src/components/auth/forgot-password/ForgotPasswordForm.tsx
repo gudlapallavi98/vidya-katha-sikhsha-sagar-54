@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Dialog, 
@@ -91,6 +91,7 @@ const ForgotPasswordForm = () => {
     }
     
     setIsResetting(true);
+    setOtpSent(false);
   };
   
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -109,7 +110,7 @@ const ForgotPasswordForm = () => {
     
     try {
       // Use Supabase's password reset functionality with the user's email
-      const { error } = await fetch(
+      const response = await fetch(
         `https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/reset-password`,
         {
           method: "POST",
@@ -121,9 +122,13 @@ const ForgotPasswordForm = () => {
             password: newPassword,
           })
         }
-      ).then(res => res.json());
+      );
       
-      if (error) throw new Error(error);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to reset password");
+      }
       
       toast({
         title: "Password Updated",
@@ -191,7 +196,10 @@ const ForgotPasswordForm = () => {
     return (
       <form onSubmit={handleResetPassword} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="newPassword">New Password</Label>
+          <Label htmlFor="newPassword" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            New Password
+          </Label>
           <Input
             id="newPassword"
             type="password"
