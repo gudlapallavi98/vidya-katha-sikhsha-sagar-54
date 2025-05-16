@@ -14,6 +14,7 @@ import {
   DialogDescription 
 } from "@/components/ui/dialog";
 import OTPInput from "./OTPInput";
+import { supabase } from "@/integrations/supabase/client";
 
 const ForgotPasswordForm = () => {
   const [email, setEmail] = useState("");
@@ -41,7 +42,24 @@ const ForgotPasswordForm = () => {
     setIsLoading(true);
     
     try {
-      // Send OTP via Resend Edge Function
+      // First, check if the email exists in the database
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+      
+      if (userError || !userData) {
+        toast({
+          variant: "destructive",
+          title: "Email not found",
+          description: "The email you entered is not registered in our system.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Email exists, send OTP via Resend Edge Function
       const response = await fetch(
         `https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`,
         {
@@ -245,7 +263,7 @@ const ForgotPasswordForm = () => {
           type="submit"
           disabled={isLoading}
         >
-          {isLoading ? "Sending..." : "Send Reset Link"}
+          {isLoading ? "Sending..." : "Send OTP"}
         </Button>
       </form>
       

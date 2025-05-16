@@ -44,14 +44,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    // Get user by email
-    const { data: users, error: getUserError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-      
-    if (getUserError || !users) {
+    // Get user ID from auth.users table by email
+    const { data: userData, error: getUserError } = await supabase.auth
+      .admin.listUsers({ 
+        filter: { 
+          email: email
+        }
+      });
+    
+    if (getUserError || !userData || userData.users.length === 0) {
       console.error("Error finding user:", getUserError);
       return new Response(
         JSON.stringify({ error: "User not found" }),
@@ -62,9 +63,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
+    const userId = userData.users[0].id;
+    
     // Update user's password
     const { error: updateError } = await supabase.auth.admin.updateUserById(
-      users.id,
+      userId,
       { password: password }
     );
     

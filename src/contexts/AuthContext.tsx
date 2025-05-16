@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
@@ -28,17 +28,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const hasSetInitialSession = useRef(false);
+  const profileFetchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // For preventing double profile fetches or infinite loops
+  const isFetchingProfile = useRef(false);
 
   // Fetch user profile to get role and other data
   const fetchUserProfile = async (userId: string) => {
+    if (isFetchingProfile.current) return;
+    
     try {
+      isFetchingProfile.current = true;
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        return;
+      }
 
       if (data && user) {
         // Update the user with profile data
@@ -53,21 +65,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error("Error fetching user profile:", error);
+    } finally {
+      isFetchingProfile.current = false;
     }
   };
 
   useEffect(() => {
-    let mounted = true;
+    // Clean up any existing timeout
+    if (profileFetchTimeout.current) {
+      clearTimeout(profileFetchTimeout.current);
+    }
     
-    // Setup auth state listener first
+    const setupAuthListener = async () => {
+      try {
+        // First get current session
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (currentSession) {
+          setSession(currentSession);
+          
+          // Cast the user to our extended type and set metadata properties
+          if (currentSession.user) {
+            const extendedUser: ExtendedUser = {
+              ...currentSession.user,
+              first_name: currentSession.user.user_metadata?.first_name,
+              last_name: currentSession.user.user_metadata?.last_name,
+              avatar_url: currentSession.user.user_metadata?.avatar_url,
+              role: currentSession.user.user_metadata?.role
+            };
+            setUser(extendedUser);
+            
+            // Use setTimeout with ref to avoid potential issues
+            profileFetchTimeout.current = setTimeout(() => {
+              fetchUserProfile(currentSession.user.id);
+            }, 100);
+          }
+        }
+      } catch (error) {
+        console.error("Error getting initial auth session:", error);
+      } finally {
+        hasSetInitialSession.current = true;
+        setLoading(false);
+      }
+    };
+
+    // Setup auth state change subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log("Auth state changed:", event, newSession ? "session exists" : "no session");
       
-      if (!mounted) return;
+      // Only process auth state changes after initial session is set
+      // This prevents duplicate processing during initialization
+      if (!hasSetInitialSession.current) return;
       
       setSession(newSession);
       
-      // Cast the user to our extended type and set metadata properties
       if (newSession?.user) {
         const extendedUser: ExtendedUser = {
           ...newSession.user,
@@ -78,61 +129,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(extendedUser);
         
-        // Use setTimeout to avoid potential deadlock
-        if (mounted) {
-          setTimeout(() => {
-            if (mounted) {
-              fetchUserProfile(newSession.user.id);
-            }
-          }, 0);
+        // Debounce profile fetching to prevent rapid successive calls
+        if (profileFetchTimeout.current) {
+          clearTimeout(profileFetchTimeout.current);
         }
+        
+        profileFetchTimeout.current = setTimeout(() => {
+          fetchUserProfile(newSession.user.id);
+        }, 100);
       } else {
         setUser(null);
-      }
-      
-      if (mounted) {
-        setLoading(false);
       }
     });
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Initial session check:", currentSession ? "session exists" : "no session");
-      
-      if (!mounted) return;
-      
-      setSession(currentSession);
-      
-      // Cast the user to our extended type and set metadata properties
-      if (currentSession?.user) {
-        const extendedUser: ExtendedUser = {
-          ...currentSession.user,
-          first_name: currentSession.user.user_metadata?.first_name,
-          last_name: currentSession.user.user_metadata?.last_name,
-          avatar_url: currentSession.user.user_metadata?.avatar_url,
-          role: currentSession.user.user_metadata?.role
-        };
-        setUser(extendedUser);
-        
-        // Use setTimeout to avoid potential deadlock
-        if (mounted) {
-          setTimeout(() => {
-            if (mounted) {
-              fetchUserProfile(currentSession.user.id);
-            }
-          }, 0);
-        }
-      } else {
-        setUser(null);
-      }
-      
-      if (mounted) {
-        setLoading(false);
-      }
-    });
+    // Initialize auth
+    setupAuthListener();
 
     return () => {
-      mounted = false;
+      if (profileFetchTimeout.current) {
+        clearTimeout(profileFetchTimeout.current);
+      }
       subscription.unsubscribe();
     };
   }, []);
