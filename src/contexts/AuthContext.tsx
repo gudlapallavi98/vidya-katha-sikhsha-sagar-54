@@ -29,6 +29,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Fetch user profile to get role and other data
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (data && user) {
+        // Update the user with profile data
+        const updatedUser: ExtendedUser = { 
+          ...user, 
+          first_name: data.first_name,
+          last_name: data.last_name,
+          role: data.role,
+          avatar_url: data.avatar_url
+        };
+        setUser(updatedUser);
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
@@ -45,6 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: newSession.user.user_metadata?.role
         };
         setUser(extendedUser);
+        
+        // Fetch additional user data in the next tick to avoid potential deadlocks
+        setTimeout(() => {
+          fetchUserProfile(newSession.user.id);
+        }, 0);
       } else {
         setUser(null);
       }
@@ -67,6 +99,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: currentSession.user.user_metadata?.role
         };
         setUser(extendedUser);
+        
+        // Fetch additional user data in the next tick to avoid potential deadlocks
+        setTimeout(() => {
+          fetchUserProfile(currentSession.user.id);
+        }, 0);
       } else {
         setUser(null);
       }

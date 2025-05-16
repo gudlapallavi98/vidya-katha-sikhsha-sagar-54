@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/toast"
 
 export function Toaster() {
-  const { toasts } = useToast()
+  const { toasts, dismissToast } = useToast()
 
   return (
     <ToastProvider>
@@ -24,7 +24,7 @@ export function Toaster() {
               )}
             </div>
             {action}
-            <ToastClose />
+            <ToastClose onClick={() => dismissToast(id)} />
           </Toast>
         )
       })}

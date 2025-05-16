@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,12 +13,29 @@ const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaValue] = useState({
+    num1: Math.floor(Math.random() * 10),
+    num2: Math.floor(Math.random() * 10)
+  });
   const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate captcha
+    const expectedAnswer = (captchaValue.num1 + captchaValue.num2).toString();
+    if (captchaAnswer !== expectedAnswer) {
+      toast({
+        variant: "destructive",
+        title: "Invalid captcha",
+        description: "Please solve the math problem correctly",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -76,6 +93,26 @@ const LoginForm = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+        </div>
+
+        <div className="space-y-2 p-4 rounded-md bg-muted">
+          <Label htmlFor="captcha" className="flex items-center gap-2">
+            Verify you're human: What is {captchaValue.num1} + {captchaValue.num2}?
+          </Label>
+          <Input
+            id="captcha"
+            type="text"
+            placeholder="Enter the answer"
+            value={captchaAnswer}
+            onChange={(e) => setCaptchaAnswer(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="text-right">
+          <Link to="/forgot-password" className="text-sm text-indian-blue hover:underline">
+            Forgot password?
+          </Link>
         </div>
       </div>
 

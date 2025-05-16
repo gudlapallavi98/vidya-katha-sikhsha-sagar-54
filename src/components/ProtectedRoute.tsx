@@ -1,53 +1,49 @@
 
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { Skeleton } from "./ui/skeleton";
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { ExtendedUser } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "student" | "teacher";
+  requiredRole?: 'student' | 'teacher' | string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ 
+  children, 
+  requiredRole 
+}: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-  const location = useLocation();
 
-  // Show loading state while checking authentication
+  // Show loading indicator while checking authentication
   if (loading) {
     return (
-      <div className="container py-12">
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-3/4" />
-          <Skeleton className="h-32 w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indian-blue"></div>
       </div>
     );
   }
 
-  // Redirect to login if not authenticated
+  // If user is not logged in, redirect to login page
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  // Check role if required
-  if (requiredRole && user.role !== requiredRole) {
-    // Redirect to appropriate dashboard based on role
-    if (user.role === "student") {
-      return <Navigate to="/student-dashboard" replace />;
-    } else if (user.role === "teacher") {
-      return <Navigate to="/teacher-dashboard" replace />;
-    } else {
-      // If no valid role, redirect to home
+  // If role is required but user doesn't have it, redirect
+  if (requiredRole) {
+    const userRole = (user as ExtendedUser)?.role;
+    
+    if (userRole !== requiredRole) {
+      // If student tries to access teacher dashboard or vice versa
+      if (userRole === 'student') {
+        return <Navigate to="/student-dashboard" replace />;
+      } else if (userRole === 'teacher') {
+        return <Navigate to="/teacher-dashboard" replace />;
+      }
+      // If no valid role, go to home
       return <Navigate to="/" replace />;
     }
   }
 
-  // If authenticated and has required role (or no role required), render children
   return <>{children}</>;
 };
 

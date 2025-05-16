@@ -84,6 +84,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formValues.email,
         password: formValues.password,
+        options: {
+          data: {
+            first_name: formValues.firstName,
+            last_name: formValues.lastName,
+            role: formValues.role,
+          }
+        }
       });
       
       if (signUpError) throw signUpError;
@@ -98,7 +105,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
           role: formValues.role,
         });
         
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+          // Continue even if profile creation fails - we'll try to handle it gracefully
+        }
       }
       
       // Success message

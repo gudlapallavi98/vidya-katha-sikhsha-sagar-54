@@ -10,6 +10,7 @@ import CourseDetailPage from './pages/CourseDetailPage';
 import NotFound from './pages/NotFound';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -30,6 +31,7 @@ function App() {
           <Route path="terms" element={<TermsPage />} />
           <Route path="signup" element={<SignUpPage />} />
           <Route path="login" element={<LoginPage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route 
             path="student-dashboard" 
             element={
