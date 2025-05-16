@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toaster } from "@/components/ui/toaster";
@@ -26,7 +25,7 @@ const ForgotPasswordPage = () => {
           <CardHeader>
             <CardTitle>Reset Password</CardTitle>
             <CardDescription>
-              Enter your email to receive a password reset link
+              Enter your email to receive a verification code
             </CardDescription>
           </CardHeader>
           <CardContent>

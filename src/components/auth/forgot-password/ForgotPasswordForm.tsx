@@ -16,6 +16,10 @@ import {
 import OTPInput from "./OTPInput";
 import { supabase } from "@/integrations/supabase/client";
 
+interface ProfileResponse {
+  id?: string;
+}
+
 const ForgotPasswordForm = () => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -47,9 +51,9 @@ const ForgotPasswordForm = () => {
         .from('profiles')
         .select('id')
         .eq('email', email)
-        .single();
+        .maybeSingle<ProfileResponse>();
       
-      if (userError || !userData) {
+      if (userError || !userData?.id) {
         toast({
           variant: "destructive",
           title: "Email not found",

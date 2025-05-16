@@ -44,10 +44,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    // Get user ID from auth.users table by email
+    // Get user by email
     const { data: userData, error: getUserError } = await supabase.auth
-      .admin.listUsers({ 
-        filter: { 
+      .admin.listUsers({
+        filter: {
           email: email
         }
       });
