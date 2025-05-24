@@ -96,44 +96,38 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
     }
   };
 
-  // Use a conditional rendering approach instead of tabs component
-  const renderActiveTabContent = () => {
-    switch(activeTab) {
-      case "personal":
-        return (
-          <PersonalInfoTab 
-            form={form} 
-            avatarUrl={avatarUrl} 
-            setAvatarUrl={setAvatarUrl} 
-            userId={user?.id || ""}
-          />
-        );
-      case "experience":
-        return <TeachingExperienceTab form={form} />;
-      case "subjects":
-        return (
-          <SubjectsTab 
-            selectedSubjects={selectedSubjects} 
-            setSelectedSubjects={setSelectedSubjects} 
-          />
-        );
-      case "certifications":
-        return (
-          <CertificationsTab 
-            certificates={certificates} 
-            setCertificates={setCertificates} 
-            userId={user?.id || ""}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {renderActiveTabContent()}
+        <Tabs value={activeTab}>
+          <TabsContent value="personal">
+            <PersonalInfoTab 
+              form={form} 
+              avatarUrl={avatarUrl} 
+              setAvatarUrl={setAvatarUrl} 
+              userId={user?.id || ""}
+            />
+          </TabsContent>
+          
+          <TabsContent value="experience">
+            <TeachingExperienceTab form={form} />
+          </TabsContent>
+          
+          <TabsContent value="subjects">
+            <SubjectsTab 
+              selectedSubjects={selectedSubjects} 
+              setSelectedSubjects={setSelectedSubjects} 
+            />
+          </TabsContent>
+          
+          <TabsContent value="certifications">
+            <CertificationsTab 
+              certificates={certificates} 
+              setCertificates={setCertificates} 
+              userId={user?.id || ""}
+            />
+          </TabsContent>
+        </Tabs>
 
         <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? "Saving..." : "Save Profile"}

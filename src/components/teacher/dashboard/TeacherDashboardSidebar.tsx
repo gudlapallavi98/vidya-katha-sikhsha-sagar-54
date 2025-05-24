@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Layout, BookOpen, Calendar, Clock, Users, Calendar as CalendarIcon } from "lucide-react";
+import { Layout, BookOpen, Calendar, Clock, Users, Calendar as CalendarIcon, Settings } from "lucide-react";
 import DashboardNav from "@/components/dashboard/DashboardNav";
 import ProfileCard from "@/components/dashboard/ProfileCard";
 
@@ -18,7 +18,8 @@ const TeacherDashboardSidebar: React.FC<TeacherDashboardSidebarProps> = ({
     { id: "courses", label: "My Courses", icon: <BookOpen className="h-4 w-4" /> },
     { id: "sessions", label: "Session Requests", icon: <Users className="h-4 w-4" /> },
     { id: "schedule", label: "My Schedule", icon: <Calendar className="h-4 w-4" /> },
-    { id: "availability", label: "Set Availability", icon: <CalendarIcon className="h-4 w-4" /> }
+    { id: "availability", label: "Set Availability", icon: <CalendarIcon className="h-4 w-4" /> },
+    { id: "profile", label: "Profile Settings", icon: <Settings className="h-4 w-4" /> }
   ];
   
   return (

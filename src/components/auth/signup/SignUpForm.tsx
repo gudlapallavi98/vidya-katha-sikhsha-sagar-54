@@ -75,16 +75,11 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
       setVerificationOpen(true);
     } catch (error) {
       console.error("Signup error:", error);
-      // Fallback to local OTP for testing
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtp(otp);
-      
       toast({
-        title: "Verification Required",
-        description: `For testing purposes, use OTP: ${otp}`,
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send verification email",
       });
-      
-      setVerificationOpen(true);
     }
   };
   
@@ -120,11 +115,20 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
       
       // Create profile in the database
       if (signUpData?.user) {
+        // Determine default avatar based on role and gender
+        let defaultAvatar = "";
+        if (formValues.role === "teacher") {
+          defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher&backgroundColor=b6e3f4";
+        } else {
+          defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=student&backgroundColor=c0aede";
+        }
+
         const { error: profileError } = await supabase.from("profiles").insert({
           id: signUpData.user.id,
           first_name: formValues.firstName,
           last_name: formValues.lastName,
           role: formValues.role,
+          avatar_url: defaultAvatar,
         });
         
         if (profileError) {
@@ -180,13 +184,10 @@ const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
         description: "A new verification code has been sent to your email",
       });
     } catch (error) {
-      // Fallback to local OTP
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtp(newOtp);
-      
       toast({
-        title: "OTP Resent",
-        description: `For testing purposes, use OTP: ${newOtp}`,
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to resend OTP",
       });
     }
   };

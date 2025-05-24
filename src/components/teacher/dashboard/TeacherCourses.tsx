@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import CourseForm from "./components/CourseForm";
+import CourseForm, { CourseFormData } from "./components/CourseForm";
 import CourseList from "./components/CourseList";
 
 interface TeacherCoursesProps {
@@ -71,7 +72,6 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
         description: "The course has been successfully deleted.",
       });
 
-      // Refresh courses list
       refetch();
     } catch (error) {
       toast({
@@ -85,30 +85,26 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
     }
   };
 
-  const handleSubmit = async (values: {
-    title: string;
-    description: string;
-    category: string;
-    total_lessons: number;
-    course_link: string;
-  }) => {
+  const handleSubmit = async (values: CourseFormData) => {
     if (!user) return;
 
     setIsSubmitting(true);
 
     try {
+      const courseData = {
+        teacher_id: user.id,
+        title: values.title,
+        description: values.description,
+        category: values.category,
+        total_lessons: values.total_lessons,
+        course_link: values.course_link || null,
+        // Additional fields can be stored in a JSON column or separate table
+      };
+
       if (isEditMode && currentCourse) {
-        // Update existing course
         const { error } = await supabase
           .from("courses")
-          .update({
-            title: values.title,
-            description: values.description,
-            category: values.category,
-            total_lessons: values.total_lessons,
-            course_link: values.course_link,
-            image_url: currentCourse.image_url, // Preserve existing image
-          })
+          .update(courseData)
           .eq("id", currentCourse.id)
           .eq("teacher_id", user.id);
 
@@ -119,17 +115,9 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
           description: "Your course has been updated successfully.",
         });
       } else {
-        // Create new course
-        const { error } = await supabase.from("courses").insert([
-          {
-            teacher_id: user.id,
-            title: values.title,
-            description: values.description,
-            category: values.category,
-            total_lessons: values.total_lessons,
-            course_link: values.course_link,
-          },
-        ]);
+        const { error } = await supabase
+          .from("courses")
+          .insert([courseData]);
 
         if (error) throw error;
 
@@ -139,7 +127,6 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
         });
       }
 
-      // Close dialog and refresh courses
       setIsDialogOpen(false);
       refetch();
     } catch (error) {
@@ -157,7 +144,6 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
   };
 
   const handleManageCourse = (courseId: string) => {
-    // Navigate to course management page
     window.location.href = `/teacher-dashboard/courses/${courseId}`;
   };
 
@@ -184,9 +170,8 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
         </CardContent>
       </Card>
 
-      {/* Course Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditMode ? "Edit Course" : "Create New Course"}
@@ -197,8 +182,11 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
               title: currentCourse?.title || "",
               description: currentCourse?.description || "",
               category: currentCourse?.category || "",
+              price: currentCourse?.price || 0,
               total_lessons: currentCourse?.total_lessons || 1,
               course_link: currentCourse?.course_link || "",
+              sample_video: currentCourse?.sample_video || "",
+              video_links: currentCourse?.video_links || [{ title: "", url: "" }],
             }}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
@@ -207,7 +195,6 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={confirmDelete !== null}
         onOpenChange={() => setConfirmDelete(null)}
