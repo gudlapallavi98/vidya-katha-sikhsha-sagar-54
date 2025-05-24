@@ -12,9 +12,10 @@ import CourseDetailPage from './pages/CourseDetailPage';
 import NotFound from './pages/NotFound';
 import SignUpPage from './pages/SignUpPage';
 import LoginPage from './pages/LoginPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
+import FAQPage from './pages/FAQPage';
+import SupportPage from './pages/SupportPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Lazy load dashboard pages to improve initial load performance
@@ -64,9 +65,10 @@ function App() {
             <Route path="courses/:id" element={<CourseDetailPage />} />
             <Route path="privacy" element={<PrivacyPage />} />
             <Route path="terms" element={<TermsPage />} />
+            <Route path="faq" element={<FAQPage />} />
+            <Route path="support" element={<SupportPage />} />
             <Route path="signup" element={<SignUpPage />} />
             <Route path="login" element={<LoginPage />} />
-            <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="dashboard" element={<AuthRedirect />} />
             <Route 
               path="student-dashboard/*" 

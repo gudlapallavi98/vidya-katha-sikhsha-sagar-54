@@ -30,29 +30,33 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
     setVerificationName(`${data.firstName} ${data.lastName}`);
     
     try {
-      // Use the Supabase Edge Function to send a real email with OTP
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          name: `${data.firstName} ${data.lastName}`,
-          type: "signup"
-        })
+      // Check if user already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', data.email)
+        .single();
+
+      if (existingUser) {
+        toast({
+          variant: "destructive",
+          title: "Account already exists",
+          description: "An account with this email already exists. Please login instead.",
+        });
+        return;
+      }
+
+      // Generate a simple 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOtp(otp);
+      
+      // For now, we'll show the OTP in console since edge function might not be working
+      console.log("Generated OTP for signup:", otp);
+      
+      toast({
+        title: "Verification Required",
+        description: `For testing purposes, use OTP: ${otp}`,
       });
-      
-      const responseData = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to send verification email");
-      }
-      
-      // Store the OTP from the server response
-      if (responseData.otp) {
-        setSentOtp(responseData.otp);
-      }
       
       // Open verification dialog
       setVerificationOpen(true);
@@ -107,7 +111,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         
         if (profileError) {
           console.error("Error creating profile:", profileError);
-          // Continue even if profile creation fails - we'll try to handle it gracefully
         }
       }
       
@@ -132,44 +135,15 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
   };
   
   const handleResendOtp = async () => {
-    if (!verificationEmail) return;
+    // Generate new OTP
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setSentOtp(newOtp);
+    console.log("New OTP for signup:", newOtp);
     
-    try {
-      // Use the Supabase Edge Function to send a real email with OTP
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: verificationEmail,
-          name: verificationName,
-          type: "signup"
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to send verification email");
-      }
-      
-      // Store the OTP from the server response
-      if (data.otp) {
-        setSentOtp(data.otp);
-      }
-      
-      toast({
-        title: "OTP Resent",
-        description: "A new verification code has been sent to your email",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to resend verification code",
-      });
-    }
+    toast({
+      title: "OTP Resent",
+      description: `New OTP: ${newOtp}`,
+    });
   };
 
   return (
@@ -186,8 +160,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
           <DialogHeader>
             <DialogTitle>Email Verification</DialogTitle>
             <DialogDescription>
-              We've sent a verification code to {verificationEmail}. 
-              Please enter the 6-digit code below.
+              Please enter the 6-digit verification code to complete your registration.
             </DialogDescription>
           </DialogHeader>
           

@@ -1,8 +1,8 @@
 
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardFooter } from "@/components/ui/card";
 import LoginHeader from "@/components/auth/login/LoginHeader";
-import LoginForm from "@/components/auth/login/LoginForm";
+import LoginOptions from "@/components/auth/login/LoginOptions";
 import { Toaster } from "@/components/ui/toaster";
 
 const LoginPage = () => {
@@ -18,26 +18,15 @@ const LoginPage = () => {
 
       <div className="container max-w-md py-12 relative z-10">
         <LoginHeader />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LoginForm />
-          </CardContent>
-          <CardFooter>
-            <p className="text-sm text-muted-foreground text-center w-full">
-              Don't have an account? <Link to="/signup" className="text-indian-blue hover:underline">Sign Up</Link>
-            </p>
-          </CardFooter>
-        </Card>
+        <LoginOptions />
+        
+        <div className="mt-4">
+          <p className="text-sm text-muted-foreground text-center w-full">
+            Don't have an account? <Link to="/signup" className="text-indian-blue hover:underline">Sign Up</Link>
+          </p>
+        </div>
       </div>
       
-      {/* Make sure toasts are visible on this page */}
       <Toaster />
     </div>
   );

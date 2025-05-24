@@ -1,5 +1,6 @@
+
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useUserProfile } from "@/hooks/use-profile-data";
 import { Progress } from "@/components/ui/progress";
@@ -58,73 +59,73 @@ function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
           <Progress value={progressPercentage} className="h-2" />
         </div>
 
-        <div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-8">
-            <TabsTrigger 
-              value="personal" 
-              onClick={() => setActiveTab("personal")}
-              className={activeTab === "personal" ? "data-[state=active]" : ""}
-            >
+            <TabsTrigger value="personal">
               Personal Information
             </TabsTrigger>
             
             {role === "student" ? (
               <>
-                <TabsTrigger 
-                  value="education" 
-                  onClick={() => setActiveTab("education")}
-                  className={activeTab === "education" ? "data-[state=active]" : ""}
-                >
+                <TabsTrigger value="education">
                   Education
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="preferences" 
-                  onClick={() => setActiveTab("preferences")}
-                  className={activeTab === "preferences" ? "data-[state=active]" : ""}
-                >
+                <TabsTrigger value="preferences">
                   Preferences
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="exams" 
-                  onClick={() => setActiveTab("exams")}
-                  className={activeTab === "exams" ? "data-[state=active]" : ""}
-                >
+                <TabsTrigger value="exams">
                   Exam History
                 </TabsTrigger>
               </>
             ) : (
               <>
-                <TabsTrigger 
-                  value="experience" 
-                  onClick={() => setActiveTab("experience")}
-                  className={activeTab === "experience" ? "data-[state=active]" : ""}
-                >
+                <TabsTrigger value="experience">
                   Teaching Experience
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="subjects" 
-                  onClick={() => setActiveTab("subjects")}
-                  className={activeTab === "subjects" ? "data-[state=active]" : ""}
-                >
+                <TabsTrigger value="subjects">
                   Subjects
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="certifications" 
-                  onClick={() => setActiveTab("certifications")}
-                  className={activeTab === "certifications" ? "data-[state=active]" : ""}
-                >
+                <TabsTrigger value="certifications">
                   Certifications
                 </TabsTrigger>
               </>
             )}
           </TabsList>
 
+          <TabsContent value="personal">
+            {role === "student" ? (
+              <StudentProfileForm activeTab="personal" onCompleted={onCompleted} />
+            ) : (
+              <TeacherProfileForm activeTab="personal" onCompleted={onCompleted} />
+            )}
+          </TabsContent>
+
           {role === "student" ? (
-            <StudentProfileForm activeTab={activeTab} onCompleted={onCompleted} />
+            <>
+              <TabsContent value="education">
+                <StudentProfileForm activeTab="education" onCompleted={onCompleted} />
+              </TabsContent>
+              <TabsContent value="preferences">
+                <StudentProfileForm activeTab="preferences" onCompleted={onCompleted} />
+              </TabsContent>
+              <TabsContent value="exams">
+                <StudentProfileForm activeTab="exams" onCompleted={onCompleted} />
+              </TabsContent>
+            </>
           ) : (
-            <TeacherProfileForm activeTab={activeTab} onCompleted={onCompleted} />
+            <>
+              <TabsContent value="experience">
+                <TeacherProfileForm activeTab="experience" onCompleted={onCompleted} />
+              </TabsContent>
+              <TabsContent value="subjects">
+                <TeacherProfileForm activeTab="subjects" onCompleted={onCompleted} />
+              </TabsContent>
+              <TabsContent value="certifications">
+                <TeacherProfileForm activeTab="certifications" onCompleted={onCompleted} />
+              </TabsContent>
+            </>
           )}
-        </div>
+        </Tabs>
       </CardContent>
     </Card>
   );
