@@ -2,21 +2,11 @@
 import { Input } from "@/components/ui/input";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { UseFormReturn } from "react-hook-form";
+import { SignUpFormData, CaptchaValue } from "./types";
 
 interface CaptchaFieldProps {
-  captchaValue: { 
-    num1: number; 
-    num2: number; 
-  };
-  form: UseFormReturn<{
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    captcha?: string;
-    role?: "student" | "teacher";
-  }>;
+  captchaValue: CaptchaValue;
+  form: UseFormReturn<SignUpFormData>;
 }
 
 const CaptchaField = ({ captchaValue, form }: CaptchaFieldProps) => {
