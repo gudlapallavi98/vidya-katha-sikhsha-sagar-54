@@ -678,6 +678,7 @@ export type Database = {
       }
       teacher_availability: {
         Row: {
+          auto_cancel_at: string | null
           available_date: string
           created_at: string | null
           end_time: string
@@ -688,6 +689,7 @@ export type Database = {
           teacher_id: string
         }
         Insert: {
+          auto_cancel_at?: string | null
           available_date: string
           created_at?: string | null
           end_time: string
@@ -698,6 +700,7 @@ export type Database = {
           teacher_id: string
         }
         Update: {
+          auto_cancel_at?: string | null
           available_date?: string
           created_at?: string | null
           end_time?: string
