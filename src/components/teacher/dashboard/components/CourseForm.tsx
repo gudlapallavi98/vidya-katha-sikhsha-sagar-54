@@ -58,14 +58,14 @@ const CourseForm: React.FC<CourseFormProps> = ({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: defaultValues.title || "",
-      category: defaultValues.category || "",
-      price: defaultValues.price || 0,
-      description: defaultValues.description || "",
-      course_link: defaultValues.course_link || "",
-      sample_video: defaultValues.sample_video || "",
-      video_links: defaultValues.video_links || [{ title: "", url: "" }],
-      total_lessons: defaultValues.total_lessons || 1,
+      title: defaultValues.title ?? "",
+      category: defaultValues.category ?? "",
+      price: defaultValues.price ?? 0,
+      description: defaultValues.description ?? "",
+      course_link: defaultValues.course_link ?? "",
+      sample_video: defaultValues.sample_video ?? "",
+      video_links: defaultValues.video_links ?? [{ title: "", url: "" }],
+      total_lessons: defaultValues.total_lessons ?? 1,
     },
   });
 
@@ -75,7 +75,18 @@ const CourseForm: React.FC<CourseFormProps> = ({
   });
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    await onSubmit(values);
+    // Ensure all required fields are present for CourseFormData
+    const courseData: CourseFormData = {
+      title: values.title,
+      category: values.category,
+      price: values.price,
+      description: values.description,
+      course_link: values.course_link || undefined,
+      sample_video: values.sample_video || undefined,
+      video_links: values.video_links,
+      total_lessons: values.total_lessons,
+    };
+    await onSubmit(courseData);
   };
 
   return (
