@@ -1,8 +1,8 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
+import { useLoginRedirect } from "@/hooks/use-login-redirect";
 
 interface OTPVerificationProps {
   email: string;
@@ -16,6 +16,9 @@ const OTPVerification = ({ email, name, onVerify, onResend, isLoading }: OTPVeri
   const [otp, setOtp] = useState("");
   const [serverOtp, setServerOtp] = useState("");
   const { toast } = useToast();
+  
+  // Add login redirect hook
+  useLoginRedirect();
 
   // Fetch OTP from server when component mounts
   const fetchOtp = async () => {

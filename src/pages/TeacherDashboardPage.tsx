@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   useTeacherCourses, 
@@ -11,6 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { useNavigate } from "react-router-dom";
 import { useAuthStatus } from "@/hooks/use-auth-status";
+import { AnimatedBackground } from "@/components/ui/animated-background";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TeacherDashboardSidebar from "@/components/teacher/dashboard/TeacherDashboardSidebar";
@@ -124,32 +124,34 @@ const TeacherDashboard = () => {
   }
 
   return (
-    <DashboardLayout
-      sidebar={
-        <TeacherDashboardSidebar 
-          activeTab={activeTab} 
-          setActiveTab={handleTabChange} 
-        />
-      }
-      children={
-        <TeacherDashboardContent
-          activeTab={activeTab}
-          teacherCourses={teacherCourses}
-          coursesLoading={coursesLoading}
-          sessionRequests={sessionRequests}
-          requestsLoading={requestsLoading}
-          teacherSessions={teacherSessions}
-          upcomingSessions={upcomingSessions}
-          sessionsLoading={sessionsLoading}
-          totalSessions={totalSessions}
-          searchQuery={searchQuery}
-          handleSearch={handleSearch}
-          handleAcceptSession={handleAcceptSession}
-          handleRejectSession={handleRejectSession}
-          handleStartClass={handleStartClass}
-        />
-      }
-    />
+    <AnimatedBackground variant="teacher">
+      <DashboardLayout
+        sidebar={
+          <TeacherDashboardSidebar 
+            activeTab={activeTab} 
+            setActiveTab={handleTabChange} 
+          />
+        }
+        children={
+          <TeacherDashboardContent
+            activeTab={activeTab}
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            teacherSessions={teacherSessions}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            searchQuery={searchQuery}
+            handleSearch={handleSearch}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
+          />
+        }
+      />
+    </AnimatedBackground>
   );
 };
 
