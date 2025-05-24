@@ -76,7 +76,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        otp: otp, // In production, you might want to store this in database instead of returning it
+        otp: otp,
         message: "OTP sent successfully" 
       }),
       {

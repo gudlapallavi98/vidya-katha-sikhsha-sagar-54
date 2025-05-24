@@ -1,196 +1,25 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import SignUpFormFields from "./SignUpFormFields";
 import OTPVerification from "./OTPVerification";
-import { SignUpFormData, CaptchaValue } from "./types";
+import { useSignUpForm } from "./hooks/useSignUpForm";
+import { CaptchaValue } from "./types";
 
 interface SignUpFormProps {
   captchaValue: CaptchaValue;
 }
 
 const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [verificationOpen, setVerificationOpen] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState("");
-  const [verificationName, setVerificationName] = useState("");
-  const [formValues, setFormValues] = useState<SignUpFormData | null>(null);
-  const [sentOtp, setSentOtp] = useState("");
-  const navigate = useNavigate();
-  
-  const handleFormSubmit = async (data: SignUpFormData) => {
-    setFormValues(data);
-    setVerificationEmail(data.email);
-    setVerificationName(`${data.firstName} ${data.lastName}`);
-    
-    try {
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('first_name', data.firstName)
-        .eq('last_name', data.lastName)
-        .single();
-
-      if (existingUser) {
-        toast({
-          variant: "destructive",
-          title: "Account already exists",
-          description: "An account with this name already exists. Please login instead.",
-        });
-        return;
-      }
-
-      // Send OTP via edge function
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.RESEND_API_KEY || 're_NDfVBiHT_BshiLXkHumjrqWsv5oS5zHVH'}`,
-        },
-        body: JSON.stringify({
-          email: data.email,
-          name: `${data.firstName} ${data.lastName}`,
-          type: "signup"
-        })
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to send verification email");
-      }
-
-      setSentOtp(responseData.otp);
-      
-      toast({
-        title: "Verification email sent",
-        description: "Please check your email for the verification code",
-      });
-      
-      setVerificationOpen(true);
-    } catch (error) {
-      console.error("Signup error:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send verification email",
-      });
-    }
-  };
-  
-  const handleVerify = async (otp: string) => {
-    if (otp !== sentOtp) {
-      toast({
-        variant: "destructive",
-        title: "Invalid OTP",
-        description: "The verification code is incorrect",
-      });
-      return;
-    }
-    
-    if (!formValues) return;
-    
-    setIsLoading(true);
-    
-    try {
-      // Sign up with Supabase
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: formValues.email,
-        password: formValues.password,
-        options: {
-          data: {
-            first_name: formValues.firstName,
-            last_name: formValues.lastName,
-            role: formValues.role,
-          }
-        }
-      });
-      
-      if (signUpError) throw signUpError;
-      
-      // Create profile in the database
-      if (signUpData?.user) {
-        // Determine default avatar based on role and gender
-        let defaultAvatar = "";
-        if (formValues.role === "teacher") {
-          defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=teacher&backgroundColor=b6e3f4";
-        } else {
-          defaultAvatar = "https://api.dicebear.com/7.x/avataaars/svg?seed=student&backgroundColor=c0aede";
-        }
-
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: signUpData.user.id,
-          first_name: formValues.firstName,
-          last_name: formValues.lastName,
-          role: formValues.role,
-          avatar_url: defaultAvatar,
-        });
-        
-        if (profileError) {
-          console.error("Error creating profile:", profileError);
-        }
-      }
-      
-      toast({
-        title: "Account created",
-        description: "Your account has been created successfully!",
-      });
-      
-      setVerificationOpen(false);
-      navigate("/login");
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Registration failed",
-        description: error instanceof Error ? error.message : "Failed to create account",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleResendOtp = async () => {
-    if (!formValues) return;
-    
-    try {
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer re_NDfVBiHT_BshiLXkHumjrqWsv5oS5zHVH`,
-        },
-        body: JSON.stringify({
-          email: formValues.email,
-          name: `${formValues.firstName} ${formValues.lastName}`,
-          type: "signup"
-        })
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to resend OTP");
-      }
-
-      setSentOtp(responseData.otp);
-      
-      toast({
-        title: "OTP Resent",
-        description: "A new verification code has been sent to your email",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to resend OTP",
-      });
-    }
-  };
+  const {
+    isLoading,
+    verificationOpen,
+    setVerificationOpen,
+    verificationEmail,
+    verificationName,
+    handleFormSubmit,
+    handleVerify,
+    handleResendOtp,
+  } = useSignUpForm();
 
   return (
     <>

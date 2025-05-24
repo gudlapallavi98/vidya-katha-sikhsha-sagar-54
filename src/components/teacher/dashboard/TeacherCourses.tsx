@@ -1,11 +1,6 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { PlusCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTeacherCourses } from "@/hooks/use-teacher-data";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -24,8 +19,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import CourseForm, { CourseFormData } from "./components/CourseForm";
+import CourseForm from "./components/CourseForm";
 import CourseList from "./components/CourseList";
+import { useTeacherCourses } from "./hooks/useTeacherCourses";
 
 interface TeacherCoursesProps {
   teacherCourses: any[];
@@ -36,116 +32,20 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
   teacherCourses, 
   coursesLoading 
 }) => {
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const { refetch } = useTeacherCourses();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentCourse, setCurrentCourse] = useState<any>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-
-  const handleCreateCourse = () => {
-    setIsEditMode(false);
-    setCurrentCourse(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleEditCourse = (course: any) => {
-    setIsEditMode(true);
-    setCurrentCourse(course);
-    setIsDialogOpen(true);
-  };
-
-  const handleDeleteCourse = async (courseId: string) => {
-    try {
-      const { error } = await supabase
-        .from("courses")
-        .delete()
-        .eq("id", courseId)
-        .eq("teacher_id", user?.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Course Deleted",
-        description: "The course has been successfully deleted.",
-      });
-
-      refetch();
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete course. Please try again.",
-      });
-      console.error("Error deleting course:", error);
-    } finally {
-      setConfirmDelete(null);
-    }
-  };
-
-  const handleSubmit = async (values: CourseFormData) => {
-    if (!user) return;
-
-    setIsSubmitting(true);
-
-    try {
-      const courseData = {
-        teacher_id: user.id,
-        title: values.title,
-        description: values.description,
-        category: values.category,
-        total_lessons: values.total_lessons,
-        course_link: values.course_link || null,
-        // Additional fields can be stored in a JSON column or separate table
-      };
-
-      if (isEditMode && currentCourse) {
-        const { error } = await supabase
-          .from("courses")
-          .update(courseData)
-          .eq("id", currentCourse.id)
-          .eq("teacher_id", user.id);
-
-        if (error) throw error;
-
-        toast({
-          title: "Course Updated",
-          description: "Your course has been updated successfully.",
-        });
-      } else {
-        const { error } = await supabase
-          .from("courses")
-          .insert([courseData]);
-
-        if (error) throw error;
-
-        toast({
-          title: "Course Created",
-          description: "Your course has been created successfully.",
-        });
-      }
-
-      setIsDialogOpen(false);
-      refetch();
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to save course. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleManageCourse = (courseId: string) => {
-    window.location.href = `/teacher-dashboard/courses/${courseId}`;
-  };
+  const {
+    isDialogOpen,
+    setIsDialogOpen,
+    isEditMode,
+    isSubmitting,
+    currentCourse,
+    confirmDelete,
+    setConfirmDelete,
+    handleCreateCourse,
+    handleEditCourse,
+    handleDeleteCourse,
+    handleSubmit,
+    handleManageCourse,
+  } = useTeacherCourses();
 
   return (
     <div className="space-y-8">
