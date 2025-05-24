@@ -12,7 +12,6 @@ export const useSignUpForm = () => {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationName, setVerificationName] = useState("");
   const [formValues, setFormValues] = useState<SignUpFormData | null>(null);
-  const [sentOtp, setSentOtp] = useState("");
   const navigate = useNavigate();
 
   const sendOtp = async (email: string, name: string) => {
@@ -21,7 +20,7 @@ export const useSignUpForm = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabase.supabaseKey}`,
+          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54ZHNzemRvYmdiaWtybnFxcnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwOTQzMTYsImV4cCI6MjA2MTY3MDMxNn0.G98OnCs8p1nglvP0qmnaOllhUFIJIuSw2iiaci1OOJo`,
         },
         body: JSON.stringify({
           email,
@@ -35,15 +34,13 @@ export const useSignUpForm = () => {
       if (!response.ok) {
         throw new Error(responseData.error || "Failed to send verification email");
       }
-
-      setSentOtp(responseData.otp);
       
       toast({
         title: "Verification email sent",
         description: "Please check your email for the verification code",
       });
       
-      return true;
+      return responseData.otp;
     } catch (error) {
       console.error("OTP sending error:", error);
       toast({
@@ -51,7 +48,7 @@ export const useSignUpForm = () => {
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to send verification email",
       });
-      return false;
+      return null;
     }
   };
 
@@ -78,8 +75,8 @@ export const useSignUpForm = () => {
         return;
       }
 
-      const success = await sendOtp(data.email, `${data.firstName} ${data.lastName}`);
-      if (success) {
+      const otpCode = await sendOtp(data.email, `${data.firstName} ${data.lastName}`);
+      if (otpCode) {
         setVerificationOpen(true);
       }
     } catch (error) {
@@ -92,8 +89,8 @@ export const useSignUpForm = () => {
     }
   };
 
-  const handleVerify = async (otp: string) => {
-    if (otp !== sentOtp) {
+  const handleVerify = async (otp: string, serverOtp: string) => {
+    if (otp !== serverOtp) {
       toast({
         variant: "destructive",
         title: "Invalid OTP",
@@ -163,8 +160,8 @@ export const useSignUpForm = () => {
   const handleResendOtp = async () => {
     if (!formValues) return;
     
-    const success = await sendOtp(formValues.email, `${formValues.firstName} ${formValues.lastName}`);
-    if (success) {
+    const otpCode = await sendOtp(formValues.email, `${formValues.firstName} ${formValues.lastName}`);
+    if (otpCode) {
       toast({
         title: "OTP Resent",
         description: "A new verification code has been sent to your email",
