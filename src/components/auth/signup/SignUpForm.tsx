@@ -4,14 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import SignUpFormFields, { SignUpFormData } from "./SignUpFormFields";
+import SignUpFormFields from "./SignUpFormFields";
 import OTPVerification from "./OTPVerification";
+import { SignUpFormData, CaptchaValue } from "./types";
 
 interface SignUpFormProps {
-  captchaValue: {
-    num1: number;
-    num2: number;
-  };
+  captchaValue: CaptchaValue;
 }
 
 const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
@@ -20,7 +18,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
   const [verificationOpen, setVerificationOpen] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationName, setVerificationName] = useState("");
-  const [formValues, setFormValues] = useState<Partial<SignUpFormData> | null>(null);
+  const [formValues, setFormValues] = useState<SignUpFormData | null>(null);
   const [sentOtp, setSentOtp] = useState("");
   const navigate = useNavigate();
   
@@ -46,26 +44,45 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         return;
       }
 
-      // Generate a simple 6-digit OTP
+      // Send OTP via edge function
+      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          name: `${data.firstName} ${data.lastName}`,
+          type: "signup"
+        })
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Failed to send verification email");
+      }
+
+      setSentOtp(responseData.otp);
+      
+      toast({
+        title: "Verification email sent",
+        description: "Please check your email for the verification code",
+      });
+      
+      setVerificationOpen(true);
+    } catch (error) {
+      console.error("Signup error:", error);
+      // Fallback to local OTP for testing
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       setSentOtp(otp);
-      
-      // For now, we'll show the OTP in console since edge function might not be working
-      console.log("Generated OTP for signup:", otp);
       
       toast({
         title: "Verification Required",
         description: `For testing purposes, use OTP: ${otp}`,
       });
       
-      // Open verification dialog
       setVerificationOpen(true);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
-      });
     }
   };
   
@@ -114,13 +131,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         }
       }
       
-      // Success message
       toast({
         title: "Account created",
         description: "Your account has been created successfully!",
       });
       
-      // Close dialog and navigate
       setVerificationOpen(false);
       navigate("/login");
     } catch (error) {
@@ -135,15 +150,43 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
   };
   
   const handleResendOtp = async () => {
-    // Generate new OTP
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setSentOtp(newOtp);
-    console.log("New OTP for signup:", newOtp);
+    if (!formValues) return;
     
-    toast({
-      title: "OTP Resent",
-      description: `New OTP: ${newOtp}`,
-    });
+    try {
+      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formValues.email,
+          name: `${formValues.firstName} ${formValues.lastName}`,
+          type: "signup"
+        })
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Failed to resend OTP");
+      }
+
+      setSentOtp(responseData.otp);
+      
+      toast({
+        title: "OTP Resent",
+        description: "A new verification code has been sent to your email",
+      });
+    } catch (error) {
+      // Fallback to local OTP
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOtp(newOtp);
+      
+      toast({
+        title: "OTP Resent",
+        description: `For testing purposes, use OTP: ${newOtp}`,
+      });
+    }
   };
 
   return (
@@ -154,13 +197,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         onSubmit={handleFormSubmit}
       />
       
-      {/* OTP Verification Dialog */}
       <Dialog open={verificationOpen} onOpenChange={setVerificationOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Email Verification</DialogTitle>
             <DialogDescription>
-              Please enter the 6-digit verification code to complete your registration.
+              Please enter the 6-digit verification code sent to your email to complete your registration.
             </DialogDescription>
           </DialogHeader>
           

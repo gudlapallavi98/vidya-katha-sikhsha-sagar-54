@@ -9,8 +9,8 @@ import PasswordFields from "./PasswordFields";
 import RoleSelector from "./RoleSelector";
 import CaptchaField from "./CaptchaField";
 import { useToast } from "@/hooks/use-toast";
+import { SignUpFormData, CaptchaValue } from "./types";
 
-// Form schema for validation
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -24,13 +24,8 @@ const formSchema = z.object({
   path: ["confirmPassword"],
 });
 
-export type SignUpFormData = z.infer<typeof formSchema>;
-
 interface SignUpFormFieldsProps {
-  captchaValue: {
-    num1: number;
-    num2: number;
-  };
+  captchaValue: CaptchaValue;
   isLoading: boolean;
   onSubmit: (data: SignUpFormData) => void;
 }
@@ -52,7 +47,6 @@ const SignUpFormFields = ({ captchaValue, isLoading, onSubmit }: SignUpFormField
   });
 
   const handleFormSubmit = (data: SignUpFormData) => {
-    // Validate captcha
     const captchaAnswer = (captchaValue.num1 + captchaValue.num2).toString();
     if (data.captcha !== captchaAnswer) {
       toast({

@@ -6,30 +6,48 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Link } from "react-router-dom";
 
 const SignUpPage = () => {
-  // Generate random numbers for captcha
   const [captchaValue] = useState({
     num1: Math.floor(Math.random() * 10),
     num2: Math.floor(Math.random() * 10)
   });
 
   return (
-    <div className="relative min-h-screen bg-orange-50">
-      {/* Animated background elements */}
+    <div className="relative min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 overflow-hidden">
+      {/* Modern animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-orange-200 rounded-full -translate-x-1/2 -translate-y-1/2 animate-pulse opacity-60"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-orange-200 rounded-full translate-x-1/3 translate-y-1/3 animate-pulse opacity-60 animation-delay-1000"></div>
-        <div className="absolute top-1/3 right-20 w-48 h-48 bg-orange-300 rounded-full animate-bounce opacity-40 animation-delay-500"></div>
-        <div className="absolute bottom-1/4 left-20 w-32 h-32 bg-orange-300 rounded-full animate-bounce opacity-40 animation-delay-1500"></div>
+        {/* Floating circles with different sizes and animations */}
+        <div className="absolute top-16 left-16 w-36 h-36 bg-gradient-to-r from-orange-200 to-amber-200 rounded-full animate-bounce opacity-60"></div>
+        <div className="absolute top-1/3 right-24 w-28 h-28 bg-gradient-to-r from-yellow-200 to-orange-200 rounded-full animate-pulse opacity-50 animation-delay-800"></div>
+        <div className="absolute bottom-1/3 left-1/5 w-44 h-44 bg-gradient-to-r from-amber-200 to-yellow-200 rounded-full animate-bounce opacity-40 animation-delay-400"></div>
+        <div className="absolute bottom-16 right-16 w-32 h-32 bg-gradient-to-r from-orange-300 to-red-200 rounded-full animate-pulse opacity-70 animation-delay-1200"></div>
+        
+        {/* Geometric shapes */}
+        <div className="absolute top-1/2 left-12 w-20 h-20 bg-gradient-to-r from-red-200 to-pink-200 rotate-45 animate-spin opacity-30" style={{animationDuration: '10s'}}></div>
+        <div className="absolute top-24 right-1/4 w-24 h-24 bg-gradient-to-r from-amber-200 to-orange-200 rotate-12 animate-pulse opacity-40"></div>
+        
+        {/* Floating particles */}
+        <div className="absolute top-1/4 left-1/2 w-5 h-5 bg-orange-300 rounded-full animate-ping opacity-60"></div>
+        <div className="absolute bottom-1/4 right-1/3 w-7 h-7 bg-yellow-300 rounded-full animate-ping opacity-50 animation-delay-600"></div>
+        <div className="absolute top-3/4 left-1/4 w-4 h-4 bg-amber-300 rounded-full animate-ping opacity-70 animation-delay-1000"></div>
+        
+        {/* Additional decorative elements */}
+        <div className="absolute top-1/6 right-1/6 w-12 h-2 bg-gradient-to-r from-orange-300 to-yellow-300 rounded-full animate-pulse opacity-50"></div>
+        <div className="absolute bottom-1/6 left-1/6 w-2 h-12 bg-gradient-to-b from-amber-300 to-orange-300 rounded-full animate-pulse opacity-50 animation-delay-800"></div>
       </div>
+
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent pointer-events-none"></div>
 
       <div className="container max-w-xl py-8 relative z-10">
         <SignUpHeader />
 
-        <Card className="mt-6">
+        <Card className="mt-6 backdrop-blur-sm bg-white/90 shadow-xl border-0">
           <CardHeader>
-            <CardTitle>Join Etutorss</CardTitle>
-            <CardDescription>
-              Create an account to get started
+            <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+              Join Etutorss
+            </CardTitle>
+            <CardDescription className="text-center text-gray-600">
+              Create an account to get started with personalized learning
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -37,7 +55,7 @@ const SignUpPage = () => {
           </CardContent>
           <CardFooter>
             <p className="text-sm text-muted-foreground text-center w-full">
-              Already have an account? <Link to="/login" className="text-indian-blue hover:underline">Login</Link>
+              Already have an account? <Link to="/login" className="text-indian-blue hover:underline font-medium">Login</Link>
             </p>
           </CardFooter>
         </Card>

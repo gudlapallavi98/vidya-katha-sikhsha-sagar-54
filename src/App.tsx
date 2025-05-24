@@ -18,18 +18,15 @@ import FAQPage from './pages/FAQPage';
 import SupportPage from './pages/SupportPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Lazy load dashboard pages to improve initial load performance
 const StudentDashboardPage = lazy(() => import('./pages/StudentDashboardPage'));
 const TeacherDashboardPage = lazy(() => import('./pages/TeacherDashboardPage'));
 
-// Loading fallback for lazy loaded components
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indian-blue"></div>
   </div>
 );
 
-// Auth redirect component
 const AuthRedirect = () => {
   const { user, loading } = useAuth();
   
@@ -41,14 +38,12 @@ const AuthRedirect = () => {
     return <Navigate to="/login" replace />;
   }
   
-  // Redirect based on user role
   if (user.role === 'student') {
     return <Navigate to="/student-dashboard" replace />;
   } else if (user.role === 'teacher') {
     return <Navigate to="/teacher-dashboard" replace />;
   }
   
-  // Default fallback
   return <Navigate to="/" replace />;
 };
 

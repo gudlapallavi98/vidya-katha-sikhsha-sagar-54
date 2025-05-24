@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +11,8 @@ import { Form } from "@/components/ui/form";
 import { useProfileFormData } from "./hooks/useProfileFormData";
 import { ProfileAvatarSection } from "./form-sections/ProfileAvatarSection";
 import { ProfileFormContent } from "./form-sections/ProfileFormContent";
+import { useUserProfile } from "@/hooks/use-profile-data";
 
-// Schema definition
 const formSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
@@ -38,6 +38,7 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { data: existingProfile } = useUserProfile();
   
   const {
     form, 
@@ -49,6 +50,45 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
     setAvatarUrl
   } = useProfileFormData(formSchema);
 
+  // Pre-fill form with signup data and existing profile data
+  useEffect(() => {
+    if (user || existingProfile) {
+      const userData = existingProfile || user;
+      
+      // Pre-fill basic info from signup
+      form.setValue("first_name", userData?.first_name || user?.user_metadata?.first_name || "");
+      form.setValue("last_name", userData?.last_name || user?.user_metadata?.last_name || "");
+      
+      // Pre-fill existing profile data
+      if (existingProfile) {
+        form.setValue("display_name", existingProfile.display_name || "");
+        form.setValue("gender", existingProfile.gender || "");
+        form.setValue("city", existingProfile.city || "");
+        form.setValue("state", existingProfile.state || "");
+        form.setValue("country", existingProfile.country || "");
+        form.setValue("bio", existingProfile.bio || "");
+        form.setValue("experience", existingProfile.experience || "");
+        form.setValue("intro_video_url", existingProfile.intro_video_url || "");
+        
+        if (existingProfile.date_of_birth) {
+          form.setValue("date_of_birth", new Date(existingProfile.date_of_birth));
+        }
+        
+        if (existingProfile.subjects_interested) {
+          setSelectedSubjects(existingProfile.subjects_interested);
+        }
+        
+        if (existingProfile.certificates) {
+          setCertificates(existingProfile.certificates);
+        }
+        
+        if (existingProfile.avatar_url) {
+          setAvatarUrl(existingProfile.avatar_url);
+        }
+      }
+    }
+  }, [user, existingProfile, form, setSelectedSubjects, setCertificates, setAvatarUrl]);
+
   const handleAvatarUpload = (url: string) => {
     setAvatarUrl(url);
   };
@@ -59,7 +99,6 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
     setIsLoading(true);
     
     try {
-      // Format date_of_birth to ISO string if it exists
       const formattedData = {
         first_name: values.first_name,
         last_name: values.last_name,
@@ -81,7 +120,6 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
 
       console.log("Updating profile with data:", formattedData);
 
-      // Update profile with formatted values
       const { error } = await supabase
         .from("profiles")
         .update(formattedData)
@@ -91,7 +129,7 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
         throw error;
       }
 
-      // Also update auth.users metadata to ensure name consistency
+      // Update auth metadata
       if (values.first_name || values.last_name) {
         try {
           const metadata = { ...user.user_metadata };
@@ -138,6 +176,8 @@ export function ProfileForm({ role, onCompleted }: ProfileFormProps) {
             avatarUrl={avatarUrl}
             userId={user.id}
             onAvatarUpload={handleAvatarUpload}
+            userRole={role}
+            userGender={form.watch("gender")}
           />
         )}
         

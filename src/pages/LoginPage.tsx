@@ -7,14 +7,27 @@ import { Toaster } from "@/components/ui/toaster";
 
 const LoginPage = () => {
   return (
-    <div className="relative min-h-screen bg-orange-50">
-      {/* Animated background elements */}
+    <div className="relative min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 overflow-hidden">
+      {/* Modern animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-orange-200 rounded-full -translate-x-1/2 -translate-y-1/2 animate-pulse opacity-60"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-orange-200 rounded-full translate-x-1/3 translate-y-1/3 animate-pulse opacity-60 animation-delay-1000"></div>
-        <div className="absolute top-1/3 right-20 w-48 h-48 bg-orange-300 rounded-full animate-bounce opacity-40 animation-delay-500"></div>
-        <div className="absolute bottom-1/4 left-20 w-32 h-32 bg-orange-300 rounded-full animate-bounce opacity-40 animation-delay-1500"></div>
+        {/* Floating circles with different sizes and animations */}
+        <div className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-full animate-bounce opacity-60"></div>
+        <div className="absolute top-1/4 right-20 w-24 h-24 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full animate-pulse opacity-50 animation-delay-1000"></div>
+        <div className="absolute bottom-1/4 left-1/4 w-40 h-40 bg-gradient-to-r from-indigo-200 to-blue-200 rounded-full animate-bounce opacity-40 animation-delay-500"></div>
+        <div className="absolute bottom-10 right-10 w-28 h-28 bg-gradient-to-r from-pink-200 to-purple-200 rounded-full animate-pulse opacity-70 animation-delay-1500"></div>
+        
+        {/* Geometric shapes */}
+        <div className="absolute top-1/2 left-10 w-16 h-16 bg-gradient-to-r from-yellow-200 to-orange-200 rotate-45 animate-spin opacity-30" style={{animationDuration: '8s'}}></div>
+        <div className="absolute top-20 right-1/3 w-20 h-20 bg-gradient-to-r from-green-200 to-teal-200 rotate-12 animate-pulse opacity-40"></div>
+        
+        {/* Floating particles */}
+        <div className="absolute top-1/3 left-1/2 w-4 h-4 bg-blue-300 rounded-full animate-ping opacity-60"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-6 h-6 bg-purple-300 rounded-full animate-ping opacity-50 animation-delay-700"></div>
+        <div className="absolute top-2/3 left-1/3 w-3 h-3 bg-indigo-300 rounded-full animate-ping opacity-70 animation-delay-1200"></div>
       </div>
+
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent pointer-events-none"></div>
 
       <div className="container max-w-md py-12 relative z-10">
         <LoginHeader />
@@ -22,7 +35,7 @@ const LoginPage = () => {
         
         <div className="mt-4">
           <p className="text-sm text-muted-foreground text-center w-full">
-            Don't have an account? <Link to="/signup" className="text-indian-blue hover:underline">Sign Up</Link>
+            Don't have an account? <Link to="/signup" className="text-indian-blue hover:underline font-medium">Sign Up</Link>
           </p>
         </div>
       </div>
