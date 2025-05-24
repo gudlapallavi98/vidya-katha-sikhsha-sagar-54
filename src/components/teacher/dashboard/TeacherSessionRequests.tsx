@@ -6,29 +6,35 @@ import SessionRequestsList from "./components/SessionRequestsList";
 import { useFetchSessionRequests } from "@/hooks/use-fetch-session-requests";
 import { useSessionStatusChange } from "@/hooks/use-session-status";
 
-const TeacherSessionRequests = () => {
-  const { sessionRequests, loading } = useFetchSessionRequests();
-  const { handleStatusChange } = useSessionStatusChange();
+interface TeacherSessionRequestsProps {
+  sessionRequests: any[];
+  requestsLoading: boolean;
+  searchQuery: string;
+  handleSearch: (query: string) => void;
+  handleAcceptSession: (sessionId: string) => Promise<void>;
+  handleRejectSession: (sessionId: string) => Promise<void>;
+}
+
+const TeacherSessionRequests: React.FC<TeacherSessionRequestsProps> = ({
+  sessionRequests,
+  requestsLoading,
+  searchQuery,
+  handleSearch,
+  handleAcceptSession,
+  handleRejectSession,
+}) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pending");
 
   const handleAccept = async (requestId: string) => {
-    const success = await handleStatusChange(requestId, 'accepted');
-    if (success) {
-      // Force reload the component or update state
-      window.location.reload();
-    }
+    await handleAcceptSession(requestId);
   };
 
   const handleReject = async (requestId: string) => {
-    const success = await handleStatusChange(requestId, 'rejected');
-    if (success) {
-      // Force reload the component or update state
-      window.location.reload();
-    }
+    await handleRejectSession(requestId);
   };
 
-  if (loading) {
+  if (requestsLoading) {
     return (
       <div className="p-4">
         <div className="h-[200px] flex items-center justify-center">

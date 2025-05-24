@@ -43,14 +43,14 @@ export interface CourseFormData {
 }
 
 export interface CourseFormProps {
-  defaultValues: Partial<CourseFormData>;
+  defaultValues?: Partial<CourseFormData>;
   onSubmit: (values: CourseFormData) => Promise<void>;
   isSubmitting: boolean;
   isEditMode?: boolean;
 }
 
 const CourseForm: React.FC<CourseFormProps> = ({ 
-  defaultValues, 
+  defaultValues = {}, 
   onSubmit, 
   isSubmitting,
   isEditMode = false
