@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -75,6 +74,12 @@ const CourseForm: React.FC<CourseFormProps> = ({
   });
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Filter out incomplete video links (empty title or url)
+    const validVideoLinks = values.video_links.filter(
+      (link): link is { title: string; url: string } => 
+        link.title.trim() !== "" && link.url.trim() !== ""
+    );
+
     // Ensure all required fields are present for CourseFormData
     const courseData: CourseFormData = {
       title: values.title,
@@ -83,7 +88,7 @@ const CourseForm: React.FC<CourseFormProps> = ({
       description: values.description,
       course_link: values.course_link || undefined,
       sample_video: values.sample_video || undefined,
-      video_links: values.video_links,
+      video_links: validVideoLinks,
       total_lessons: values.total_lessons,
     };
     await onSubmit(courseData);
