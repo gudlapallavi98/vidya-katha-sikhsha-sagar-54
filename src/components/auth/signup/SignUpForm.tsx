@@ -12,7 +12,7 @@ interface SignUpFormProps {
   captchaValue: CaptchaValue;
 }
 
-const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
+const SignUpForm = ({ captchaValue }: SignUpFormProps) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [verificationOpen, setVerificationOpen] = useState(false);
@@ -31,15 +31,16 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
       // Check if user already exists
       const { data: existingUser } = await supabase
         .from('profiles')
-        .select('email')
-        .eq('email', data.email)
+        .select('id')
+        .eq('first_name', data.firstName)
+        .eq('last_name', data.lastName)
         .single();
 
       if (existingUser) {
         toast({
           variant: "destructive",
           title: "Account already exists",
-          description: "An account with this email already exists. Please login instead.",
+          description: "An account with this name already exists. Please login instead.",
         });
         return;
       }
@@ -49,6 +50,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.RESEND_API_KEY || 're_NDfVBiHT_BshiLXkHumjrqWsv5oS5zHVH'}`,
         },
         body: JSON.stringify({
           email: data.email,
@@ -122,7 +124,6 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
           id: signUpData.user.id,
           first_name: formValues.firstName,
           last_name: formValues.lastName,
-          email: formValues.email,
           role: formValues.role,
         });
         
@@ -157,6 +158,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ captchaValue }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer re_NDfVBiHT_BshiLXkHumjrqWsv5oS5zHVH`,
         },
         body: JSON.stringify({
           email: formValues.email,
