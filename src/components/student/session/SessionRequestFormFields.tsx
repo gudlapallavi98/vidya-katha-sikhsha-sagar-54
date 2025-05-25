@@ -55,19 +55,34 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please log in to submit a session request.",
+      });
+      return;
+    }
 
     setIsLoading(true);
     try {
+      console.log("Submitting session request with data:", {
+        user_id: user.id,
+        teacher_id: teacherId,
+        availability,
+        type,
+        message: values.message
+      });
+
       const sessionData = {
         student_id: user.id,
         teacher_id: teacherId,
         proposed_title: type === 'individual' 
-          ? `${availability.subject?.name} Session` 
-          : availability.title,
-        request_message: values.message,
+          ? `${availability.subject?.name || 'Session'} - Individual Session` 
+          : availability.title || 'Course Session',
+        request_message: values.message || '',
         proposed_date: type === 'individual' 
-          ? `${availability.available_date}T${availability.start_time}` 
+          ? `${availability.available_date}T${availability.start_time}:00` 
           : new Date().toISOString(),
         proposed_duration: type === 'individual' 
           ? calculateDuration(availability.start_time, availability.end_time)
@@ -77,9 +92,19 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         availability_id: type === 'individual' ? availability.id : null,
       };
 
-      const { error } = await supabase.from("session_requests").insert(sessionData);
+      console.log("Session data to insert:", sessionData);
 
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from("session_requests")
+        .insert(sessionData)
+        .select();
+
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Session request created successfully:", data);
 
       toast({
         title: "Request Submitted",
@@ -92,7 +117,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
       toast({
         variant: "destructive",
         title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -142,6 +167,12 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
                 </div>
               </>
             )}
+            <div>
+              <span className="font-medium">Amount Paid:</span>
+              <p className="text-sm text-muted-foreground">
+                ₹{type === 'individual' ? '500' : '2000'}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

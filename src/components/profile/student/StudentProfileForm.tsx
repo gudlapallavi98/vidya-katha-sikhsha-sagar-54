@@ -55,7 +55,14 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
   const updateProfile = useUpdateProfile();
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Required",
+        description: "Please log in to update your profile.",
+      });
+      return;
+    }
     
     setIsLoading(true);
     console.log("Submitting student profile form with values:", values);
@@ -65,42 +72,44 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
       const formattedData = {
         first_name: values.first_name,
         last_name: values.last_name,
-        display_name: values.display_name,
-        gender: values.gender,
-        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : undefined,
-        city: values.city,
-        state: values.state,
-        country: values.country,
-        bio: values.bio,
-        subjects_interested: selectedSubjects,
-        avatar_url: avatarUrl,
+        display_name: values.display_name || null,
+        gender: values.gender || null,
+        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : null,
+        city: values.city || null,
+        state: values.state || null,
+        country: values.country || null,
+        bio: values.bio || null,
+        subjects_interested: selectedSubjects.length > 0 ? selectedSubjects : null,
+        avatar_url: avatarUrl || null,
         profile_completed: true,
         updated_at: new Date().toISOString(),
-        education_level: values.education_level,
-        study_preferences: studyPreferences,
-        exam_history: examHistory.length > 0 ? examHistory : undefined,
-        school_name: values.school_name,
-        grade_level: values.grade_level
+        education_level: values.education_level || null,
+        study_preferences: studyPreferences.length > 0 ? studyPreferences : null,
+        exam_history: examHistory.length > 0 ? examHistory : null,
+        school_name: values.school_name || null,
+        grade_level: values.grade_level || null
       };
 
       console.log("Formatted data for student profile:", formattedData);
-      await updateProfile.mutateAsync(formattedData);
       
-      toast({
-        title: "Profile Updated",
-        description: "Your profile has been successfully updated."
-      });
+      // Filter out null values to avoid overwriting with null
+      const filteredData = Object.entries(formattedData)
+        .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+        .reduce((obj: any, [key, value]) => {
+          obj[key] = value;
+          return obj;
+        }, {});
+
+      console.log("Filtered data for update:", filteredData);
+
+      await updateProfile.mutateAsync(filteredData);
       
       if (onCompleted) {
         onCompleted();
       }
     } catch (error) {
       console.error("Profile update error:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update profile. Please try again."
-      });
+      // The error is already handled by the useUpdateProfile hook
     } finally {
       setIsLoading(false);
     }

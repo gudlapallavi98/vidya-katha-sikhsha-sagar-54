@@ -21,7 +21,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success'>('pending');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const amount = type === 'individual' ? 500 : (availability.price || 2000);
+  const amount = type === 'individual' ? 500 : 2000;
   const title = type === 'individual' ? availability.subject?.name : availability.title;
 
   // Generate UPI payment URL
@@ -31,6 +31,29 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
     const note = `Payment for ${title}`;
     
     return `upi://pay?pa=${upiId}&pn=${payeeName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+  };
+
+  // Generate QR code data URL (simplified representation)
+  const generateQRCode = () => {
+    const upiUrl = generateUPIUrl();
+    // In a real implementation, you would use a QR code library
+    // For now, we'll create a simple visual representation
+    return `data:image/svg+xml;base64,${btoa(`
+      <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="200" height="200" fill="white"/>
+        <rect x="10" y="10" width="20" height="20" fill="black"/>
+        <rect x="40" y="10" width="20" height="20" fill="black"/>
+        <rect x="70" y="10" width="20" height="20" fill="black"/>
+        <rect x="10" y="40" width="20" height="20" fill="black"/>
+        <rect x="70" y="40" width="20" height="20" fill="black"/>
+        <rect x="10" y="70" width="20" height="20" fill="black"/>
+        <rect x="40" y="70" width="20" height="20" fill="black"/>
+        <rect x="70" y="70" width="20" height="20" fill="black"/>
+        <text x="100" y="100" font-family="Arial" font-size="12" fill="black">UPI Payment</text>
+        <text x="100" y="120" font-family="Arial" font-size="10" fill="black">₹${amount}</text>
+        <text x="100" y="140" font-family="Arial" font-size="8" fill="black">${title}</text>
+      </svg>
+    `)}`;
   };
 
   const handleSimulatePayment = async () => {
@@ -110,12 +133,11 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <div className="bg-white p-4 rounded-lg inline-block border">
-            {/* QR Code placeholder - In production, use a QR code library */}
-            <div className="w-48 h-48 bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-              QR Code
-              <br />
-              ₹{amount}
-            </div>
+            <img 
+              src={generateQRCode()} 
+              alt="Payment QR Code" 
+              className="w-48 h-48"
+            />
           </div>
           
           <div className="space-y-2">
