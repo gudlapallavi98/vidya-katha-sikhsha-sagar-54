@@ -14,6 +14,33 @@ interface AvailabilitySelectorProps {
   onBack: () => void;
 }
 
+interface IndividualAvailability {
+  id: string;
+  teacher_id: string;
+  subject_id: string;
+  available_date: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  subject?: {
+    id: string;
+    name: string;
+  };
+}
+
+interface CourseAvailability {
+  id: string;
+  title: string;
+  description: string;
+  total_lessons: number;
+  teacher_id: string;
+  category: string;
+  image_url: string | null;
+  course_link: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
   teacherId,
   onSelectAvailability,
@@ -22,7 +49,7 @@ export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
   const [selectedType, setSelectedType] = useState<'individual' | 'course'>('individual');
 
   // Fetch individual availability
-  const { data: individualAvailability = [], isLoading: loadingIndividual } = useQuery({
+  const { data: individualAvailability = [], isLoading: loadingIndividual } = useQuery<IndividualAvailability[]>({
     queryKey: ['individual_availability', teacherId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -36,22 +63,21 @@ export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
         .gte('available_date', new Date().toISOString().split('T')[0]);
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
   // Fetch course availability
-  const { data: courseAvailability = [], isLoading: loadingCourse } = useQuery({
+  const { data: courseAvailability = [], isLoading: loadingCourse } = useQuery<CourseAvailability[]>({
     queryKey: ['course_availability', teacherId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('courses')
         .select('*')
-        .eq('teacher_id', teacherId)
-        .eq('published', true);
+        .eq('teacher_id', teacherId);
       
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
@@ -156,7 +182,7 @@ export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">₹{course.price || '2000'}</span>
+                      <span className="text-sm">₹2000</span>
                     </div>
                     <Badge variant="secondary" className="w-fit">
                       Course

@@ -48,6 +48,12 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
     },
   });
 
+  const calculateDuration = (startTime: string, endTime: string): number => {
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    return Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
 
@@ -64,7 +70,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
           ? `${availability.available_date}T${availability.start_time}` 
           : new Date().toISOString(),
         proposed_duration: type === 'individual' 
-          ? Math.floor((new Date(`2000-01-01T${availability.end_time}`) - new Date(`2000-01-01T${availability.start_time}`)) / (1000 * 60))
+          ? calculateDuration(availability.start_time, availability.end_time)
           : 60,
         status: "pending",
         course_id: type === 'course' ? availability.id : null,
