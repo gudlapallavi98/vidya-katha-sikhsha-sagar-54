@@ -25,22 +25,28 @@ export type CourseFormData = z.infer<typeof courseSchema>;
 
 interface CourseFormProps {
   onSubmit: (data: CourseFormData) => void;
-  initialData?: Partial<CourseFormData>;
+  defaultValues?: Partial<CourseFormData>;
   isSubmitting?: boolean;
+  isEditMode?: boolean;
 }
 
-const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, initialData, isSubmitting }) => {
+const CourseForm: React.FC<CourseFormProps> = ({ 
+  onSubmit, 
+  defaultValues = {}, 
+  isSubmitting = false,
+  isEditMode = false
+}) => {
   const form = useForm<CourseFormData>({
     resolver: zodResolver(courseSchema),
     defaultValues: {
-      title: initialData?.title || "",
-      description: initialData?.description || "",
-      category: initialData?.category || "",
-      total_lessons: initialData?.total_lessons || 1,
-      course_link: initialData?.course_link || "",
-      price: initialData?.price || 0,
-      is_published: initialData?.is_published || false,
-      sample_video: initialData?.sample_video || "",
+      title: defaultValues?.title || "",
+      description: defaultValues?.description || "",
+      category: defaultValues?.category || "",
+      total_lessons: defaultValues?.total_lessons || 1,
+      course_link: defaultValues?.course_link || "",
+      price: defaultValues?.price || 0,
+      is_published: defaultValues?.is_published || false,
+      sample_video: defaultValues?.sample_video || "",
     },
   });
 

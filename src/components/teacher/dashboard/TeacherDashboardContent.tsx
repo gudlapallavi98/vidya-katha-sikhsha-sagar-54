@@ -9,25 +9,103 @@ import EnhancedAvailabilityScheduler from "../availability/EnhancedAvailabilityS
 
 interface TeacherDashboardContentProps {
   activeTab: string;
+  teacherCourses?: any[];
+  coursesLoading?: boolean;
+  sessionRequests?: any[];
+  requestsLoading?: boolean;
+  teacherSessions?: any[];
+  upcomingSessions?: any[];
+  sessionsLoading?: boolean;
+  totalSessions?: {
+    completed: number;
+    upcoming: number;
+  };
+  searchQuery?: string;
+  handleSearch?: (query: string) => void;
+  handleAcceptSession?: (sessionId: string) => Promise<void>;
+  handleRejectSession?: (sessionId: string) => Promise<void>;
+  handleStartClass?: (sessionId: string) => Promise<void>;
 }
 
-const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({ activeTab }) => {
+const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({ 
+  activeTab,
+  teacherCourses = [],
+  coursesLoading = false,
+  sessionRequests = [],
+  requestsLoading = false,
+  teacherSessions = [],
+  upcomingSessions = [],
+  sessionsLoading = false,
+  totalSessions = { completed: 0, upcoming: 0 },
+  searchQuery = "",
+  handleSearch = () => {},
+  handleAcceptSession = async () => {},
+  handleRejectSession = async () => {},
+  handleStartClass = async () => {},
+}) => {
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
-        return <TeacherOverview />;
+        return (
+          <TeacherOverview 
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
+          />
+        );
       case "courses":
-        return <TeacherCourses />;
+        return (
+          <TeacherCourses 
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+          />
+        );
       case "schedule":
-        return <TeacherSchedule />;
+        return (
+          <TeacherSchedule 
+            teacherSessions={teacherSessions}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            handleStartClass={handleStartClass}
+          />
+        );
       case "availability":
         return <EnhancedAvailabilityScheduler />;
       case "session-requests":
-        return <TeacherSessionRequests />;
+        return (
+          <TeacherSessionRequests 
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            searchQuery={searchQuery}
+            handleSearch={handleSearch}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+          />
+        );
       case "session-management":
         return <SessionManagement />;
       default:
-        return <TeacherOverview />;
+        return (
+          <TeacherOverview 
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
+          />
+        );
     }
   };
 

@@ -86,7 +86,7 @@ const TeacherCourses: React.FC<TeacherCoursesProps> = ({
               total_lessons: currentCourse?.total_lessons || 1,
               course_link: currentCourse?.course_link || "",
               sample_video: currentCourse?.sample_video || "",
-              video_links: currentCourse?.video_links || [{ title: "", url: "" }],
+              is_published: currentCourse?.is_published || false,
             }}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
