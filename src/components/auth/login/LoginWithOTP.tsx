@@ -1,10 +1,8 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -12,179 +10,125 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 const LoginWithOTP = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
-  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
-  const [sentOtp, setSentOtp] = useState("");
   const { toast } = useToast();
-  const navigate = useNavigate();
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!email) {
       toast({
         variant: "destructive",
-        title: "Email required",
+        title: "Email Required",
         description: "Please enter your email address",
       });
       return;
     }
 
     setIsLoading(true);
-
+    
     try {
-      // Check if user exists by checking auth.users via RPC or using a different approach
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      // Alternative: Generate OTP and proceed without checking user existence
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
+      // Send OTP via Supabase edge function
+      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email,
-          name: "User", // Default name since we can't access profiles directly
+          name: email.split('@')[0], // Use email prefix as name
           type: "login"
         })
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to send OTP");
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to send OTP");
       }
 
-      setSentOtp(data.otp);
-      setIsOtpSent(true);
+      console.log("OTP sent successfully:", result);
       
       toast({
         title: "OTP Sent",
         description: "Please check your email for the verification code",
       });
-    } catch (error) {
-      console.error("OTP send error:", error);
-      // Fallback to local OTP for testing
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtp(otp);
-      setIsOtpSent(true);
       
+      setStep("otp");
+    } catch (error) {
+      console.error("Error sending OTP:", error);
       toast({
-        title: "OTP Generated",
-        description: `For testing purposes, use OTP: ${otp}`,
+        variant: "destructive",
+        title: "Failed to Send OTP",
+        description: error instanceof Error ? error.message : "Please try again",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (otp !== sentOtp) {
+    if (!otp || otp.length !== 6) {
       toast({
         variant: "destructive",
         title: "Invalid OTP",
-        description: "The verification code is incorrect",
+        description: "Please enter the 6-digit code",
       });
       return;
     }
 
     setIsLoading(true);
-
+    
     try {
-      // Sign in user with email (magic link style)
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email,
+      // Verify OTP with Supabase
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email',
       });
 
-      if (error) throw error;
-
-      toast({
-        title: "Login successful",
-        description: "You have been logged in successfully",
-      });
-
-      // Get user role and redirect
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (userProfile?.role === 'student') {
-        navigate('/student-dashboard');
-      } else if (userProfile?.role === 'teacher') {
-        navigate('/teacher-dashboard');
-      } else {
-        navigate('/');
+      if (error) {
+        throw error;
       }
+
+      console.log("OTP verified successfully:", data);
+      
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
+
+      // Redirect will be handled by useLoginRedirect hook
     } catch (error) {
+      console.error("Error verifying OTP:", error);
       toast({
         variant: "destructive",
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
+        title: "Invalid OTP",
+        description: "Please check your code and try again",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResendOtp = async () => {
-    try {
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          name: "User",
-          type: "login"
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to resend OTP");
-      }
-
-      setSentOtp(data.otp);
-      
-      toast({
-        title: "OTP Resent",
-        description: "A new verification code has been sent to your email",
-      });
-    } catch (error) {
-      // Fallback to local OTP
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSentOtp(newOtp);
-      
-      toast({
-        title: "OTP Resent",
-        description: `For testing purposes, use OTP: ${newOtp}`,
-      });
-    }
+  const handleResendOTP = async () => {
+    await handleSendOTP(new Event('submit') as any);
   };
 
-  if (isOtpSent) {
+  if (step === "otp") {
     return (
-      <form onSubmit={handleVerifyOtp} className="space-y-4">
-        <div className="text-center mb-4">
-          <p className="text-sm text-muted-foreground">
-            We've sent a verification code to {email}
+      <div className="space-y-6">
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">Enter Verification Code</h3>
+          <p className="text-sm text-muted-foreground mt-2">
+            We've sent a 6-digit code to {email}
           </p>
         </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="otp">Enter 6-digit code</Label>
+
+        <form onSubmit={handleVerifyOTP} className="space-y-4">
           <div className="flex justify-center">
-            <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
+            <InputOTP value={otp} onChange={setOtp} maxLength={6}>
               <InputOTPGroup>
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
@@ -195,58 +139,60 @@ const LoginWithOTP = () => {
               </InputOTPGroup>
             </InputOTP>
           </div>
-        </div>
 
-        <div className="flex flex-col space-y-2">
-          <Button type="submit" disabled={isLoading || otp.length !== 6}>
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Verifying..." : "Verify & Login"}
           </Button>
-          
+        </form>
+
+        <div className="text-center space-y-2">
           <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleResendOtp}
+            variant="link" 
+            onClick={handleResendOTP}
+            disabled={isLoading}
+            className="text-sm"
           >
-            Resend OTP
+            Resend Code
           </Button>
-          
           <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => setIsOtpSent(false)}
+            variant="link" 
+            onClick={() => setStep("email")}
+            className="text-sm"
           >
-            Back to Email
+            Change Email
           </Button>
         </div>
-      </form>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={handleSendOtp} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email" className="flex items-center gap-2">
-          <Mail className="h-4 w-4" />
-          Email Address
-        </Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-lg font-semibold">Login with OTP</h3>
+        <p className="text-sm text-muted-foreground mt-2">
+          Enter your email to receive a verification code
+        </p>
       </div>
 
-      <Button 
-        type="submit" 
-        className="w-full bg-indian-saffron hover:bg-indian-saffron/90" 
-        disabled={isLoading}
-      >
-        {isLoading ? "Sending OTP..." : "Send OTP"}
-      </Button>
-    </form>
+      <form onSubmit={handleSendOTP} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email Address</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+          />
+        </div>
+
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Sending..." : "Send Verification Code"}
+        </Button>
+      </form>
+    </div>
   );
 };
 

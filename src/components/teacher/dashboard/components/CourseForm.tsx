@@ -1,145 +1,124 @@
-import React, { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+
+import React from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Plus, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 
-const formSchema = z.object({
-  title: z.string().min(2, "Course name must be at least 2 characters"),
-  category: z.string().min(2, "Category must be at least 2 characters"),
+const courseSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  category: z.string().min(1, "Category is required"),
+  total_lessons: z.number().min(1, "Must have at least 1 lesson"),
+  course_link: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   price: z.number().min(0, "Price must be 0 or greater"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  course_link: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  sample_video: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  video_links: z.array(z.object({
-    title: z.string().min(1, "Video title is required"),
-    url: z.string().url("Please enter a valid YouTube URL"),
-  })).max(10, "Maximum 10 video links allowed"),
-  total_lessons: z.number().min(1, "Total lessons must be at least 1"),
+  is_published: z.boolean().default(false),
+  sample_video: z.string().url("Must be a valid URL").optional().or(z.literal("")),
 });
 
-export interface CourseFormData {
-  title: string;
-  category: string;
-  price: number;
-  description: string;
-  course_link?: string;
-  sample_video?: string;
-  video_links: Array<{ title: string; url: string }>;
-  total_lessons: number;
+export type CourseFormData = z.infer<typeof courseSchema>;
+
+interface CourseFormProps {
+  onSubmit: (data: CourseFormData) => void;
+  initialData?: Partial<CourseFormData>;
+  isSubmitting?: boolean;
 }
 
-export interface CourseFormProps {
-  defaultValues?: Partial<CourseFormData>;
-  onSubmit: (values: CourseFormData) => Promise<void>;
-  isSubmitting: boolean;
-  isEditMode?: boolean;
-}
-
-const CourseForm: React.FC<CourseFormProps> = ({ 
-  defaultValues = {}, 
-  onSubmit, 
-  isSubmitting,
-  isEditMode = false
-}) => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, initialData, isSubmitting }) => {
+  const form = useForm<CourseFormData>({
+    resolver: zodResolver(courseSchema),
     defaultValues: {
-      title: defaultValues.title ?? "",
-      category: defaultValues.category ?? "",
-      price: defaultValues.price ?? 0,
-      description: defaultValues.description ?? "",
-      course_link: defaultValues.course_link ?? "",
-      sample_video: defaultValues.sample_video ?? "",
-      video_links: defaultValues.video_links ?? [{ title: "", url: "" }],
-      total_lessons: defaultValues.total_lessons ?? 1,
+      title: initialData?.title || "",
+      description: initialData?.description || "",
+      category: initialData?.category || "",
+      total_lessons: initialData?.total_lessons || 1,
+      course_link: initialData?.course_link || "",
+      price: initialData?.price || 0,
+      is_published: initialData?.is_published || false,
+      sample_video: initialData?.sample_video || "",
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "video_links",
-  });
-
-  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Filter out incomplete video links (empty title or url)
-    const validVideoLinks = values.video_links.filter(
-      (link): link is { title: string; url: string } => 
-        link.title.trim() !== "" && link.url.trim() !== ""
-    );
-
-    // Ensure all required fields are present for CourseFormData
-    const courseData: CourseFormData = {
-      title: values.title,
-      category: values.category,
-      price: values.price,
-      description: values.description,
-      course_link: values.course_link || undefined,
-      sample_video: values.sample_video || undefined,
-      video_links: validVideoLinks,
-      total_lessons: values.total_lessons,
-    };
-    await onSubmit(courseData);
-  };
+  const categories = [
+    "Mathematics",
+    "Science",
+    "English",
+    "History",
+    "Geography", 
+    "Computer Science",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Economics",
+    "Business Studies",
+    "Accounting",
+    "Art",
+    "Music",
+    "Physical Education",
+    "Other"
+  ];
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Course Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter course name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Course Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter course title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Describe your course"
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="category"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter category" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Price (₹)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter price"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -152,9 +131,9 @@ const CourseForm: React.FC<CourseFormProps> = ({
               <FormItem>
                 <FormLabel>Total Lessons</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter total lessons"
+                  <Input 
+                    type="number" 
+                    min="1"
                     {...field}
                     onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                   />
@@ -165,33 +144,68 @@ const CourseForm: React.FC<CourseFormProps> = ({
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter course description"
-                  rows={4}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Price (₹)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    {...field}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Set to 0 for free courses
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="is_published"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Publish Course</FormLabel>
+                  <FormDescription>
+                    Make this course visible to students
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
           name="course_link"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Course Resource Link (Optional)</FormLabel>
+              <FormLabel>Course Link (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com" {...field} />
+                <Input 
+                  placeholder="https://your-course-platform.com/course"
+                  {...field}
+                />
               </FormControl>
+              <FormDescription>
+                External link to your course content
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -202,73 +216,23 @@ const CourseForm: React.FC<CourseFormProps> = ({
           name="sample_video"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Sample Video (Optional)</FormLabel>
+              <FormLabel>Sample Video URL (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="https://youtube.com/..." {...field} />
+                <Input 
+                  placeholder="https://youtube.com/watch?v=..."
+                  {...field}
+                />
               </FormControl>
+              <FormDescription>
+                Preview video for students
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label>Video Links (Max 10)</Label>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => append({ title: "", url: "" })}
-              disabled={fields.length >= 10}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Video
-            </Button>
-          </div>
-
-          {fields.map((field, index) => (
-            <div key={field.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 p-4 border rounded">
-              <FormField
-                control={form.control}
-                name={`video_links.${index}.title`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder="Video title" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`video_links.${index}.url`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder="YouTube URL" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                onClick={() => remove(index)}
-                disabled={fields.length === 1}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Saving..." : isEditMode ? "Update Course" : "Create Course"}
+          {isSubmitting ? "Saving..." : "Save Course"}
         </Button>
       </form>
     </Form>

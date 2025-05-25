@@ -1,113 +1,191 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
-import { useLoginRedirect } from "@/hooks/use-login-redirect";
+import { supabase } from "@/integrations/supabase/client";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 interface OTPVerificationProps {
   email: string;
-  name: string;
-  onVerify: (otp: string, serverOtp: string) => void;
-  onResend: () => void;
-  isLoading: boolean;
+  userData: any;
+  onSuccess: () => void;
+  onBack: () => void;
 }
 
-const OTPVerification = ({ email, name, onVerify, onResend, isLoading }: OTPVerificationProps) => {
+const OTPVerification: React.FC<OTPVerificationProps> = ({ 
+  email, 
+  userData, 
+  onSuccess, 
+  onBack 
+}) => {
   const [otp, setOtp] = useState("");
-  const [serverOtp, setServerOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  
-  // Add login redirect hook
-  useLoginRedirect();
 
-  // Fetch OTP from server when component mounts
-  const fetchOtp = async () => {
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) {
+      toast({
+        variant: "destructive",
+        title: "Invalid OTP",
+        description: "Please enter the 6-digit verification code",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      const response = await fetch(`https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp`, {
+      console.log("Verifying OTP for email:", email);
+
+      // First verify the OTP from our signup_otps table
+      const { data: otpData, error: otpError } = await supabase
+        .from('signup_otps')
+        .select('*')
+        .eq('email', email)
+        .eq('otp', otp)
+        .eq('verified', false)
+        .eq('used', false)
+        .gte('expires_at', new Date().toISOString())
+        .single();
+
+      if (otpError || !otpData) {
+        throw new Error("Invalid or expired OTP");
+      }
+
+      // Mark OTP as verified
+      const { error: updateError } = await supabase
+        .from('signup_otps')
+        .update({ verified: true, used: true })
+        .eq('id', otpData.id);
+
+      if (updateError) {
+        console.error("Error updating OTP:", updateError);
+      }
+
+      // Create the user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: userData.password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            role: userData.role,
+          }
+        }
+      });
+
+      if (authError) {
+        console.error("Auth error:", authError);
+        throw authError;
+      }
+
+      console.log("User created successfully:", authData);
+
+      toast({
+        title: "Account Created",
+        description: "Your account has been created successfully!",
+      });
+
+      onSuccess();
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      toast({
+        variant: "destructive",
+        title: "Verification Failed",
+        description: error instanceof Error ? error.message : "Invalid verification code",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54ZHNzemRvYmdiaWtybnFxcnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwOTQzMTYsImV4cCI6MjA2MTY3MDMxNn0.G98OnCs8p1nglvP0qmnaOllhUFIJIuSw2iiaci1OOJo`,
         },
         body: JSON.stringify({
-          email,
-          name,
+          email: email,
+          name: `${userData.firstName} ${userData.lastName}`,
           type: "signup"
         })
       });
 
-      const responseData = await response.json();
-      if (response.ok && responseData.otp) {
-        setServerOtp(responseData.otp);
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to resend OTP");
       }
+
+      toast({
+        title: "OTP Resent",
+        description: "A new verification code has been sent to your email",
+      });
     } catch (error) {
-      console.error("Error fetching OTP:", error);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchOtp();
-  }, []);
-
-  const handleVerify = () => {
-    if (otp.length !== 6) {
+      console.error("Error resending OTP:", error);
       toast({
         variant: "destructive",
-        title: "Invalid OTP",
-        description: "Please enter a 6-digit verification code",
+        title: "Failed to Resend",
+        description: "Please try again",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-    
-    onVerify(otp, serverOtp);
-  };
-
-  const handleResend = async () => {
-    await onResend();
-    await fetchOtp(); // Fetch new OTP after resend
   };
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <p className="text-sm text-muted-foreground mb-4">
-          We've sent a 6-digit verification code to <strong>{email}</strong>
+        <h3 className="text-xl font-semibold">Verify Your Email</h3>
+        <p className="text-sm text-muted-foreground mt-2">
+          We've sent a 6-digit verification code to<br />
+          <span className="font-medium">{email}</span>
         </p>
       </div>
 
-      <div className="flex justify-center">
-        <InputOTP
-          maxLength={6}
-          value={otp}
-          onChange={(value) => setOtp(value)}
-        >
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-          </InputOTPGroup>
-        </InputOTP>
-      </div>
+      <form onSubmit={handleVerifyOTP} className="space-y-6">
+        <div className="flex justify-center">
+          <InputOTP value={otp} onChange={setOtp} maxLength={6}>
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
 
-      <div className="space-y-4">
-        <Button 
-          onClick={handleVerify}
-          className="w-full bg-indian-saffron hover:bg-indian-saffron/90"
-          disabled={isLoading || otp.length !== 6}
-        >
-          {isLoading ? "Verifying..." : "Verify Email"}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Verifying..." : "Verify & Create Account"}
         </Button>
+      </form>
 
+      <div className="text-center space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Didn't receive the code?
+        </p>
         <Button 
-          variant="outline" 
-          onClick={handleResend}
-          className="w-full"
+          variant="link" 
+          onClick={handleResendOTP}
           disabled={isLoading}
+          className="text-sm"
         >
-          Resend Code
+          Resend Verification Code
+        </Button>
+        <Button 
+          variant="link" 
+          onClick={onBack}
+          className="text-sm"
+        >
+          Change Email Address
         </Button>
       </div>
     </div>

@@ -1,38 +1,86 @@
 
 import React from "react";
-import { Layout, BookOpen, Calendar, Clock, Users, Calendar as CalendarIcon, Settings } from "lucide-react";
-import DashboardNav from "@/components/dashboard/DashboardNav";
-import ProfileCard from "@/components/dashboard/ProfileCard";
+import { Button } from "@/components/ui/button";
+import { 
+  LayoutDashboard, 
+  BookOpen, 
+  Calendar, 
+  Clock, 
+  MessageSquare,
+  Video,
+  Settings 
+} from "lucide-react";
 
 interface TeacherDashboardSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
-const TeacherDashboardSidebar: React.FC<TeacherDashboardSidebarProps> = ({
-  activeTab,
-  setActiveTab,
+const TeacherDashboardSidebar: React.FC<TeacherDashboardSidebarProps> = ({ 
+  activeTab, 
+  setActiveTab 
 }) => {
-  const navItems = [
-    { id: "overview", label: "Dashboard", icon: <Layout className="h-4 w-4" /> },
-    { id: "courses", label: "My Courses", icon: <BookOpen className="h-4 w-4" /> },
-    { id: "sessions", label: "Session Requests", icon: <Users className="h-4 w-4" /> },
-    { id: "schedule", label: "My Schedule", icon: <Calendar className="h-4 w-4" /> },
-    { id: "availability", label: "Set Availability", icon: <CalendarIcon className="h-4 w-4" /> },
-    { id: "profile", label: "Profile Settings", icon: <Settings className="h-4 w-4" /> }
+  const menuItems = [
+    { 
+      id: "overview", 
+      label: "Overview", 
+      icon: LayoutDashboard 
+    },
+    { 
+      id: "courses", 
+      label: "Courses", 
+      icon: BookOpen 
+    },
+    { 
+      id: "schedule", 
+      label: "Schedule", 
+      icon: Calendar 
+    },
+    { 
+      id: "availability", 
+      label: "Availability", 
+      icon: Clock 
+    },
+    { 
+      id: "session-requests", 
+      label: "Session Requests", 
+      icon: MessageSquare 
+    },
+    { 
+      id: "session-management", 
+      label: "Session Management", 
+      icon: Video 
+    }
   ];
-  
+
   return (
-    <div className="flex h-full flex-col space-y-6">
-      <div className="space-y-2">
-        <ProfileCard role="teacher" />
-      </div>
-      <div className="flex-1">
-        <DashboardNav
-          items={navItems}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
+    <div className="hidden border-r bg-muted/40 md:block">
+      <div className="flex h-full max-h-screen flex-col gap-2">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <h2 className="text-lg font-semibold">Teacher Dashboard</h2>
+        </div>
+        <div className="flex-1">
+          <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.id}
+                  variant={activeTab === item.id ? "secondary" : "ghost"}
+                  className={`justify-start gap-3 ${
+                    activeTab === item.id 
+                      ? "bg-muted text-primary" 
+                      : "text-muted-foreground hover:text-primary"
+                  }`}
+                  onClick={() => setActiveTab(item.id)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Button>
+              );
+            })}
+          </nav>
+        </div>
       </div>
     </div>
   );

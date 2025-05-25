@@ -119,10 +119,15 @@ export type Database = {
           description: string
           id: string
           image_url: string | null
+          is_published: boolean | null
+          price: number | null
+          published_at: string | null
+          sample_video: string | null
           teacher_id: string | null
           title: string
           total_lessons: number
           updated_at: string | null
+          video_links: Json | null
         }
         Insert: {
           category: string
@@ -131,10 +136,15 @@ export type Database = {
           description: string
           id?: string
           image_url?: string | null
+          is_published?: boolean | null
+          price?: number | null
+          published_at?: string | null
+          sample_video?: string | null
           teacher_id?: string | null
           title: string
           total_lessons?: number
           updated_at?: string | null
+          video_links?: Json | null
         }
         Update: {
           category?: string
@@ -143,10 +153,15 @@ export type Database = {
           description?: string
           id?: string
           image_url?: string | null
+          is_published?: boolean | null
+          price?: number | null
+          published_at?: string | null
+          sample_video?: string | null
           teacher_id?: string | null
           title?: string
           total_lessons?: number
           updated_at?: string | null
+          video_links?: Json | null
         }
         Relationships: [
           {
@@ -455,16 +470,80 @@ export type Database = {
           },
         ]
       }
+      session_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          payment_gateway: string | null
+          payment_method: string
+          payment_status: string | null
+          session_id: string | null
+          session_request_id: string | null
+          student_id: string
+          teacher_id: string
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          payment_gateway?: string | null
+          payment_method: string
+          payment_status?: string | null
+          session_id?: string | null
+          session_request_id?: string | null
+          student_id: string
+          teacher_id: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          payment_gateway?: string | null
+          payment_method?: string
+          payment_status?: string | null
+          session_id?: string | null
+          session_request_id?: string | null
+          student_id?: string
+          teacher_id?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_payments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_session_request_id_fkey"
+            columns: ["session_request_id"]
+            isOneToOne: false
+            referencedRelation: "session_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_requests: {
         Row: {
           availability_id: string | null
           course_id: string | null
           created_at: string | null
           id: string
+          payment_amount: number | null
+          payment_status: string | null
+          priority_level: string | null
           proposed_date: string
           proposed_duration: number
           proposed_title: string
           request_message: string | null
+          session_type: string | null
           status: string
           student_id: string | null
           teacher_id: string | null
@@ -475,10 +554,14 @@ export type Database = {
           course_id?: string | null
           created_at?: string | null
           id?: string
+          payment_amount?: number | null
+          payment_status?: string | null
+          priority_level?: string | null
           proposed_date: string
           proposed_duration: number
           proposed_title: string
           request_message?: string | null
+          session_type?: string | null
           status: string
           student_id?: string | null
           teacher_id?: string | null
@@ -489,10 +572,14 @@ export type Database = {
           course_id?: string | null
           created_at?: string | null
           id?: string
+          payment_amount?: number | null
+          payment_status?: string | null
+          priority_level?: string | null
           proposed_date?: string
           proposed_duration?: number
           proposed_title?: string
           request_message?: string | null
+          session_type?: string | null
           status?: string
           student_id?: string | null
           teacher_id?: string | null
@@ -537,6 +624,11 @@ export type Database = {
           end_time: string
           id: string
           meeting_link: string | null
+          payment_amount: number | null
+          payment_method: string | null
+          payment_status: string | null
+          recording_url: string | null
+          session_notes: string | null
           start_time: string
           status: string
           teacher_id: string | null
@@ -550,6 +642,11 @@ export type Database = {
           end_time: string
           id?: string
           meeting_link?: string | null
+          payment_amount?: number | null
+          payment_method?: string | null
+          payment_status?: string | null
+          recording_url?: string | null
+          session_notes?: string | null
           start_time: string
           status: string
           teacher_id?: string | null
@@ -563,6 +660,11 @@ export type Database = {
           end_time?: string
           id?: string
           meeting_link?: string | null
+          payment_amount?: number | null
+          payment_method?: string | null
+          payment_status?: string | null
+          recording_url?: string | null
+          session_notes?: string | null
           start_time?: string
           status?: string
           teacher_id?: string | null
@@ -680,9 +782,13 @@ export type Database = {
         Row: {
           auto_cancel_at: string | null
           available_date: string
+          booked_students: number | null
           created_at: string | null
           end_time: string
           id: string
+          max_students: number | null
+          notes: string | null
+          session_type: string | null
           start_time: string
           status: string | null
           subject_id: string
@@ -691,9 +797,13 @@ export type Database = {
         Insert: {
           auto_cancel_at?: string | null
           available_date: string
+          booked_students?: number | null
           created_at?: string | null
           end_time: string
           id?: string
+          max_students?: number | null
+          notes?: string | null
+          session_type?: string | null
           start_time: string
           status?: string | null
           subject_id: string
@@ -702,9 +812,13 @@ export type Database = {
         Update: {
           auto_cancel_at?: string | null
           available_date?: string
+          booked_students?: number | null
           created_at?: string | null
           end_time?: string
           id?: string
+          max_students?: number | null
+          notes?: string | null
+          session_type?: string | null
           start_time?: string
           status?: string | null
           subject_id?: string

@@ -1,8 +1,13 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +43,41 @@ const handler = async (req: Request): Promise<Response> => {
 
     const otp = generateOTP();
     console.log("Generated OTP:", otp);
+    
+    // Store OTP in database for signup, or use Supabase Auth for login
+    if (type === "signup") {
+      // Store OTP in signup_otps table
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
+
+      const { error: insertError } = await supabase
+        .from('signup_otps')
+        .insert({
+          email,
+          otp,
+          expires_at: expiresAt.toISOString(),
+          verified: false,
+          used: false,
+        });
+
+      if (insertError) {
+        console.error("Error storing OTP:", insertError);
+        throw new Error("Failed to store OTP");
+      }
+    } else if (type === "login") {
+      // For login, we'll send OTP via Supabase Auth
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: false, // Don't create new users for login
+        }
+      });
+
+      if (authError) {
+        console.error("Supabase Auth OTP error:", authError);
+        // Continue to send custom OTP email if Supabase fails
+      }
+    }
     
     const subject = type === "signup" ? "Welcome to Etutorss - Verify Your Account" : "Your Login Code - Etutorss";
     
@@ -109,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        otp: otp,
+        otp: type === "signup" ? otp : "sent", // Only return OTP for signup in development
         message: "OTP sent successfully",
         emailId: emailResponse.id
       }),
