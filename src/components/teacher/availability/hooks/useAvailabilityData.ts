@@ -24,86 +24,55 @@ export const useAvailabilityData = () => {
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
-  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if profile is complete
-  useEffect(() => {
-    const checkProfile = async () => {
-      if (!user) {
-        setIsLoading(false);
+  // Fetch teacher's subjects
+  const fetchTeacherSubjects = async () => {
+    if (!user) return;
+
+    try {
+      // Get teacher's interested subjects
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("subjects_interested")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) {
+        console.error("Error fetching profile subjects:", profileError);
         return;
       }
-      
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("profile_completed")
-          .eq("id", user.id)
-          .single();
-          
-        if (error) {
-          console.error("Error checking profile:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Could not check profile status"
-          });
-        } else {
-          setIsProfileComplete(data?.profile_completed || false);
-        }
-      } catch (err) {
-        console.error("Error in profile check:", err);
-      } finally {
-        setIsLoading(false);
+
+      const subjectNames = profileData?.subjects_interested || [];
+
+      if (subjectNames.length === 0) {
+        setSubjects([]);
+        return;
       }
-    };
-    
-    checkProfile();
-  }, [user]);
 
-  // Fetch teacher's subjects
-  useEffect(() => {
-    const fetchTeacherSubjects = async () => {
-      if (!user) return;
+      // Get subject details
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("*")
+        .in("name", subjectNames);
 
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("subjects_interested")
-          .eq("id", user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error fetching profile subjects:", profileError);
-          return;
-        }
-
-        const subjectNames = profileData?.subjects_interested || [];
-
-        if (subjectNames.length === 0) return;
-
-        const { data, error } = await supabase
-          .from("subjects")
-          .select("*")
-          .in("name", subjectNames);
-
-        if (error) {
-          console.error("Error fetching subjects:", error);
-          return;
-        }
-
-        setSubjects(data || []);
-      } catch (err) {
-        console.error("Error fetching subjects:", err);
+      if (error) {
+        console.error("Error fetching subjects:", error);
+        return;
       }
-    };
 
-    fetchTeacherSubjects();
-  }, [user]);
+      setSubjects(data || []);
+    } catch (err) {
+      console.error("Error fetching subjects:", err);
+    }
+  };
 
+  // Fetch existing availabilities
   const fetchAvailabilities = async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -112,30 +81,76 @@ export const useAvailabilityData = () => {
           *,
           subject:subjects(id, name)
         `)
-        .eq("teacher_id", user.id);
+        .eq("teacher_id", user.id)
+        .order("available_date", { ascending: true });
 
       if (error) {
         console.error("Error fetching availabilities:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load availabilities"
+        });
         return;
       }
 
+      console.log("Fetched availabilities:", data);
       setAvailabilities(data || []);
     } catch (err) {
       console.error("Error in fetchAvailabilities:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Initial data fetching
   useEffect(() => {
-    if (user) {
-      fetchAvailabilities();
-    }
+    const loadData = async () => {
+      if (user) {
+        setIsLoading(true);
+        await Promise.all([
+          fetchTeacherSubjects(),
+          fetchAvailabilities()
+        ]);
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user]);
+
+  // Set up real-time subscription for availabilities
+  useEffect(() => {
+    if (!user) return;
+
+    const subscription = supabase
+      .channel('teacher_availability_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'teacher_availability',
+          filter: `teacher_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Availability change received:', payload);
+          // Refetch availabilities when changes occur
+          fetchAvailabilities();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [user]);
 
   return {
     subjects,
     availabilities,
-    isProfileComplete,
     isLoading,
     fetchAvailabilities,
+    fetchTeacherSubjects,
   };
 };

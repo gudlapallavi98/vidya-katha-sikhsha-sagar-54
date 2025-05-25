@@ -12,6 +12,7 @@ export const useSignUpForm = () => {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [verificationName, setVerificationName] = useState("");
   const [formValues, setFormValues] = useState<SignUpFormData | null>(null);
+  const [serverOtp, setServerOtp] = useState("");
   const navigate = useNavigate();
 
   const sendOtp = async (email: string, name: string) => {
@@ -40,6 +41,8 @@ export const useSignUpForm = () => {
         description: "Please check your email for the verification code",
       });
       
+      // Store the server OTP for verification
+      setServerOtp(responseData.otp || "");
       return responseData.otp;
     } catch (error) {
       console.error("OTP sending error:", error);
@@ -89,8 +92,11 @@ export const useSignUpForm = () => {
     }
   };
 
-  const handleVerify = async (otp: string, serverOtp: string) => {
-    if (otp !== serverOtp) {
+  const handleVerify = async (otp: string, providedServerOtp: string) => {
+    // Use the stored server OTP if not provided
+    const otpToCheck = providedServerOtp || serverOtp;
+    
+    if (otp !== otpToCheck) {
       toast({
         variant: "destructive",
         title: "Invalid OTP",

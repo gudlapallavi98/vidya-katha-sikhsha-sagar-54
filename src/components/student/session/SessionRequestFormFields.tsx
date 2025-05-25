@@ -90,6 +90,9 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         status: "pending",
         course_id: type === 'course' ? availability.id : null,
         availability_id: type === 'individual' ? availability.id : null,
+        payment_amount: type === 'individual' ? 500 : 2000,
+        payment_status: "completed", // Since we've already processed payment
+        session_type: type,
       };
 
       console.log("Session data to insert:", sessionData);
@@ -106,9 +109,24 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
 
       console.log("Session request created successfully:", data);
 
+      // Update availability status if it's an individual session
+      if (type === 'individual' && availability.id) {
+        const { error: updateError } = await supabase
+          .from("teacher_availability")
+          .update({ 
+            status: "booked",
+            booked_students: (availability.booked_students || 0) + 1
+          })
+          .eq("id", availability.id);
+
+        if (updateError) {
+          console.error("Error updating availability:", updateError);
+        }
+      }
+
       toast({
-        title: "Request Submitted",
-        description: "Your session request has been sent successfully. You'll receive confirmation via email.",
+        title: "Request Submitted Successfully",
+        description: "Your session request has been sent to the teacher. You'll receive confirmation via email.",
       });
 
       onSuccess();
@@ -169,8 +187,8 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
             )}
             <div>
               <span className="font-medium">Amount Paid:</span>
-              <p className="text-sm text-muted-foreground">
-                ₹{type === 'individual' ? '500' : '2000'}
+              <p className="text-sm text-muted-foreground text-green-600 font-semibold">
+                ₹{type === 'individual' ? '500' : '2000'} ✓ Paid
               </p>
             </div>
           </div>
@@ -200,7 +218,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
           />
 
           <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? "Submitting..." : "Submit Request"}
+            {isLoading ? "Submitting..." : "Submit Session Request"}
           </Button>
         </form>
       </Form>

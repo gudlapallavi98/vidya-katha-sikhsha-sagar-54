@@ -6,12 +6,14 @@ interface CourseContentProps {
   activeCategory: string;
   selectedSubcategory: string | null;
   categories: Record<string, string>;
+  searchQuery?: string;
 }
 
 const CourseContent = ({ 
   activeCategory, 
   selectedSubcategory,
-  categories 
+  categories,
+  searchQuery = ""
 }: CourseContentProps) => {
   return (
     <div className="w-full md:w-3/4">
@@ -28,14 +30,20 @@ const CourseContent = ({
         </div>
         
         <TabsContent value="grid" className="mt-0">
-          <FeaturedCourses />
+          <FeaturedCourses 
+            searchQuery={searchQuery}
+            selectedCategory={activeCategory}
+            selectedSubcategory={selectedSubcategory}
+          />
         </TabsContent>
         
         <TabsContent value="list" className="mt-0">
           <div className="space-y-4">
-            <p className="text-center text-muted-foreground py-12">
-              List view will be implemented with dynamic data from Supabase
-            </p>
+            <FeaturedCourses 
+              searchQuery={searchQuery}
+              selectedCategory={activeCategory}
+              selectedSubcategory={selectedSubcategory}
+            />
           </div>
         </TabsContent>
       </Tabs>

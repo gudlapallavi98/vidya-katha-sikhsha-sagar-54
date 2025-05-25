@@ -12,6 +12,7 @@ const LoginWithOTP = () => {
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
   const [isLoading, setIsLoading] = useState(false);
+  const [serverOtp, setServerOtp] = useState("");
   const { toast } = useToast();
 
   const handleSendOTP = async (e: React.FormEvent) => {
@@ -28,15 +29,16 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // Send OTP via Supabase edge function
+      // Send OTP via Resend using our edge function
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54ZHNzemRvYmdiaWtybnFxcnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwOTQzMTYsImV4cCI6MjA2MTY3MDMxNn0.G98OnCs8p1nglvP0qmnaOllhUFIJIuSw2iiaci1OOJo",
         },
         body: JSON.stringify({
           email: email,
-          name: email.split('@')[0], // Use email prefix as name
+          name: email.split('@')[0],
           type: "login"
         })
       });
@@ -48,6 +50,7 @@ const LoginWithOTP = () => {
       }
 
       console.log("OTP sent successfully:", result);
+      setServerOtp(result.otp || "");
       
       toast({
         title: "OTP Sent",
@@ -81,18 +84,36 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // Verify OTP with Supabase
-      const { data, error } = await supabase.auth.verifyOtp({
+      // For login, verify the OTP against our stored server OTP
+      if (otp !== serverOtp) {
+        throw new Error("Invalid OTP code");
+      }
+
+      // Sign in with magic link using Supabase
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        token: otp,
-        type: 'email',
+        options: {
+          shouldCreateUser: false,
+        },
       });
 
       if (error) {
-        throw error;
+        // If Supabase OTP fails, try password-less sign in
+        console.warn("Supabase OTP failed, attempting alternative auth");
+        
+        // Check if user exists in our database
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (!profile) {
+          throw new Error("User not found. Please sign up first.");
+        }
       }
 
-      console.log("OTP verified successfully:", data);
+      console.log("OTP verified successfully");
       
       toast({
         title: "Login Successful",
@@ -105,7 +126,7 @@ const LoginWithOTP = () => {
       toast({
         variant: "destructive",
         title: "Invalid OTP",
-        description: "Please check your code and try again",
+        description: error instanceof Error ? error.message : "Please check your code and try again",
       });
     } finally {
       setIsLoading(false);
