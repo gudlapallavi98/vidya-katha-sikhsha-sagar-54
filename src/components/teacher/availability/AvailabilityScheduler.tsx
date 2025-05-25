@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,7 +194,7 @@ export function AvailabilityScheduler() {
     <div className="space-y-8">
       <AvailabilityForm 
         subjects={subjects} 
-        onAvailabilityCreated={handleAvailabilityAdded}
+        onSubmit={handleAvailabilityAdded}
       />
       <AvailabilityList 
         availabilities={availabilities} 

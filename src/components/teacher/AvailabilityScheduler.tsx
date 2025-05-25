@@ -30,7 +30,7 @@ export function AvailabilityScheduler() {
     <div className="space-y-8">
       <AvailabilityForm 
         subjects={subjects} 
-        onAvailabilityCreated={handleAvailabilityAdded}
+        onSubmit={handleAvailabilityAdded}
       />
       <AvailabilityList 
         availabilities={availabilities} 
