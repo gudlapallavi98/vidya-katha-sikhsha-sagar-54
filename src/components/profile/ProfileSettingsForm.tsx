@@ -14,12 +14,18 @@ interface ProfileSettingsFormProps {
 
 function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
   const [activeTab, setActiveTab] = useState("personal");
-  const { data: profile, isLoading } = useUserProfile();
+  const { data: profile, isLoading, error } = useUserProfile();
   const [progressPercentage, setProgressPercentage] = useState(0);
+
+  console.log("Profile data in ProfileSettingsForm:", profile);
+  console.log("Loading state:", isLoading);
+  console.log("Error state:", error);
 
   // Calculate profile completion percentage
   useEffect(() => {
     if (profile) {
+      console.log("Calculating progress for profile:", profile);
+      
       // Define fields that should be filled for a complete profile
       const requiredFields = ["first_name", "last_name", "gender", "date_of_birth", "city", "country"];
       const teacherFields = ["experience", "intro_video_url"];
@@ -33,7 +39,8 @@ function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
       // Count filled fields
       let filledFields = 0;
       allRequiredFields.forEach(field => {
-        if (profile[field] && profile[field] !== "") {
+        const value = profile[field];
+        if (value && value !== "" && (Array.isArray(value) ? value.length > 0 : true)) {
           filledFields++;
         }
       });
@@ -41,11 +48,30 @@ function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
       // Calculate percentage
       const percentage = Math.round((filledFields / allRequiredFields.length) * 100);
       setProgressPercentage(percentage);
+      console.log(`Profile completion: ${filledFields}/${allRequiredFields.length} = ${percentage}%`);
     }
   }, [profile, role]);
 
   if (isLoading) {
-    return <div className="p-6">Loading profile...</div>;
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Loading profile...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">
+            Error loading profile: {error.message}
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

@@ -27,43 +27,76 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log("OTP request received");
+    
     const { email, name, type }: OTPRequest = await req.json();
+    console.log("Request data:", { email, name, type });
 
     if (!email || !name || !type) {
       throw new Error("Missing required fields: email, name, or type");
     }
 
     const otp = generateOTP();
+    console.log("Generated OTP:", otp);
+    
     const subject = type === "signup" ? "Welcome to Etutorss - Verify Your Account" : "Your Login Code - Etutorss";
     
     const emailContent = type === "signup" 
       ? `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #2563eb;">Welcome to Etutorss!</h1>
-          <p>Hello ${name},</p>
-          <p>Thank you for signing up with Etutorss. Please use the following verification code to complete your registration:</p>
-          <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-            <h2 style="color: #1f2937; font-size: 32px; letter-spacing: 4px; margin: 0;">${otp}</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin: 0;">Welcome to Etutorss!</h1>
           </div>
-          <p>This code will expire in 10 minutes for security reasons.</p>
-          <p>If you didn't request this verification, please ignore this email.</p>
-          <p>Best regards,<br>The Etutorss Team</p>
+          <p style="font-size: 16px; color: #333;">Hello ${name},</p>
+          <p style="font-size: 16px; color: #333; line-height: 1.5;">
+            Thank you for signing up with Etutorss. Please use the following verification code to complete your registration:
+          </p>
+          <div style="background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0;">
+            <h2 style="color: #1f2937; font-size: 36px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace; font-weight: bold;">${otp}</h2>
+          </div>
+          <p style="font-size: 14px; color: #666; line-height: 1.5;">
+            This code will expire in 10 minutes for security reasons.
+          </p>
+          <p style="font-size: 14px; color: #666; line-height: 1.5;">
+            If you didn't request this verification, please ignore this email.
+          </p>
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="font-size: 14px; color: #666; margin: 0;">
+              Best regards,<br>
+              <strong>The Etutorss Team</strong>
+            </p>
+          </div>
         </div>
       `
       : `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #2563eb;">Your Login Code</h1>
-          <p>Hello ${name},</p>
-          <p>Here's your login verification code:</p>
-          <div style="background-color: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-            <h2 style="color: #1f2937; font-size: 32px; letter-spacing: 4px; margin: 0;">${otp}</h2>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin: 0;">Your Login Code</h1>
           </div>
-          <p>This code will expire in 10 minutes for security reasons.</p>
-          <p>If you didn't request this login code, please secure your account immediately.</p>
-          <p>Best regards,<br>The Etutorss Team</p>
+          <p style="font-size: 16px; color: #333;">Hello ${name},</p>
+          <p style="font-size: 16px; color: #333; line-height: 1.5;">
+            Here's your login verification code:
+          </p>
+          <div style="background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 30px; text-align: center; margin: 30px 0;">
+            <h2 style="color: #1f2937; font-size: 36px; letter-spacing: 8px; margin: 0; font-family: 'Courier New', monospace; font-weight: bold;">${otp}</h2>
+          </div>
+          <p style="font-size: 14px; color: #666; line-height: 1.5;">
+            This code will expire in 10 minutes for security reasons.
+          </p>
+          <p style="font-size: 14px; color: #666; line-height: 1.5;">
+            If you didn't request this login code, please secure your account immediately.
+          </p>
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="font-size: 14px; color: #666; margin: 0;">
+              Best regards,<br>
+              <strong>The Etutorss Team</strong>
+            </p>
+          </div>
         </div>
       `;
 
+    console.log("Attempting to send email...");
+    
     const emailResponse = await resend.emails.send({
       from: "Etutorss <info@etutorss.com>",
       to: [email],
@@ -71,13 +104,14 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailContent,
     });
 
-    console.log("OTP email sent successfully:", emailResponse);
+    console.log("Email sent successfully:", emailResponse);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         otp: otp,
-        message: "OTP sent successfully" 
+        message: "OTP sent successfully",
+        emailId: emailResponse.id
       }),
       {
         status: 200,
@@ -92,7 +126,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        success: false 
+        success: false,
+        details: error.toString()
       }),
       {
         status: 500,

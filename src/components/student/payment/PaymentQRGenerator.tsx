@@ -26,34 +26,59 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
 
   // Generate UPI payment URL
   const generateUPIUrl = () => {
-    const upiId = "teacher@paytm"; // Replace with actual UPI ID
+    const upiId = "teacher@paytm";
     const payeeName = "Etutorss";
     const note = `Payment for ${title}`;
     
     return `upi://pay?pa=${upiId}&pn=${payeeName}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
   };
 
-  // Generate QR code data URL (simplified representation)
+  // Generate QR code data URL using a simple pattern approach
   const generateQRCode = () => {
-    const upiUrl = generateUPIUrl();
-    // In a real implementation, you would use a QR code library
-    // For now, we'll create a simple visual representation
-    return `data:image/svg+xml;base64,${btoa(`
-      <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-        <rect width="200" height="200" fill="white"/>
-        <rect x="10" y="10" width="20" height="20" fill="black"/>
-        <rect x="40" y="10" width="20" height="20" fill="black"/>
-        <rect x="70" y="10" width="20" height="20" fill="black"/>
-        <rect x="10" y="40" width="20" height="20" fill="black"/>
-        <rect x="70" y="40" width="20" height="20" fill="black"/>
-        <rect x="10" y="70" width="20" height="20" fill="black"/>
-        <rect x="40" y="70" width="20" height="20" fill="black"/>
-        <rect x="70" y="70" width="20" height="20" fill="black"/>
-        <text x="100" y="100" font-family="Arial" font-size="12" fill="black">UPI Payment</text>
-        <text x="100" y="120" font-family="Arial" font-size="10" fill="black">₹${amount}</text>
-        <text x="100" y="140" font-family="Arial" font-size="8" fill="black">${title}</text>
-      </svg>
-    `)}`;
+    // Create a simple placeholder QR-like pattern using canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx) {
+      // Fill background
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, 200, 200);
+      
+      // Draw simple QR-like pattern
+      ctx.fillStyle = 'black';
+      
+      // Corner markers
+      const drawCornerMarker = (x: number, y: number) => {
+        ctx.fillRect(x, y, 30, 30);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(x + 5, y + 5, 20, 20);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(x + 10, y + 10, 10, 10);
+      };
+      
+      drawCornerMarker(10, 10);
+      drawCornerMarker(160, 10);
+      drawCornerMarker(10, 160);
+      
+      // Random pattern for data
+      for (let i = 0; i < 20; i++) {
+        for (let j = 0; j < 20; j++) {
+          if (Math.random() > 0.5) {
+            ctx.fillRect(50 + i * 5, 50 + j * 5, 4, 4);
+          }
+        }
+      }
+      
+      // Add text
+      ctx.fillStyle = 'black';
+      ctx.font = '12px Arial';
+      ctx.fillText('UPI Payment', 60, 90);
+      ctx.fillText(`₹${amount}`, 75, 110);
+    }
+    
+    return canvas.toDataURL();
   };
 
   const handleSimulatePayment = async () => {
