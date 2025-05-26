@@ -24,6 +24,7 @@ const formSchema = z.object({
   start_time: z.string().min(1, "Start time is required"),
   end_time: z.string().min(1, "End time is required"),
   max_students: z.number().min(2, "Live courses must allow at least 2 students"),
+  price: z.number().min(0, "Price must be a positive number"),
 });
 
 interface Subject {
@@ -45,6 +46,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
     resolver: zodResolver(formSchema),
     defaultValues: {
       max_students: 5,
+      price: 0,
     },
   });
 
@@ -106,6 +108,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
           status: "available",
           session_type: "group",
           max_students: values.max_students,
+          price: values.price,
         })
         .select();
 
@@ -121,7 +124,10 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
         description: "Your live course availability has been set successfully.",
       });
 
-      form.reset();
+      form.reset({
+        max_students: 5,
+        price: 0,
+      });
       
       if (onAvailabilityCreated) {
         onAvailabilityCreated();
@@ -172,6 +178,21 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
           />
           {form.formState.errors.max_students && (
             <p className="text-sm text-red-500">{form.formState.errors.max_students.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="price">Price per student (₹)</Label>
+          <Input
+            id="price"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0"
+            {...form.register("price", { valueAsNumber: true })}
+          />
+          {form.formState.errors.price && (
+            <p className="text-sm text-red-500">{form.formState.errors.price.message}</p>
           )}
         </div>
 

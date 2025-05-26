@@ -4,9 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import IndividualAvailabilityForm from "./IndividualAvailabilityForm";
 import LiveCourseAvailabilityForm from "./LiveCourseAvailabilityForm";
+import { AvailabilityList } from "./AvailabilityList";
 
 export function EnhancedAvailabilityScheduler() {
   const [activeTab, setActiveTab] = useState("individual");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleAvailabilityCreated = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
     <div className="space-y-6">
@@ -22,7 +28,7 @@ export function EnhancedAvailabilityScheduler() {
               <CardTitle>Set Individual Session Availability</CardTitle>
             </CardHeader>
             <CardContent>
-              <IndividualAvailabilityForm />
+              <IndividualAvailabilityForm onAvailabilityCreated={handleAvailabilityCreated} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -33,11 +39,24 @@ export function EnhancedAvailabilityScheduler() {
               <CardTitle>Set Live Course Availability</CardTitle>
             </CardHeader>
             <CardContent>
-              <LiveCourseAvailabilityForm />
+              <LiveCourseAvailabilityForm onAvailabilityCreated={handleAvailabilityCreated} />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>My Availability Schedule</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AvailabilityList 
+            key={refreshKey}
+            availabilities={[]} 
+            onAvailabilityRemoved={handleAvailabilityCreated} 
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

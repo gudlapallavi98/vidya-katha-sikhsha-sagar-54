@@ -23,6 +23,7 @@ const formSchema = z.object({
   }),
   start_time: z.string().min(1, "Start time is required"),
   end_time: z.string().min(1, "End time is required"),
+  price: z.number().min(0, "Price must be a positive number"),
 });
 
 interface Subject {
@@ -42,7 +43,9 @@ export default function IndividualAvailabilityForm({ onAvailabilityCreated }: In
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: {
+      price: 0,
+    },
   });
 
   useEffect(() => {
@@ -103,6 +106,7 @@ export default function IndividualAvailabilityForm({ onAvailabilityCreated }: In
           status: "available",
           session_type: "individual",
           max_students: 1,
+          price: values.price,
         })
         .select();
 
@@ -154,6 +158,21 @@ export default function IndividualAvailabilityForm({ onAvailabilityCreated }: In
           </Select>
           {form.formState.errors.subject_id && (
             <p className="text-sm text-red-500">{form.formState.errors.subject_id.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="price">Price (₹)</Label>
+          <Input
+            id="price"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="0"
+            {...form.register("price", { valueAsNumber: true })}
+          />
+          {form.formState.errors.price && (
+            <p className="text-sm text-red-500">{form.formState.errors.price.message}</p>
           )}
         </div>
 

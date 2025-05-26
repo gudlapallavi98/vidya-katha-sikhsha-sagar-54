@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { useLoginRedirect } from "@/hooks/use-login-redirect";
+import { useNavigate } from "react-router-dom";
 
 const LoginWithOTP = () => {
   const [email, setEmail] = useState("");
@@ -15,9 +15,7 @@ const LoginWithOTP = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [serverOtp, setServerOtp] = useState("");
   const { toast } = useToast();
-  
-  // Use the login redirect hook
-  useLoginRedirect();
+  const navigate = useNavigate();
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +31,23 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
+      // First check if user exists
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, email')
+        .eq('email', email)
+        .single();
+
+      if (!profile) {
+        toast({
+          variant: "destructive",
+          title: "User Not Found",
+          description: "Please sign up first or check your email address.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       // Send OTP via Resend using our edge function
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
@@ -93,6 +108,17 @@ const LoginWithOTP = () => {
         throw new Error("Invalid OTP code");
       }
 
+      // Get user profile to determine role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error("User not found. Please sign up first.");
+      }
+
       // Use magic link for authentication
       const { error } = await supabase.auth.signInWithOtp({
         email,
@@ -103,16 +129,7 @@ const LoginWithOTP = () => {
 
       if (error) {
         console.error("Supabase auth error:", error);
-        // Fallback: Check if user exists in profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', email)
-          .single();
-
-        if (!profile) {
-          throw new Error("User not found. Please sign up first.");
-        }
+        // For now, we'll manually redirect based on role
       }
 
       console.log("OTP verified successfully");
@@ -122,7 +139,14 @@ const LoginWithOTP = () => {
         description: "Welcome back!",
       });
 
-      // The useLoginRedirect hook will handle the redirect automatically
+      // Redirect based on user role
+      if (profile.role === 'teacher') {
+        navigate('/teacher-dashboard');
+      } else if (profile.role === 'student') {
+        navigate('/student-dashboard');
+      } else {
+        navigate('/');
+      }
       
     } catch (error) {
       console.error("Error verifying OTP:", error);
