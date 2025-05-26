@@ -34,7 +34,7 @@ const LoginWithOTP = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54ZHNzemRvYmdiaWtybnFxcnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwOTQzMTYsImV4cCI6MjA2MTY3MDMxNn0.G98OnCs8p1nglvP0qmnaOllhUFIJIuSw2iiaci1OOJo",
+          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54ZHNzemRvYmdiaWtybnFxcnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwOTQzMTYsImV4cCI6MjA2MTY3MDMxNn0.G98OnCs8p1nglvP0qmnaOllhUFIJIuSw2iiaci1OOJo`,
         },
         body: JSON.stringify({
           email: email,
@@ -89,26 +89,26 @@ const LoginWithOTP = () => {
         throw new Error("Invalid OTP code");
       }
 
-      // Sign in with magic link using Supabase
-      const { error } = await supabase.auth.signInWithOtp({
+      // Create a dummy password for the user and sign in
+      const tempPassword = Math.random().toString(36).slice(-8);
+      
+      // Try to sign in with email and a temporary password
+      // If user doesn't exist, this will fail gracefully
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          shouldCreateUser: false,
-        },
+        password: tempPassword,
       });
 
-      if (error) {
-        // If Supabase OTP fails, try password-less sign in
-        console.warn("Supabase OTP failed, attempting alternative auth");
-        
-        // Check if user exists in our database
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
+      if (signInError) {
+        // If password sign in fails, use magic link
+        const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            shouldCreateUser: false,
+          },
+        });
 
-        if (!profile) {
+        if (magicLinkError) {
           throw new Error("User not found. Please sign up first.");
         }
       }
