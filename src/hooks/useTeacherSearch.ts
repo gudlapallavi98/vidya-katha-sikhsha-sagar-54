@@ -9,6 +9,10 @@ interface Teacher {
   subjects_interested?: string[];
   bio?: string;
   email?: string;
+  experience?: string;
+  avatar_url?: string;
+  city?: string;
+  country?: string;
 }
 
 interface TeacherAvailability {
@@ -26,14 +30,7 @@ interface TeacherAvailability {
     id: string;
     name: string;
   };
-  teacher: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    bio?: string;
-    email?: string;
-    subjects_interested?: string[];
-  };
+  teacher: Teacher;
 }
 
 export const useTeacherSearch = (searchQuery: string = '') => {
@@ -66,12 +63,16 @@ export const useTeacherSearch = (searchQuery: string = '') => {
             max_students,
             price,
             subject:subjects(id, name),
-            teacher:profiles(
+            teacher:profiles!teacher_availability_teacher_id_fkey(
               id,
               first_name,
               last_name,
               bio,
-              subjects_interested
+              subjects_interested,
+              experience,
+              avatar_url,
+              city,
+              country
             )
           `)
           .eq('status', 'available')
@@ -79,8 +80,7 @@ export const useTeacherSearch = (searchQuery: string = '') => {
           .order('available_date', { ascending: true });
 
         if (searchQuery.length >= 2) {
-          // Search by teacher name or subject name
-          query = query.or(`teacher.first_name.ilike.%${searchQuery}%,teacher.last_name.ilike.%${searchQuery}%,subject.name.ilike.%${searchQuery}%`);
+          // We'll filter in JavaScript since the OR operator with nested fields is complex
         }
 
         const { data, error } = await query.limit(50);
@@ -93,12 +93,28 @@ export const useTeacherSearch = (searchQuery: string = '') => {
         console.log('Fetched teacher availability:', data);
         
         // Filter out any records where the teacher data failed to load
-        const validData = (data || []).filter(item => 
+        let validData = (data || []).filter(item => 
           item.teacher && 
           typeof item.teacher === 'object' && 
           'first_name' in item.teacher &&
           'last_name' in item.teacher
         ) as TeacherAvailability[];
+
+        // Apply search filter if provided
+        if (searchQuery.length >= 2) {
+          const searchLower = searchQuery.toLowerCase();
+          validData = validData.filter(item => {
+            const teacherName = `${item.teacher.first_name} ${item.teacher.last_name}`.toLowerCase();
+            const subjectName = item.subject?.name?.toLowerCase() || '';
+            const teacherBio = item.teacher.bio?.toLowerCase() || '';
+            const teacherSubjects = (item.teacher.subjects_interested || []).join(' ').toLowerCase();
+            
+            return teacherName.includes(searchLower) ||
+                   subjectName.includes(searchLower) ||
+                   teacherBio.includes(searchLower) ||
+                   teacherSubjects.includes(searchLower);
+          });
+        }
         
         setTeachers(validData);
       } catch (err) {

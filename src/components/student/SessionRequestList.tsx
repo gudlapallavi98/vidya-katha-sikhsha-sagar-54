@@ -29,7 +29,9 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
       (teacher.subjects_interested && 
         teacher.subjects_interested.some(subject => 
           subject.toLowerCase().includes(searchLower)
-        ))
+        )) ||
+      (teacher.city && teacher.city.toLowerCase().includes(searchLower)) ||
+      (teacher.experience && teacher.experience.toLowerCase().includes(searchLower))
     );
   });
 
@@ -38,7 +40,7 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search teachers by name or subject..."
+          placeholder="Search teachers by name, subject, or experience..."
           className="pl-10"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -59,6 +61,8 @@ const SessionRequestList = ({ onSelectTeacher }: SessionRequestListProps) => {
               experience={teacher.experience}
               avatarUrl={teacher.avatar_url}
               subjects={teacher.subjects_interested}
+              city={teacher.city}
+              country={teacher.country}
               onBookSession={() => onSelectTeacher(teacher.id)}
             />
           ))}

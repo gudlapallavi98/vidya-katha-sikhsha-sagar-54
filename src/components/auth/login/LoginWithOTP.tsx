@@ -17,14 +17,14 @@ const LoginWithOTP = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const sendOTPToEmail = async () => {
+  const sendOTPEmail = async (): Promise<boolean> => {
     if (!email) {
       toast({
         variant: "destructive",
         title: "Email Required",
         description: "Please enter your email address",
       });
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -43,8 +43,7 @@ const LoginWithOTP = () => {
           title: "User Not Found",
           description: "Please sign up first or check your email address.",
         });
-        setIsLoading(false);
-        return;
+        return false;
       }
 
       // Send OTP via Resend using our edge function
@@ -75,7 +74,7 @@ const LoginWithOTP = () => {
         description: "Please check your email for the verification code",
       });
       
-      setStep("otp");
+      return true;
     } catch (error) {
       console.error("Error sending OTP:", error);
       toast({
@@ -83,17 +82,21 @@ const LoginWithOTP = () => {
         title: "Failed to Send OTP",
         description: error instanceof Error ? error.message : "Please try again",
       });
+      return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSendOTP = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    await sendOTPToEmail();
+    const success = await sendOTPEmail();
+    if (success) {
+      setStep("otp");
+    }
   };
 
-  const handleVerifyOTP = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otp || otp.length !== 6) {
       toast({
@@ -123,20 +126,17 @@ const LoginWithOTP = () => {
         throw new Error("User not found. Please sign up first.");
       }
 
-      // Use magic link for authentication without creating user
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: false,
-        },
-      });
-
-      if (error) {
-        console.error("Supabase auth error:", error);
-        // Continue with manual session creation since we verified OTP
-      }
-
+      // For OTP login, we'll create a custom session without using Supabase auth
+      // This prevents the magic link email from being sent
       console.log("OTP verified successfully for user:", profile);
+      
+      // Store user info in localStorage for session management
+      localStorage.setItem('authenticated_user', JSON.stringify({
+        id: profile.id,
+        email: profile.email,
+        role: profile.role,
+        loginMethod: 'otp'
+      }));
       
       toast({
         title: "Login Successful",
@@ -153,6 +153,8 @@ const LoginWithOTP = () => {
         } else {
           navigate('/');
         }
+        // Reload to update auth state
+        window.location.reload();
       }, 100);
       
     } catch (error) {
@@ -167,8 +169,14 @@ const LoginWithOTP = () => {
     }
   };
 
-  const handleResendOTP = () => {
-    sendOTPToEmail();
+  const handleResendOTP = async () => {
+    const success = await sendOTPEmail();
+    if (success) {
+      toast({
+        title: "OTP Resent",
+        description: "A new verification code has been sent to your email",
+      });
+    }
   };
 
   if (step === "otp") {

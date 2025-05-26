@@ -3,7 +3,8 @@ import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { User, MapPin, Star } from "lucide-react";
 
 interface TeacherProfileCardProps {
   id: string;
@@ -13,6 +14,10 @@ interface TeacherProfileCardProps {
   experience?: string;
   avatarUrl?: string;
   subjects?: string[];
+  city?: string;
+  country?: string;
+  price?: number;
+  sessionType?: string;
   onBookSession: (teacherId: string) => void;
 }
 
@@ -24,10 +29,16 @@ const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({
   experience,
   avatarUrl,
   subjects,
+  city,
+  country,
+  price,
+  sessionType,
   onBookSession,
 }) => {
+  const location = [city, country].filter(Boolean).join(', ');
+
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col hover:shadow-lg transition-shadow">
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar className="h-16 w-16">
           {avatarUrl ? (
@@ -38,52 +49,77 @@ const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({
             </AvatarFallback>
           )}
         </Avatar>
-        <div>
-          <CardTitle>{firstName} {lastName}</CardTitle>
-          <CardDescription>Teacher</CardDescription>
+        <div className="flex-1">
+          <CardTitle className="text-lg">{firstName} {lastName}</CardTitle>
+          <CardDescription className="flex items-center gap-1">
+            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+            Teacher
+          </CardDescription>
+          {location && (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              {location}
+            </div>
+          )}
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col space-y-4">
         {subjects && subjects.length > 0 && (
-          <div className="mb-4">
-            <h4 className="text-sm font-medium mb-1">Subjects</h4>
+          <div>
+            <h4 className="text-sm font-medium mb-2">Subjects</h4>
             <div className="flex flex-wrap gap-1">
-              {subjects.map((subject, index) => (
-                <span 
-                  key={index}
-                  className="bg-muted text-xs px-2 py-1 rounded"
-                >
+              {subjects.slice(0, 3).map((subject, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
                   {subject}
-                </span>
+                </Badge>
               ))}
+              {subjects.length > 3 && (
+                <Badge variant="outline" className="text-xs">
+                  +{subjects.length - 3} more
+                </Badge>
+              )}
             </div>
           </div>
         )}
         
         {experience && (
-          <div className="mb-4">
+          <div>
             <h4 className="text-sm font-medium mb-1">Experience</h4>
-            <p className="text-sm text-muted-foreground">
-              {experience.length > 150 ? `${experience.substring(0, 150)}...` : experience}
+            <p className="text-sm text-muted-foreground line-clamp-3">
+              {experience.length > 120 ? `${experience.substring(0, 120)}...` : experience}
             </p>
           </div>
         )}
         
         {bio && (
-          <div className="mb-4 flex-1">
-            <h4 className="text-sm font-medium mb-1">Bio</h4>
-            <p className="text-sm text-muted-foreground">
-              {bio.length > 200 ? `${bio.substring(0, 200)}...` : bio}
+          <div className="flex-1">
+            <h4 className="text-sm font-medium mb-1">About</h4>
+            <p className="text-sm text-muted-foreground line-clamp-3">
+              {bio.length > 150 ? `${bio.substring(0, 150)}...` : bio}
             </p>
           </div>
         )}
         
-        <Button 
-          onClick={() => onBookSession(id)} 
-          className="mt-auto w-full"
-        >
-          Book Session
-        </Button>
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex flex-col">
+            {price && (
+              <span className="font-bold text-lg text-primary">
+                ₹{price}
+              </span>
+            )}
+            {sessionType && (
+              <span className="text-xs text-muted-foreground capitalize">
+                {sessionType} session
+              </span>
+            )}
+          </div>
+          <Button 
+            onClick={() => onBookSession(id)} 
+            className="flex-shrink-0"
+          >
+            Book Session
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

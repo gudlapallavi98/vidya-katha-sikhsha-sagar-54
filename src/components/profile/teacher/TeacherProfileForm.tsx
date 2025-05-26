@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useProfileFormData } from "../hooks/useProfileFormData";
@@ -100,6 +100,13 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs value={activeTab}>
+          <TabsList className="grid grid-cols-4 mb-8">
+            <TabsTrigger value="personal">Personal</TabsTrigger>
+            <TabsTrigger value="experience">Experience</TabsTrigger>
+            <TabsTrigger value="subjects">Subjects</TabsTrigger>
+            <TabsTrigger value="certifications">Certifications</TabsTrigger>
+          </TabsList>
+          
           <TabsContent value="personal">
             <PersonalInfoTab 
               form={form} 
