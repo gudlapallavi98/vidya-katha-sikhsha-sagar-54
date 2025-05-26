@@ -13,7 +13,7 @@ interface AvailabilityListProps {
 }
 
 export function AvailabilityList({ availabilities = [], onAvailabilityRemoved }: AvailabilityListProps) {
-  const { data: fetchedAvailabilities, isLoading } = useAvailabilityData();
+  const { availabilities: fetchedAvailabilities, isLoading } = useAvailabilityData();
   const { toast } = useToast();
   
   // Use fetched data if availabilities prop is empty
