@@ -17,8 +17,7 @@ const LoginWithOTP = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSendOTP = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const sendOTPToEmail = async () => {
     if (!email) {
       toast({
         variant: "destructive",
@@ -87,6 +86,11 @@ const LoginWithOTP = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSendOTP = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await sendOTPToEmail();
   };
 
   const handleVerifyOTP = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -164,11 +168,7 @@ const LoginWithOTP = () => {
   };
 
   const handleResendOTP = () => {
-    const form = document.createElement('form');
-    const event = new Event('submit', { bubbles: true, cancelable: true });
-    Object.defineProperty(event, 'target', { value: form });
-    Object.defineProperty(event, 'currentTarget', { value: form });
-    handleSendOTP(event as unknown as React.FormEvent<HTMLFormElement>);
+    sendOTPToEmail();
   };
 
   if (step === "otp") {
