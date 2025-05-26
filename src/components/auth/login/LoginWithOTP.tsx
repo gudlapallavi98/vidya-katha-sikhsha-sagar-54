@@ -17,7 +17,7 @@ const LoginWithOTP = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSendOTP = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) {
       toast({
@@ -89,7 +89,7 @@ const LoginWithOTP = () => {
     }
   };
 
-  const handleVerifyOTP = async (e: React.FormEvent) => {
+  const handleVerifyOTP = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!otp || otp.length !== 6) {
       toast({
@@ -163,9 +163,12 @@ const LoginWithOTP = () => {
     }
   };
 
-  const handleResendOTP = async () => {
-    const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
-    await handleSendOTP(fakeEvent);
+  const handleResendOTP = () => {
+    const form = document.createElement('form');
+    const event = new Event('submit', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'target', { value: form });
+    Object.defineProperty(event, 'currentTarget', { value: form });
+    handleSendOTP(event as unknown as React.FormEvent<HTMLFormElement>);
   };
 
   if (step === "otp") {

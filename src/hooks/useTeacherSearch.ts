@@ -66,12 +66,11 @@ export const useTeacherSearch = (searchQuery: string = '') => {
             max_students,
             price,
             subject:subjects(id, name),
-            teacher:profiles!teacher_availability_teacher_id_fkey(
+            teacher:profiles(
               id,
               first_name,
               last_name,
               bio,
-              email,
               subjects_interested
             )
           `)
@@ -92,7 +91,16 @@ export const useTeacherSearch = (searchQuery: string = '') => {
         }
 
         console.log('Fetched teacher availability:', data);
-        setTeachers(data || []);
+        
+        // Filter out any records where the teacher data failed to load
+        const validData = (data || []).filter(item => 
+          item.teacher && 
+          typeof item.teacher === 'object' && 
+          'first_name' in item.teacher &&
+          'last_name' in item.teacher
+        ) as TeacherAvailability[];
+        
+        setTeachers(validData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred while fetching teachers');
         console.error('Error fetching teachers:', err);
