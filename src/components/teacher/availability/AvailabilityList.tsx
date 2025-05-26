@@ -1,176 +1,117 @@
 
-import { useState } from "react";
-import { BookOpen, CalendarIcon, ClockIcon, History } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useAvailabilityData } from "./hooks/useAvailabilityData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, Users, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-
-interface Subject {
-  id: string;
-  name: string;
-}
-
-interface Availability {
-  id: string;
-  subject_id: string;
-  subject: Subject;
-  available_date: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-}
 
 interface AvailabilityListProps {
-  availabilities: Availability[];
+  availabilities?: any[];
   onAvailabilityRemoved: () => void;
 }
 
-export function AvailabilityList({ availabilities, onAvailabilityRemoved }: AvailabilityListProps) {
+export function AvailabilityList({ availabilities = [], onAvailabilityRemoved }: AvailabilityListProps) {
+  const { data: fetchedAvailabilities, isLoading } = useAvailabilityData();
   const { toast } = useToast();
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("upcoming");
+  
+  // Use fetched data if availabilities prop is empty
+  const displayAvailabilities = availabilities.length > 0 ? availabilities : (fetchedAvailabilities || []);
 
-  const removeAvailability = async (id: string) => {
-    if (!user) return;
-
+  const handleRemoveAvailability = async (id: string) => {
     try {
       const { error } = await supabase
-        .from("teacher_availability")
+        .from('teacher_availability')
         .delete()
-        .eq("id", id)
-        .eq("teacher_id", user.id);
+        .eq('id', id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Availability Removed",
-        description: "Your availability slot has been removed",
+        description: "Your availability has been successfully removed.",
       });
 
-      // Notify parent component to refresh availabilities
       onAvailabilityRemoved();
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Something went wrong",
+        description: "Failed to remove availability. Please try again.",
       });
     }
   };
 
-  // Filter availabilities based on selected tab
-  const filteredAvailabilities = availabilities.filter(availability => {
-    const availableDate = new Date(availability.available_date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate date comparison
-    
-    if (activeTab === "upcoming") {
-      return availableDate >= today;
-    } else {
-      return availableDate < today;
-    }
-  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <p>Loading your availability...</p>
+      </div>
+    );
+  }
+
+  if (displayAvailabilities.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold mb-2">No Availability Set</h3>
+        <p className="text-muted-foreground">
+          Create your availability schedule using the forms above.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Scheduled Availabilities</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid grid-cols-2">
-            <TabsTrigger value="upcoming" className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Upcoming
-            </TabsTrigger>
-            <TabsTrigger value="past" className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Past
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <TabsContent value="upcoming" className="mt-0">
-          {filteredAvailabilities.length > 0 ? (
-            <div className="space-y-4">
-              {filteredAvailabilities.map((availability) => (
-                <div 
-                  key={availability.id} 
-                  className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg"
+    <div className="space-y-4">
+      {displayAvailabilities.map((availability) => (
+        <Card key={availability.id}>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                {availability.subject?.name || "General Session"}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant={availability.session_type === 'individual' ? 'default' : 'secondary'}>
+                  {availability.session_type}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveAvailability(availability.id)}
+                  className="text-destructive hover:text-destructive"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-indian-saffron" />
-                      <span className="font-medium">{(availability.subject as Subject).name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>{new Date(availability.available_date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {availability.start_time.substring(0, 5)} - {availability.end_time.substring(0, 5)}
-                      </span>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="mt-2 md:mt-0 text-red-500 border-red-500"
-                    onClick={() => removeAvailability(availability.id)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              You don't have any upcoming availability scheduled.
-            </p>
-          )}
-        </TabsContent>
-
-        <TabsContent value="past" className="mt-0">
-          {filteredAvailabilities.length > 0 ? (
-            <div className="space-y-4">
-              {filteredAvailabilities.map((availability) => (
-                <div 
-                  key={availability.id} 
-                  className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg bg-gray-50"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-gray-500" />
-                      <span className="font-medium">{(availability.subject as Subject).name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>{new Date(availability.available_date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {availability.start_time.substring(0, 5)} - {availability.end_time.substring(0, 5)}
-                      </span>
-                    </div>
-                  </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span>{new Date(availability.available_date).toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span>{availability.start_time} - {availability.end_time}</span>
+              </div>
+              {availability.session_type === 'live_course' && (
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>Max {availability.max_students} students</span>
                 </div>
-              ))}
+              )}
             </div>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              You don't have any past availability slots.
-            </p>
-          )}
-        </TabsContent>
-      </CardContent>
-    </Card>
+            {availability.price && (
+              <div className="mt-3 pt-3 border-t">
+                <span className="font-semibold">Price: ₹{availability.price}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }
