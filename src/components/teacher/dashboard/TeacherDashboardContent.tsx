@@ -21,9 +21,9 @@ interface TeacherDashboardContentProps {
   };
   searchQuery: string;
   handleSearch: (query: string) => void;
-  handleAcceptSession: (sessionId: string) => void;
-  handleRejectSession: (sessionId: string) => void;
-  handleStartClass: (sessionId: string) => void;
+  handleAcceptSession: (sessionId: string) => Promise<void>;
+  handleRejectSession: (sessionId: string) => Promise<void>;
+  handleStartClass: (sessionId: string) => Promise<void>;
 }
 
 const TeacherDashboardContent = ({
@@ -47,10 +47,16 @@ const TeacherDashboardContent = ({
       case "overview":
         return (
           <TeacherOverview
-            totalCourses={teacherCourses.length}
-            totalSessions={totalSessions}
-            upcomingSessions={upcomingSessions}
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
             sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
           />
         );
       case "courses":
@@ -74,9 +80,10 @@ const TeacherDashboardContent = ({
       case "schedule":
         return (
           <TeacherSchedule
-            sessions={teacherSessions}
-            isLoading={sessionsLoading}
-            onStartClass={handleStartClass}
+            teacherSessions={teacherSessions}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            handleStartClass={handleStartClass}
           />
         );
       case "availability":
@@ -90,16 +97,22 @@ const TeacherDashboardContent = ({
                 Manage your profile information and preferences
               </p>
             </div>
-            <ProfileSettingsForm />
+            <ProfileSettingsForm role="teacher" />
           </div>
         );
       default:
         return (
           <TeacherOverview
-            totalCourses={teacherCourses.length}
-            totalSessions={totalSessions}
-            upcomingSessions={upcomingSessions}
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
             sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            totalSessions={totalSessions}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
           />
         );
     }
