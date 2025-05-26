@@ -23,14 +23,6 @@ const formSchema = z.object({
   }),
   start_time: z.string().min(1, "Start time is required"),
   end_time: z.string().min(1, "End time is required"),
-  price: z.number().min(1, "Price must be greater than 0"),
-  course_duration: z.number().min(1, "Course duration is required"),
-  start_date: z.date({
-    required_error: "Start date is required",
-  }),
-  end_date: z.date({
-    required_error: "End date is required",
-  }),
 });
 
 interface Subject {
@@ -38,7 +30,11 @@ interface Subject {
   name: string;
 }
 
-export default function IndividualAvailabilityForm() {
+interface IndividualAvailabilityFormProps {
+  onAvailabilityCreated?: () => void;
+}
+
+export default function IndividualAvailabilityForm({ onAvailabilityCreated }: IndividualAvailabilityFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -46,10 +42,7 @@ export default function IndividualAvailabilityForm() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      price: 0,
-      course_duration: 60,
-    },
+    defaultValues: {},
   });
 
   useEffect(() => {
@@ -97,7 +90,9 @@ export default function IndividualAvailabilityForm() {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase
+      console.log("Submitting availability:", values);
+      
+      const { data, error } = await supabase
         .from("teacher_availability")
         .insert({
           teacher_id: user.id,
@@ -106,9 +101,17 @@ export default function IndividualAvailabilityForm() {
           start_time: values.start_time,
           end_time: values.end_time,
           status: "available",
-        });
+          session_type: "individual",
+          max_students: 1,
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error:", error);
+        throw error;
+      }
+
+      console.log("Availability created successfully:", data);
 
       toast({
         title: "Availability Created",
@@ -116,6 +119,10 @@ export default function IndividualAvailabilityForm() {
       });
 
       form.reset();
+      
+      if (onAvailabilityCreated) {
+        onAvailabilityCreated();
+      }
     } catch (error) {
       console.error("Error creating availability:", error);
       toast({
@@ -147,19 +154,6 @@ export default function IndividualAvailabilityForm() {
           </Select>
           {form.formState.errors.subject_id && (
             <p className="text-sm text-red-500">{form.formState.errors.subject_id.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="price">Price (₹)</Label>
-          <Input
-            id="price"
-            type="number"
-            placeholder="Enter price"
-            {...form.register("price", { valueAsNumber: true })}
-          />
-          {form.formState.errors.price && (
-            <p className="text-sm text-red-500">{form.formState.errors.price.message}</p>
           )}
         </div>
 
@@ -197,19 +191,6 @@ export default function IndividualAvailabilityForm() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="course_duration">Course Duration (minutes)</Label>
-          <Input
-            id="course_duration"
-            type="number"
-            placeholder="60"
-            {...form.register("course_duration", { valueAsNumber: true })}
-          />
-          {form.formState.errors.course_duration && (
-            <p className="text-sm text-red-500">{form.formState.errors.course_duration.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="start_time">Start Time</Label>
           <Input
             id="start_time"
@@ -230,72 +211,6 @@ export default function IndividualAvailabilityForm() {
           />
           {form.formState.errors.end_time && (
             <p className="text-sm text-red-500">{form.formState.errors.end_time.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Start Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !form.watch("start_date") && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch("start_date") ? (
-                  format(form.watch("start_date"), "PPP")
-                ) : (
-                  <span>Pick start date</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={form.watch("start_date")}
-                onSelect={(date) => date && form.setValue("start_date", date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          {form.formState.errors.start_date && (
-            <p className="text-sm text-red-500">{form.formState.errors.start_date.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label>End Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !form.watch("end_date") && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch("end_date") ? (
-                  format(form.watch("end_date"), "PPP")
-                ) : (
-                  <span>Pick end date</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={form.watch("end_date")}
-                onSelect={(date) => date && form.setValue("end_date", date)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          {form.formState.errors.end_date && (
-            <p className="text-sm text-red-500">{form.formState.errors.end_date.message}</p>
           )}
         </div>
       </div>

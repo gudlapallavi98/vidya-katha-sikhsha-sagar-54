@@ -1,86 +1,68 @@
 
-import React from "react";
 import TeacherOverview from "./TeacherOverview";
 import TeacherCourses from "./TeacherCourses";
-import TeacherSchedule from "./TeacherSchedule";
 import TeacherSessionRequests from "./TeacherSessionRequests";
-import SessionManagement from "./components/SessionManagement";
-import EnhancedAvailabilityScheduler from "../availability/EnhancedAvailabilityScheduler";
+import TeacherSchedule from "./TeacherSchedule";
+import { EnhancedAvailabilityScheduler } from "../availability/EnhancedAvailabilityScheduler";
+import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 
 interface TeacherDashboardContentProps {
   activeTab: string;
-  teacherCourses?: any[];
-  coursesLoading?: boolean;
-  sessionRequests?: any[];
-  requestsLoading?: boolean;
-  teacherSessions?: any[];
-  upcomingSessions?: any[];
-  sessionsLoading?: boolean;
-  totalSessions?: {
+  teacherCourses: any[];
+  coursesLoading: boolean;
+  sessionRequests: any[];
+  requestsLoading: boolean;
+  teacherSessions: any[];
+  upcomingSessions: any[];
+  sessionsLoading: boolean;
+  totalSessions: {
     completed: number;
     upcoming: number;
   };
-  searchQuery?: string;
-  handleSearch?: (query: string) => void;
-  handleAcceptSession?: (sessionId: string) => Promise<void>;
-  handleRejectSession?: (sessionId: string) => Promise<void>;
-  handleStartClass?: (sessionId: string) => Promise<void>;
+  searchQuery: string;
+  handleSearch: (query: string) => void;
+  handleAcceptSession: (sessionId: string) => void;
+  handleRejectSession: (sessionId: string) => void;
+  handleStartClass: (sessionId: string) => void;
 }
 
-const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({ 
+const TeacherDashboardContent = ({
   activeTab,
-  teacherCourses = [],
-  coursesLoading = false,
-  sessionRequests = [],
-  requestsLoading = false,
-  teacherSessions = [],
-  upcomingSessions = [],
-  sessionsLoading = false,
-  totalSessions = { completed: 0, upcoming: 0 },
-  searchQuery = "",
-  handleSearch = () => {},
-  handleAcceptSession = async () => {},
-  handleRejectSession = async () => {},
-  handleStartClass = async () => {},
-}) => {
+  teacherCourses,
+  coursesLoading,
+  sessionRequests,
+  requestsLoading,
+  teacherSessions,
+  upcomingSessions,
+  sessionsLoading,
+  totalSessions,
+  searchQuery,
+  handleSearch,
+  handleAcceptSession,
+  handleRejectSession,
+  handleStartClass,
+}: TeacherDashboardContentProps) => {
   const renderContent = () => {
     switch (activeTab) {
       case "overview":
         return (
-          <TeacherOverview 
-            teacherCourses={teacherCourses}
-            coursesLoading={coursesLoading}
-            sessionRequests={sessionRequests}
-            requestsLoading={requestsLoading}
-            upcomingSessions={upcomingSessions}
-            sessionsLoading={sessionsLoading}
+          <TeacherOverview
+            totalCourses={teacherCourses.length}
             totalSessions={totalSessions}
-            handleAcceptSession={handleAcceptSession}
-            handleRejectSession={handleRejectSession}
-            handleStartClass={handleStartClass}
+            upcomingSessions={upcomingSessions}
+            sessionRequests={sessionRequests}
           />
         );
       case "courses":
         return (
-          <TeacherCourses 
+          <TeacherCourses
             teacherCourses={teacherCourses}
             coursesLoading={coursesLoading}
           />
         );
-      case "schedule":
+      case "sessions":
         return (
-          <TeacherSchedule 
-            teacherSessions={teacherSessions}
-            upcomingSessions={upcomingSessions}
-            sessionsLoading={sessionsLoading}
-            handleStartClass={handleStartClass}
-          />
-        );
-      case "availability":
-        return <EnhancedAvailabilityScheduler />;
-      case "session-requests":
-        return (
-          <TeacherSessionRequests 
+          <TeacherSessionRequests
             sessionRequests={sessionRequests}
             requestsLoading={requestsLoading}
             searchQuery={searchQuery}
@@ -89,28 +71,42 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
             handleRejectSession={handleRejectSession}
           />
         );
-      case "session-management":
-        return <SessionManagement />;
+      case "schedule":
+        return (
+          <TeacherSchedule
+            sessions={teacherSessions}
+            isLoading={sessionsLoading}
+            onStartClass={handleStartClass}
+          />
+        );
+      case "availability":
+        return <EnhancedAvailabilityScheduler />;
+      case "profile":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h1 className="font-sanskrit text-3xl font-bold">Profile Settings</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage your profile information and preferences
+              </p>
+            </div>
+            <ProfileSettingsForm />
+          </div>
+        );
       default:
         return (
-          <TeacherOverview 
-            teacherCourses={teacherCourses}
-            coursesLoading={coursesLoading}
-            sessionRequests={sessionRequests}
-            requestsLoading={requestsLoading}
-            upcomingSessions={upcomingSessions}
-            sessionsLoading={sessionsLoading}
+          <TeacherOverview
+            totalCourses={teacherCourses.length}
             totalSessions={totalSessions}
-            handleAcceptSession={handleAcceptSession}
-            handleRejectSession={handleRejectSession}
-            handleStartClass={handleStartClass}
+            upcomingSessions={upcomingSessions}
+            sessionRequests={sessionRequests}
           />
         );
     }
   };
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div className="flex-1 p-8 overflow-auto">
       {renderContent()}
     </div>
   );

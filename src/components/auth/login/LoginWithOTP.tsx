@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { useLoginRedirect } from "@/hooks/use-login-redirect";
 
 const LoginWithOTP = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +15,9 @@ const LoginWithOTP = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [serverOtp, setServerOtp] = useState("");
   const { toast } = useToast();
+  
+  // Use the login redirect hook
+  useLoginRedirect();
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,26 +93,24 @@ const LoginWithOTP = () => {
         throw new Error("Invalid OTP code");
       }
 
-      // Create a dummy password for the user and sign in
-      const tempPassword = Math.random().toString(36).slice(-8);
-      
-      // Try to sign in with email and a temporary password
-      // If user doesn't exist, this will fail gracefully
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Use magic link for authentication
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password: tempPassword,
+        options: {
+          shouldCreateUser: false,
+        },
       });
 
-      if (signInError) {
-        // If password sign in fails, use magic link
-        const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-          },
-        });
+      if (error) {
+        console.error("Supabase auth error:", error);
+        // Fallback: Check if user exists in profiles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', email)
+          .single();
 
-        if (magicLinkError) {
+        if (!profile) {
           throw new Error("User not found. Please sign up first.");
         }
       }
@@ -120,7 +122,8 @@ const LoginWithOTP = () => {
         description: "Welcome back!",
       });
 
-      // Redirect will be handled by useLoginRedirect hook
+      // The useLoginRedirect hook will handle the redirect automatically
+      
     } catch (error) {
       console.error("Error verifying OTP:", error);
       toast({
