@@ -788,6 +788,7 @@ export type Database = {
           id: string
           max_students: number | null
           notes: string | null
+          price: number | null
           session_type: string | null
           start_time: string
           status: string | null
@@ -803,6 +804,7 @@ export type Database = {
           id?: string
           max_students?: number | null
           notes?: string | null
+          price?: number | null
           session_type?: string | null
           start_time: string
           status?: string | null
@@ -818,6 +820,7 @@ export type Database = {
           id?: string
           max_students?: number | null
           notes?: string | null
+          price?: number | null
           session_type?: string | null
           start_time?: string
           status?: string | null

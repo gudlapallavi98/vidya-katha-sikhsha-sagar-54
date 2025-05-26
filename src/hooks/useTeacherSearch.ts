@@ -96,6 +96,7 @@ export const useTeacherSearch = (searchQuery: string = '') => {
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred while fetching teachers');
         console.error('Error fetching teachers:', err);
+        setTeachers([]);
       } finally {
         setIsLoading(false);
       }

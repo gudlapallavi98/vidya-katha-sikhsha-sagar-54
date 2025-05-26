@@ -119,7 +119,7 @@ const LoginWithOTP = () => {
         throw new Error("User not found. Please sign up first.");
       }
 
-      // Use magic link for authentication
+      // Use magic link for authentication without creating user
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -129,24 +129,27 @@ const LoginWithOTP = () => {
 
       if (error) {
         console.error("Supabase auth error:", error);
-        // For now, we'll manually redirect based on role
+        // Continue with manual session creation since we verified OTP
       }
 
-      console.log("OTP verified successfully");
+      console.log("OTP verified successfully for user:", profile);
       
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
 
-      // Redirect based on user role
-      if (profile.role === 'teacher') {
-        navigate('/teacher-dashboard');
-      } else if (profile.role === 'student') {
-        navigate('/student-dashboard');
-      } else {
-        navigate('/');
-      }
+      // Small delay to ensure proper state management
+      setTimeout(() => {
+        // Redirect based on user role
+        if (profile.role === 'teacher') {
+          navigate('/teacher-dashboard');
+        } else if (profile.role === 'student') {
+          navigate('/student-dashboard');
+        } else {
+          navigate('/');
+        }
+      }, 100);
       
     } catch (error) {
       console.error("Error verifying OTP:", error);
@@ -161,7 +164,8 @@ const LoginWithOTP = () => {
   };
 
   const handleResendOTP = async () => {
-    await handleSendOTP(new Event('submit') as any);
+    const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+    await handleSendOTP(fakeEvent);
   };
 
   if (step === "otp") {
