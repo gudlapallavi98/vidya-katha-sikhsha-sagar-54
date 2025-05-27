@@ -61,6 +61,7 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
             requestsLoading={requestsLoading}
             handleAcceptSession={handleAcceptSession}
             handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
           />
         );
       
@@ -76,8 +77,9 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
         return (
           <TeacherSchedule
             teacherSessions={teacherSessions}
+            upcomingSessions={upcomingSessions}
             sessionsLoading={sessionsLoading}
-            onStartClass={handleStartClass}
+            handleStartClass={handleStartClass}
           />
         );
       
@@ -111,6 +113,7 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
             requestsLoading={requestsLoading}
             handleAcceptSession={handleAcceptSession}
             handleRejectSession={handleRejectSession}
+            handleStartClass={handleStartClass}
           />
         );
     }
