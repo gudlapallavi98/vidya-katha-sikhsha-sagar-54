@@ -10,7 +10,7 @@ const TeacherProfileSettings: React.FC = () => {
         <p className="text-muted-foreground">Manage your teaching profile and preferences</p>
       </div>
       
-      <TeacherProfileForm />
+      <TeacherProfileForm activeTab="personal" />
     </div>
   );
 };

@@ -60,37 +60,40 @@ const CourseDetailPage = () => {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indian-orange mx-auto"></div>
-            <p className="mt-4 text-lg">Loading course details...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indian-orange mx-auto"></div>
+          <p className="mt-4 text-lg">Loading course details...</p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   if (!course || !teacher) {
     return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Course not found</h1>
-            <p className="text-gray-600">The course you're looking for doesn't exist.</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Course not found</h1>
+          <p className="text-gray-600">The course you're looking for doesn't exist.</p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <CourseDetailsEnrollment course={course} teacher={teacher} />
+    </div>
+  );
+};
+
+// Wrap the component with Layout
+const CourseDetailPageWithLayout = () => {
+  return (
     <Layout>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <CourseDetailsEnrollment course={course} teacher={teacher} />
-      </div>
+      <CourseDetailPage />
     </Layout>
   );
 };
 
-export default CourseDetailPage;
+export default CourseDetailPageWithLayout;

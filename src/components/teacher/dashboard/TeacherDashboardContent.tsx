@@ -55,22 +55,28 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
             totalSessions={totalSessions}
             sessionsLoading={sessionsLoading}
             upcomingSessions={upcomingSessions}
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
           />
         );
       
       case "courses":
         return (
           <TeacherCourses
-            courses={teacherCourses}
-            loading={coursesLoading}
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
           />
         );
       
       case "schedule":
         return (
           <TeacherSchedule
-            sessions={teacherSessions}
-            loading={sessionsLoading}
+            teacherSessions={teacherSessions}
+            sessionsLoading={sessionsLoading}
             onStartClass={handleStartClass}
           />
         );
@@ -99,6 +105,12 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
             totalSessions={totalSessions}
             sessionsLoading={sessionsLoading}
             upcomingSessions={upcomingSessions}
+            teacherCourses={teacherCourses}
+            coursesLoading={coursesLoading}
+            sessionRequests={sessionRequests}
+            requestsLoading={requestsLoading}
+            handleAcceptSession={handleAcceptSession}
+            handleRejectSession={handleRejectSession}
           />
         );
     }
