@@ -66,6 +66,14 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
     }
   }
 
+  // Get current date in IST
+  const getCurrentDateIST = () => {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istTime = new Date(now.getTime() + istOffset);
+    return new Date(istTime.getFullYear(), istTime.getMonth(), istTime.getDate());
+  };
+
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -110,15 +118,14 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
                 onSelect={(date) => {
                   console.log("Selected date:", date);
                   if (date) {
-                    // Ensure we're setting the date in local timezone
-                    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                    setValue("available_date", localDate);
+                    // Create date in IST timezone
+                    const istDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    setValue("available_date", istDate);
                   }
                 }}
                 disabled={(date) => {
-                  // Disable past dates
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
+                  // Disable past dates based on IST
+                  const today = getCurrentDateIST();
                   return date < today;
                 }}
                 initialFocus

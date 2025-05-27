@@ -117,6 +117,7 @@ export type Database = {
           course_link: string | null
           created_at: string | null
           description: string
+          enrollment_status: string | null
           id: string
           image_url: string | null
           is_published: boolean | null
@@ -134,6 +135,7 @@ export type Database = {
           course_link?: string | null
           created_at?: string | null
           description: string
+          enrollment_status?: string | null
           id?: string
           image_url?: string | null
           is_published?: boolean | null
@@ -151,6 +153,7 @@ export type Database = {
           course_link?: string | null
           created_at?: string | null
           description?: string
+          enrollment_status?: string | null
           id?: string
           image_url?: string | null
           is_published?: boolean | null
@@ -849,6 +852,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      teacher_subjects: {
+        Row: {
+          created_at: string | null
+          id: string
+          subject_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          subject_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          subject_id?: string
+          teacher_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

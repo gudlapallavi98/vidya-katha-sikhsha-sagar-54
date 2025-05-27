@@ -8,29 +8,55 @@ import { AvailabilityList } from "./AvailabilityList";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function EnhancedAvailabilityScheduler() {
   const [activeTab, setActiveTab] = useState("individual");
   const [refreshKey, setRefreshKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleAvailabilityCreated = () => {
     setRefreshKey(prev => prev + 1);
   };
 
-  // Fetch subjects for the dropdown
+  // Fetch teacher's subjects from their profile
   const { data: subjects = [] } = useQuery({
-    queryKey: ['subjects'],
+    queryKey: ['teacher-subjects', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!user) return [];
+      
+      // First get teacher's interested subjects from profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('subjects_interested')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return [];
+      }
+      
+      const subjectNames = profile?.subjects_interested || [];
+      if (subjectNames.length === 0) return [];
+      
+      // Get subject details
+      const { data: subjectData, error: subjectError } = await supabase
         .from('subjects')
         .select('id, name')
+        .in('name', subjectNames)
         .order('name');
       
-      if (error) throw error;
-      return data || [];
-    }
+      if (subjectError) {
+        console.error('Error fetching subjects:', subjectError);
+        return [];
+      }
+      
+      return subjectData || [];
+    },
+    enabled: !!user
   });
 
   const handleIndividualSubmit = async (formData: any) => {

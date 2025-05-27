@@ -85,6 +85,18 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
 
       const actualPrice = getActualPrice();
 
+      // Create proper date object for IST timezone
+      let proposedDate;
+      if (type === 'individual') {
+        // Combine date and time for individual sessions
+        const dateStr = availability.available_date;
+        const timeStr = availability.start_time;
+        proposedDate = new Date(`${dateStr}T${timeStr}:00+05:30`).toISOString();
+      } else {
+        // For courses, use current date
+        proposedDate = new Date().toISOString();
+      }
+
       const sessionData = {
         student_id: user.id,
         teacher_id: teacherId,
@@ -92,9 +104,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
           ? `${availability.subject?.name || 'Session'} - Individual Session` 
           : availability.title || 'Course Session',
         request_message: values.message || '',
-        proposed_date: type === 'individual' 
-          ? `${availability.available_date}T${availability.start_time}:00` 
-          : new Date().toISOString(),
+        proposed_date: proposedDate,
         proposed_duration: type === 'individual' 
           ? calculateDuration(availability.start_time, availability.end_time)
           : 60,
@@ -104,6 +114,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         payment_amount: actualPrice,
         payment_status: "completed", // Since we've already processed payment
         session_type: type,
+        priority_level: "normal"
       };
 
       console.log("Session data to insert:", sessionData);
@@ -187,13 +198,18 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
                 <div>
                   <span className="font-medium">Date:</span>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(availability.available_date).toLocaleDateString()}
+                    {new Date(availability.available_date + 'T00:00:00+05:30').toLocaleDateString('en-IN', {
+                      timeZone: 'Asia/Kolkata',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
                   </p>
                 </div>
                 <div>
                   <span className="font-medium">Time:</span>
                   <p className="text-sm text-muted-foreground">
-                    {availability.start_time} - {availability.end_time}
+                    {availability.start_time} - {availability.end_time} IST
                   </p>
                 </div>
               </>

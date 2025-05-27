@@ -1,10 +1,15 @@
 
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import TeacherOverview from "./TeacherOverview";
 import TeacherCourses from "./TeacherCourses";
-import TeacherSessionRequests from "./TeacherSessionRequests";
 import TeacherSchedule from "./TeacherSchedule";
+import TeacherSessionRequests from "./TeacherSessionRequests";
+import TeacherProfileSettings from "./TeacherProfileSettings";
 import { EnhancedAvailabilityScheduler } from "../availability/EnhancedAvailabilityScheduler";
-import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
 
 interface TeacherDashboardContentProps {
   activeTab: string;
@@ -26,7 +31,7 @@ interface TeacherDashboardContentProps {
   handleStartClass: (sessionId: string) => Promise<void>;
 }
 
-const TeacherDashboardContent = ({
+const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
   activeTab,
   teacherCourses,
   coursesLoading,
@@ -41,32 +46,36 @@ const TeacherDashboardContent = ({
   handleAcceptSession,
   handleRejectSession,
   handleStartClass,
-}: TeacherDashboardContentProps) => {
-  const renderContent = () => {
+}) => {
+  const renderActiveTab = () => {
     switch (activeTab) {
       case "overview":
         return (
           <TeacherOverview
-            teacherCourses={teacherCourses}
-            coursesLoading={coursesLoading}
-            sessionRequests={sessionRequests}
-            requestsLoading={requestsLoading}
-            upcomingSessions={upcomingSessions}
-            sessionsLoading={sessionsLoading}
             totalSessions={totalSessions}
-            handleAcceptSession={handleAcceptSession}
-            handleRejectSession={handleRejectSession}
-            handleStartClass={handleStartClass}
+            sessionsLoading={sessionsLoading}
+            upcomingSessions={upcomingSessions}
           />
         );
+      
       case "courses":
         return (
           <TeacherCourses
-            teacherCourses={teacherCourses}
-            coursesLoading={coursesLoading}
+            courses={teacherCourses}
+            loading={coursesLoading}
           />
         );
-      case "sessions":
+      
+      case "schedule":
+        return (
+          <TeacherSchedule
+            sessions={teacherSessions}
+            loading={sessionsLoading}
+            onStartClass={handleStartClass}
+          />
+        );
+      
+      case "requests":
         return (
           <TeacherSessionRequests
             sessionRequests={sessionRequests}
@@ -77,50 +86,27 @@ const TeacherDashboardContent = ({
             handleRejectSession={handleRejectSession}
           />
         );
-      case "schedule":
-        return (
-          <TeacherSchedule
-            teacherSessions={teacherSessions}
-            upcomingSessions={upcomingSessions}
-            sessionsLoading={sessionsLoading}
-            handleStartClass={handleStartClass}
-          />
-        );
+      
       case "availability":
         return <EnhancedAvailabilityScheduler />;
+      
       case "profile":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h1 className="font-sanskrit text-3xl font-bold">Profile Settings</h1>
-              <p className="text-muted-foreground mt-2">
-                Manage your profile information and preferences
-              </p>
-            </div>
-            <ProfileSettingsForm role="teacher" />
-          </div>
-        );
+        return <TeacherProfileSettings />;
+      
       default:
         return (
           <TeacherOverview
-            teacherCourses={teacherCourses}
-            coursesLoading={coursesLoading}
-            sessionRequests={sessionRequests}
-            requestsLoading={requestsLoading}
-            upcomingSessions={upcomingSessions}
-            sessionsLoading={sessionsLoading}
             totalSessions={totalSessions}
-            handleAcceptSession={handleAcceptSession}
-            handleRejectSession={handleRejectSession}
-            handleStartClass={handleStartClass}
+            sessionsLoading={sessionsLoading}
+            upcomingSessions={upcomingSessions}
           />
         );
     }
   };
 
   return (
-    <div className="flex-1 p-8 overflow-auto">
-      {renderContent()}
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      {renderActiveTab()}
     </div>
   );
 };
