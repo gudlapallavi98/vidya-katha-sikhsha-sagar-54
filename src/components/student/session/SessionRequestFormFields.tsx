@@ -54,6 +54,15 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
     return Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
   };
 
+  // Get the actual price from availability data
+  const getActualPrice = () => {
+    if (type === 'individual') {
+      return availability.price || 500; // fallback to 500 if no price set
+    } else {
+      return availability.price || 0; // fallback to 0 for courses
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
       toast({
@@ -74,6 +83,8 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         message: values.message
       });
 
+      const actualPrice = getActualPrice();
+
       const sessionData = {
         student_id: user.id,
         teacher_id: teacherId,
@@ -90,7 +101,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         status: "pending",
         course_id: type === 'course' ? availability.id : null,
         availability_id: type === 'individual' ? availability.id : null,
-        payment_amount: type === 'individual' ? 500 : 2000,
+        payment_amount: actualPrice,
         payment_status: "completed", // Since we've already processed payment
         session_type: type,
       };
@@ -142,6 +153,8 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
     }
   };
 
+  const actualPrice = getActualPrice();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -188,7 +201,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
             <div>
               <span className="font-medium">Amount Paid:</span>
               <p className="text-sm text-muted-foreground text-green-600 font-semibold">
-                ₹{type === 'individual' ? '500' : '2000'} ✓ Paid
+                ₹{actualPrice} ✓ Paid
               </p>
             </div>
           </div>

@@ -22,6 +22,7 @@ interface IndividualAvailability {
   start_time: string;
   end_time: string;
   status: string;
+  price: number;
   subject?: {
     id: string;
     name: string;
@@ -35,6 +36,7 @@ interface CourseAvailability {
   total_lessons: number;
   teacher_id: string;
   category: string;
+  price: number;
   image_url: string | null;
   course_link: string | null;
   created_at: string;
@@ -48,10 +50,14 @@ export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
 }) => {
   const [selectedType, setSelectedType] = useState<'individual' | 'course'>('individual');
 
-  // Fetch individual availability
+  // Fetch individual availability with prices
   const { data: individualAvailability = [], isLoading: loadingIndividual } = useQuery<IndividualAvailability[]>({
     queryKey: ['individual_availability', teacherId],
     queryFn: async () => {
+      const now = new Date();
+      const currentDate = now.toISOString().split('T')[0];
+      const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+      
       const { data, error } = await supabase
         .from('teacher_availability')
         .select(`
@@ -60,21 +66,24 @@ export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
         `)
         .eq('teacher_id', teacherId)
         .eq('status', 'available')
-        .gte('available_date', new Date().toISOString().split('T')[0]);
+        .or(`available_date.gt.${currentDate},and(available_date.eq.${currentDate},start_time.gt.${currentTime})`)
+        .order('available_date', { ascending: true })
+        .order('start_time', { ascending: true });
       
       if (error) throw error;
       return data || [];
     },
   });
 
-  // Fetch course availability
+  // Fetch course availability with prices
   const { data: courseAvailability = [], isLoading: loadingCourse } = useQuery<CourseAvailability[]>({
     queryKey: ['course_availability', teacherId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('courses')
         .select('*')
-        .eq('teacher_id', teacherId);
+        .eq('teacher_id', teacherId)
+        .eq('is_published', true);
       
       if (error) throw error;
       return data || [];
@@ -140,7 +149,9 @@ export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">₹500/hour</span>
+                      <span className="text-sm">
+                        ₹{availability.price || 500}/hour
+                      </span>
                     </div>
                     <Badge variant="secondary" className="w-fit">
                       Individual Session
@@ -182,7 +193,9 @@ export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">₹2000</span>
+                      <span className="text-sm">
+                        ₹{course.price || 0}
+                      </span>
                     </div>
                     <Badge variant="secondary" className="w-fit">
                       Course

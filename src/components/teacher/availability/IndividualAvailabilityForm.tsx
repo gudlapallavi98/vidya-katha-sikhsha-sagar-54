@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,139 +12,66 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
-  subject_id: z.string().min(1, "Subject is required"),
+  subject_id: z.string().min(1, "Please select a subject"),
   available_date: z.date({
-    required_error: "Available date is required",
+    required_error: "Please select a date",
   }),
-  start_time: z.string().min(1, "Start time is required"),
-  end_time: z.string().min(1, "End time is required"),
-  price: z.number().min(0, "Price must be a positive number"),
+  start_time: z.string().min(1, "Please select start time"),
+  end_time: z.string().min(1, "Please select end time"),
+  price: z.number().min(0, "Price must be 0 or greater"),
+  max_students: z.number().min(1, "Must allow at least 1 student"),
+  notes: z.string().optional(),
 });
 
-interface Subject {
-  id: string;
-  name: string;
-}
+type FormData = z.infer<typeof formSchema>;
 
 interface IndividualAvailabilityFormProps {
-  onAvailabilityCreated?: () => void;
+  subjects: Array<{ id: string; name: string }>;
+  onSubmit: (data: FormData) => Promise<void>;
+  isLoading: boolean;
 }
 
-export default function IndividualAvailabilityForm({ onAvailabilityCreated }: IndividualAvailabilityFormProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
+const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
+  subjects,
+  onSubmit,
+  isLoading,
+}) => {
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      price: 0,
+      max_students: 1,
+      price: 500,
+      notes: "",
     },
   });
 
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      if (!user) return;
+  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = form;
+  const selectedDate = watch("available_date");
 
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("subjects_interested")
-          .eq("id", user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Error fetching profile subjects:", profileError);
-          return;
-        }
-
-        const subjectNames = profileData?.subjects_interested || [];
-
-        if (subjectNames.length === 0) return;
-
-        const { data, error } = await supabase
-          .from("subjects")
-          .select("*")
-          .in("name", subjectNames);
-
-        if (error) {
-          console.error("Error fetching subjects:", error);
-          return;
-        }
-
-        setSubjects(data || []);
-      } catch (err) {
-        console.error("Error fetching subjects:", err);
-      }
-    };
-
-    fetchSubjects();
-  }, [user]);
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    
-    try {
-      console.log("Submitting availability:", values);
-      
-      const { data, error } = await supabase
-        .from("teacher_availability")
-        .insert({
-          teacher_id: user.id,
-          subject_id: values.subject_id,
-          available_date: values.available_date.toISOString().split('T')[0],
-          start_time: values.start_time,
-          end_time: values.end_time,
-          status: "available",
-          session_type: "individual",
-          max_students: 1,
-          price: values.price,
-        })
-        .select();
-
-      if (error) {
-        console.error("Database error:", error);
-        throw error;
-      }
-
-      console.log("Availability created successfully:", data);
-
-      toast({
-        title: "Availability Created",
-        description: "Your individual availability has been set successfully.",
-      });
-
-      form.reset();
-      
-      if (onAvailabilityCreated) {
-        onAvailabilityCreated();
-      }
-    } catch (error) {
-      console.error("Error creating availability:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create availability. Please try again.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleFormSubmit = async (data: FormData) => {
+    console.log("Form data before submission:", data);
+    await onSubmit(data);
+    reset();
   };
 
+  // Generate time options
+  const timeOptions = [];
+  for (let hour = 6; hour <= 22; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      timeOptions.push(timeString);
+    }
+  }
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="subject">Subject</Label>
-          <Select onValueChange={(value) => form.setValue("subject_id", value)}>
+        <div>
+          <Label>Subject</Label>
+          <Select onValueChange={(value) => setValue("subject_id", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select a subject" />
             </SelectTrigger>
@@ -156,27 +83,12 @@ export default function IndividualAvailabilityForm({ onAvailabilityCreated }: In
               ))}
             </SelectContent>
           </Select>
-          {form.formState.errors.subject_id && (
-            <p className="text-sm text-red-500">{form.formState.errors.subject_id.message}</p>
+          {errors.subject_id && (
+            <p className="text-sm text-red-500 mt-1">{errors.subject_id.message}</p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="price">Price (₹)</Label>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0"
-            {...form.register("price", { valueAsNumber: true })}
-          />
-          {form.formState.errors.price && (
-            <p className="text-sm text-red-500">{form.formState.errors.price.message}</p>
-          )}
-        </div>
-
-        <div className="space-y-2">
+        <div>
           <Label>Available Date</Label>
           <Popover>
             <PopoverTrigger asChild>
@@ -184,59 +96,121 @@ export default function IndividualAvailabilityForm({ onAvailabilityCreated }: In
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
-                  !form.watch("available_date") && "text-muted-foreground"
+                  !selectedDate && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch("available_date") ? (
-                  format(form.watch("available_date"), "PPP")
-                ) : (
-                  <span>Pick a date</span>
-                )}
+                {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
+            <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={form.watch("available_date")}
-                onSelect={(date) => date && form.setValue("available_date", date)}
+                selected={selectedDate}
+                onSelect={(date) => {
+                  console.log("Selected date:", date);
+                  if (date) {
+                    // Ensure we're setting the date in local timezone
+                    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    setValue("available_date", localDate);
+                  }
+                }}
+                disabled={(date) => {
+                  // Disable past dates
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date < today;
+                }}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
-          {form.formState.errors.available_date && (
-            <p className="text-sm text-red-500">{form.formState.errors.available_date.message}</p>
+          {errors.available_date && (
+            <p className="text-sm text-red-500 mt-1">{errors.available_date.message}</p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="start_time">Start Time</Label>
-          <Input
-            id="start_time"
-            type="time"
-            {...form.register("start_time")}
-          />
-          {form.formState.errors.start_time && (
-            <p className="text-sm text-red-500">{form.formState.errors.start_time.message}</p>
+        <div>
+          <Label>Start Time</Label>
+          <Select onValueChange={(value) => setValue("start_time", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select start time" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeOptions.map((time) => (
+                <SelectItem key={time} value={time}>
+                  {time}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.start_time && (
+            <p className="text-sm text-red-500 mt-1">{errors.start_time.message}</p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="end_time">End Time</Label>
+        <div>
+          <Label>End Time</Label>
+          <Select onValueChange={(value) => setValue("end_time", value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select end time" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeOptions.map((time) => (
+                <SelectItem key={time} value={time}>
+                  {time}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.end_time && (
+            <p className="text-sm text-red-500 mt-1">{errors.end_time.message}</p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="price">Price per Hour (₹)</Label>
           <Input
-            id="end_time"
-            type="time"
-            {...form.register("end_time")}
+            id="price"
+            type="number"
+            min="0"
+            step="10"
+            {...register("price", { valueAsNumber: true })}
           />
-          {form.formState.errors.end_time && (
-            <p className="text-sm text-red-500">{form.formState.errors.end_time.message}</p>
+          {errors.price && (
+            <p className="text-sm text-red-500 mt-1">{errors.price.message}</p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="max_students">Maximum Students</Label>
+          <Input
+            id="max_students"
+            type="number"
+            min="1"
+            max="10"
+            {...register("max_students", { valueAsNumber: true })}
+          />
+          {errors.max_students && (
+            <p className="text-sm text-red-500 mt-1">{errors.max_students.message}</p>
           )}
         </div>
       </div>
 
+      <div>
+        <Label htmlFor="notes">Notes (Optional)</Label>
+        <Textarea
+          id="notes"
+          placeholder="Any additional notes about this session..."
+          {...register("notes")}
+        />
+      </div>
+
       <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? "Creating..." : "Create Individual Availability"}
+        {isLoading ? "Creating..." : "Create Availability"}
       </Button>
     </form>
   );
-}
+};
+
+export default IndividualAvailabilityForm;

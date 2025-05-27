@@ -100,24 +100,40 @@ const LoginWithOTP = () => {
       // Check if user profile exists to determine role
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('role, first_name, last_name')
-        .ilike('first_name', email.split('@')[0] + '%')
+        .select('role, first_name, last_name, id')
+        .eq('first_name', email.split('@')[0])
         .limit(1);
 
-      if (profileError) {
-        console.log("Profile lookup error (this is normal for first-time users):", profileError);
-      }
+      console.log("Profile lookup for OTP login:", profiles);
 
       let userRole = 'student'; // default role
+      let userId = '';
+      
       if (profiles && profiles.length > 0) {
         userRole = profiles[0].role;
+        userId = profiles[0].id;
+      } else {
+        // If no profile found, try by email domain matching
+        const emailDomain = email.split('@')[0];
+        const { data: emailProfiles, error: emailError } = await supabase
+          .from('profiles')
+          .select('role, first_name, last_name, id')
+          .ilike('first_name', `%${emailDomain}%`)
+          .limit(1);
+          
+        if (emailProfiles && emailProfiles.length > 0) {
+          userRole = emailProfiles[0].role;
+          userId = emailProfiles[0].id;
+        }
       }
 
-      // Store authentication info
+      // Store authentication info in localStorage for our auth context
       localStorage.setItem('authenticated_user', JSON.stringify({
+        id: userId,
         email: email,
         loginMethod: 'otp',
-        role: userRole
+        role: userRole,
+        first_name: email.split('@')[0]
       }));
       
       toast({
@@ -125,11 +141,15 @@ const LoginWithOTP = () => {
         description: "Welcome back!",
       });
 
-      // Navigate based on role
-      const targetRoute = userRole === 'teacher' ? '/teacher-dashboard' : '/student-dashboard';
-      
-      // Use replace to prevent going back to login
-      navigate(targetRoute, { replace: true });
+      // Navigate based on role with a small delay to ensure storage is set
+      setTimeout(() => {
+        const targetRoute = userRole === 'teacher' ? '/teacher-dashboard' : '/student-dashboard';
+        console.log("Redirecting to:", targetRoute);
+        navigate(targetRoute, { replace: true });
+        
+        // Force a page reload to ensure auth context picks up the change
+        window.location.href = targetRoute;
+      }, 100);
       
     } catch (error) {
       console.error("Error verifying OTP:", error);

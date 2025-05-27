@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BookOpen, User, Clock, DollarSign } from "lucide-react";
 
 interface Course {
   id: string;
@@ -18,9 +20,12 @@ interface Course {
   image_url?: string;
   sample_video?: string;
   total_lessons: number;
+  course_link?: string;
   profiles?: {
     first_name: string;
     last_name: string;
+    bio?: string;
+    experience?: string;
   };
 }
 
@@ -37,6 +42,7 @@ const FeaturedCourses = ({
 }: FeaturedCoursesProps) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -48,7 +54,9 @@ const FeaturedCourses = ({
             *,
             profiles:teacher_id (
               first_name,
-              last_name
+              last_name,
+              bio,
+              experience
             )
           `)
           .eq("is_published", true); // Only show published courses
@@ -86,6 +94,64 @@ const FeaturedCourses = ({
 
     fetchCourses();
   }, [searchQuery, selectedCategory, selectedSubcategory]);
+
+  const handleEnrollment = async (course: Course) => {
+    try {
+      // Get the authenticated user from localStorage
+      const authUser = localStorage.getItem('authenticated_user');
+      if (!authUser) {
+        toast({
+          variant: "destructive",
+          title: "Authentication Required",
+          description: "Please log in to enroll in courses"
+        });
+        return;
+      }
+
+      const user = JSON.parse(authUser);
+      
+      // Check if already enrolled
+      const { data: existingEnrollment } = await supabase
+        .from('enrollments')
+        .select('id')
+        .eq('student_id', user.id)
+        .eq('course_id', course.id)
+        .single();
+
+      if (existingEnrollment) {
+        toast({
+          title: "Already Enrolled",
+          description: "You are already enrolled in this course"
+        });
+        return;
+      }
+
+      // Create enrollment
+      const { error } = await supabase
+        .from('enrollments')
+        .insert({
+          student_id: user.id,
+          course_id: course.id,
+          enrolled_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Enrollment Successful",
+        description: `You have successfully enrolled in ${course.title}`
+      });
+
+      setSelectedCourse(null);
+    } catch (error) {
+      console.error("Enrollment error:", error);
+      toast({
+        variant: "destructive",
+        title: "Enrollment Failed",
+        description: "Something went wrong. Please try again."
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -159,9 +225,85 @@ const FeaturedCourses = ({
                     Preview
                   </Button>
                 )}
-                <Button size="sm">
-                  Enroll Now
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button size="sm" onClick={() => setSelectedCourse(course)}>
+                      View Details
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>{course.title}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span className="text-sm">
+                            {course.profiles?.first_name} {course.profiles?.last_name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <BookOpen className="h-4 w-4" />
+                          <span className="text-sm">{course.total_lessons} lessons</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          <span className="text-sm">
+                            {course.price === 0 ? "Free" : `₹${course.price}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{course.category}</Badge>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-semibold mb-2">Course Description</h4>
+                        <p className="text-sm text-muted-foreground">{course.description}</p>
+                      </div>
+                      
+                      {course.profiles?.bio && (
+                        <div>
+                          <h4 className="font-semibold mb-2">About the Teacher</h4>
+                          <p className="text-sm text-muted-foreground">{course.profiles.bio}</p>
+                        </div>
+                      )}
+                      
+                      {course.profiles?.experience && (
+                        <div>
+                          <h4 className="font-semibold mb-2">Experience</h4>
+                          <p className="text-sm text-muted-foreground">{course.profiles.experience}</p>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2 pt-4">
+                        {course.sample_video && (
+                          <Button
+                            variant="outline"
+                            onClick={() => window.open(course.sample_video, '_blank')}
+                          >
+                            Preview Course
+                          </Button>
+                        )}
+                        {course.course_link && (
+                          <Button
+                            variant="outline"
+                            onClick={() => window.open(course.course_link, '_blank')}
+                          >
+                            Course Materials
+                          </Button>
+                        )}
+                        <Button 
+                          className="flex-1"
+                          onClick={() => handleEnrollment(course)}
+                        >
+                          Enroll Now - ₹{course.price || 0}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </CardContent>
