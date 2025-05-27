@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -46,8 +45,10 @@ export const useTeacherSearch = (searchQuery: string = '') => {
       setError(null);
 
       try {
-        // Get current date to filter future availability
-        const currentDate = new Date().toISOString().split('T')[0];
+        // Get current date and time to filter future availability
+        const now = new Date();
+        const currentDate = now.toISOString().split('T')[0];
+        const currentTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM format
         
         let query = supabase
           .from('teacher_availability')
@@ -76,12 +77,9 @@ export const useTeacherSearch = (searchQuery: string = '') => {
             )
           `)
           .eq('status', 'available')
-          .gte('available_date', currentDate)
-          .order('available_date', { ascending: true });
-
-        if (searchQuery.length >= 2) {
-          // We'll filter in JavaScript since the OR operator with nested fields is complex
-        }
+          .or(`available_date.gt.${currentDate},and(available_date.eq.${currentDate},start_time.gt.${currentTime})`)
+          .order('available_date', { ascending: true })
+          .order('start_time', { ascending: true });
 
         const { data, error } = await query.limit(50);
 
@@ -115,8 +113,20 @@ export const useTeacherSearch = (searchQuery: string = '') => {
                    teacherSubjects.includes(searchLower);
           });
         }
+
+        // Group by teacher and keep only the latest availability for each teacher
+        const teacherMap = new Map<string, TeacherAvailability>();
+        validData.forEach(item => {
+          const existingItem = teacherMap.get(item.teacher_id);
+          if (!existingItem || 
+              new Date(item.available_date + 'T' + item.start_time) < new Date(existingItem.available_date + 'T' + existingItem.start_time)) {
+            teacherMap.set(item.teacher_id, item);
+          }
+        });
+
+        const latestAvailabilities = Array.from(teacherMap.values());
         
-        setTeachers(validData);
+        setTeachers(latestAvailabilities);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred while fetching teachers');
         console.error('Error fetching teachers:', err);

@@ -18,6 +18,12 @@ import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   subject_id: z.string().min(1, "Subject is required"),
+  start_date: z.date({
+    required_error: "Start date is required",
+  }),
+  end_date: z.date({
+    required_error: "End date is required",
+  }),
   available_date: z.date({
     required_error: "Available date is required",
   }),
@@ -25,6 +31,9 @@ const formSchema = z.object({
   end_time: z.string().min(1, "End time is required"),
   max_students: z.number().min(2, "Live courses must allow at least 2 students"),
   price: z.number().min(0, "Price must be a positive number"),
+}).refine((data) => data.end_date >= data.start_date, {
+  message: "End date must be after start date",
+  path: ["end_date"],
 });
 
 interface Subject {
@@ -102,6 +111,8 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
         .insert({
           teacher_id: user.id,
           subject_id: values.subject_id,
+          start_date: values.start_date.toISOString().split('T')[0],
+          end_date: values.end_date.toISOString().split('T')[0],
           available_date: values.available_date.toISOString().split('T')[0],
           start_time: values.start_time,
           end_time: values.end_time,
@@ -178,6 +189,72 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
           />
           {form.formState.errors.max_students && (
             <p className="text-sm text-red-500">{form.formState.errors.max_students.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Course Start Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !form.watch("start_date") && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {form.watch("start_date") ? (
+                  format(form.watch("start_date"), "PPP")
+                ) : (
+                  <span>Pick start date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={form.watch("start_date")}
+                onSelect={(date) => date && form.setValue("start_date", date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {form.formState.errors.start_date && (
+            <p className="text-sm text-red-500">{form.formState.errors.start_date.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Course End Date</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !form.watch("end_date") && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {form.watch("end_date") ? (
+                  format(form.watch("end_date"), "PPP")
+                ) : (
+                  <span>Pick end date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={form.watch("end_date")}
+                onSelect={(date) => date && form.setValue("end_date", date)}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+          {form.formState.errors.end_date && (
+            <p className="text-sm text-red-500">{form.formState.errors.end_date.message}</p>
           )}
         </div>
 

@@ -24,7 +24,9 @@ export const acceptSessionRequest = async (requestId: string) => {
         start_time: request.proposed_date,
         end_time: new Date(new Date(request.proposed_date).getTime() + request.proposed_duration * 60000).toISOString(),
         status: 'scheduled',
-        meeting_link: `https://meet.jit.si/${requestId}-${new Date().getTime()}`
+        meeting_link: `https://meet.jit.si/${requestId}-${new Date().getTime()}`,
+        payment_amount: request.payment_amount,
+        payment_status: request.payment_status
       })
       .select();
     
@@ -143,6 +145,51 @@ export const startSession = async (sessionId: string) => {
     return meetingLink;
   } catch (error) {
     console.error("Error starting session:", error);
+    throw error;
+  }
+};
+
+// Function to submit session request with proper error handling
+export const submitSessionRequest = async (requestData: {
+  student_id: string;
+  teacher_id: string;
+  availability_id: string;
+  proposed_title: string;
+  request_message?: string;
+  proposed_date: string;
+  proposed_duration: number;
+  payment_amount?: number;
+  session_type?: string;
+}) => {
+  try {
+    console.log("Submitting session request:", requestData);
+    
+    const { data, error } = await supabase
+      .from('session_requests')
+      .insert({
+        student_id: requestData.student_id,
+        teacher_id: requestData.teacher_id,
+        availability_id: requestData.availability_id,
+        proposed_title: requestData.proposed_title,
+        request_message: requestData.request_message || '',
+        proposed_date: requestData.proposed_date,
+        proposed_duration: requestData.proposed_duration,
+        payment_amount: requestData.payment_amount || 0,
+        session_type: requestData.session_type || 'individual',
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Session request submission error:", error);
+      throw error;
+    }
+
+    console.log("Session request submitted successfully:", data);
+    return data;
+  } catch (error) {
+    console.error("Error submitting session request:", error);
     throw error;
   }
 };

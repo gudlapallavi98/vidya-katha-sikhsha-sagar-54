@@ -784,12 +784,14 @@ export type Database = {
           available_date: string
           booked_students: number | null
           created_at: string | null
+          end_date: string | null
           end_time: string
           id: string
           max_students: number | null
           notes: string | null
           price: number | null
           session_type: string | null
+          start_date: string | null
           start_time: string
           status: string | null
           subject_id: string
@@ -800,12 +802,14 @@ export type Database = {
           available_date: string
           booked_students?: number | null
           created_at?: string | null
+          end_date?: string | null
           end_time: string
           id?: string
           max_students?: number | null
           notes?: string | null
           price?: number | null
           session_type?: string | null
+          start_date?: string | null
           start_time: string
           status?: string | null
           subject_id: string
@@ -816,12 +820,14 @@ export type Database = {
           available_date?: string
           booked_students?: number | null
           created_at?: string | null
+          end_date?: string | null
           end_time?: string
           id?: string
           max_students?: number | null
           notes?: string | null
           price?: number | null
           session_type?: string | null
+          start_date?: string | null
           start_time?: string
           status?: string | null
           subject_id?: string

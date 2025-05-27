@@ -30,16 +30,6 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // First check if user exists
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, first_name, last_name')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id || '')
-        .single();
-
-      // Check if profile exists by email in another way since email is not in profiles
-      const { data: userData } = await supabase.auth.getUser();
-      
       // Send OTP via Resend using our edge function
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
@@ -107,24 +97,27 @@ const LoginWithOTP = () => {
         throw new Error("Invalid OTP code");
       }
 
-      // Get user profile to determine role using email lookup
+      // Check if user profile exists to determine role
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
-        .limit(10);
+        .select('role, first_name, last_name')
+        .ilike('first_name', email.split('@')[0] + '%')
+        .limit(1);
 
       if (profileError) {
-        throw new Error("Error fetching profiles");
+        console.log("Profile lookup error (this is normal for first-time users):", profileError);
       }
 
-      // Since we can't directly query by email in profiles, we'll need to use a different approach
-      // Let's try to sign in with a temporary method to get the user ID
-      let userProfile = null;
-      
-      // Store user info in localStorage for session management
+      let userRole = 'student'; // default role
+      if (profiles && profiles.length > 0) {
+        userRole = profiles[0].role;
+      }
+
+      // Store authentication info
       localStorage.setItem('authenticated_user', JSON.stringify({
         email: email,
-        loginMethod: 'otp'
+        loginMethod: 'otp',
+        role: userRole
       }));
       
       toast({
@@ -132,13 +125,11 @@ const LoginWithOTP = () => {
         description: "Welcome back!",
       });
 
-      // Small delay to ensure proper state management
-      setTimeout(() => {
-        // For now, default to student dashboard since we can't determine role
-        navigate('/student-dashboard');
-        // Reload to update auth state
-        window.location.reload();
-      }, 100);
+      // Navigate based on role
+      const targetRoute = userRole === 'teacher' ? '/teacher-dashboard' : '/student-dashboard';
+      
+      // Use replace to prevent going back to login
+      navigate(targetRoute, { replace: true });
       
     } catch (error) {
       console.error("Error verifying OTP:", error);

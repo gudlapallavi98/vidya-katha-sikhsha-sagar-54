@@ -69,7 +69,13 @@ export const useTeacherCourses = () => {
         category: values.category,
         total_lessons: values.total_lessons,
         course_link: values.course_link || null,
+        price: values.price,
+        is_published: values.is_published,
+        sample_video: values.sample_video || null,
+        published_at: values.is_published ? new Date().toISOString() : null,
       };
+
+      console.log("Submitting course data:", courseData);
 
       if (isEditMode && currentCourse) {
         const { error } = await supabase
@@ -78,7 +84,10 @@ export const useTeacherCourses = () => {
           .eq("id", currentCourse.id)
           .eq("teacher_id", user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Update error:", error);
+          throw error;
+        }
 
         toast({
           title: "Course Updated",
@@ -89,7 +98,10 @@ export const useTeacherCourses = () => {
           .from("courses")
           .insert([courseData]);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Insert error:", error);
+          throw error;
+        }
 
         toast({
           title: "Course Created",
@@ -100,6 +112,7 @@ export const useTeacherCourses = () => {
       setIsDialogOpen(false);
       refetch();
     } catch (error) {
+      console.error("Error saving course:", error);
       toast({
         variant: "destructive",
         title: "Error",
