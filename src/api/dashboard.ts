@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { calculatePricing, createPaymentRecord } from '@/utils/pricingUtils';
 
 // Session request handling
 export const acceptSessionRequest = async (requestId: string) => {
@@ -63,6 +64,26 @@ export const acceptSessionRequest = async (requestId: string) => {
     if (attendeeError) {
       console.error("Attendee creation error:", attendeeError);
       throw attendeeError;
+    }
+
+    // Create teacher earnings record
+    try {
+      const pricing = calculatePricing(request.payment_amount / 1.1); // Reverse calculate teacher rate
+      
+      const { error: earningsError } = await supabase
+        .from('teacher_earnings')
+        .insert({
+          teacher_id: request.teacher_id,
+          session_id: newSession.id,
+          amount: pricing.teacherPayout,
+          status: 'pending'
+        });
+
+      if (earningsError) {
+        console.error("Earnings creation error:", earningsError);
+      }
+    } catch (earningsError) {
+      console.error("Error creating earnings record:", earningsError);
     }
     
     return newSession;

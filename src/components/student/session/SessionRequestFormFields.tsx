@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { calculatePricing, createPaymentRecord, formatCurrency } from "@/utils/pricingUtils";
 
 const formSchema = z.object({
   message: z.string().optional(),
@@ -54,14 +55,12 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
     return Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
   };
 
-  // Get the actual price from availability data
-  const getActualPrice = () => {
-    if (type === 'individual') {
-      return availability.price || 500; // fallback to 500 if no price set
-    } else {
-      return availability.price || 0; // fallback to 0 for courses
-    }
-  };
+  // Get teacher rate and calculate pricing
+  const teacherRate = type === 'individual' 
+    ? (availability.price || availability.teacher_rate || 100)
+    : (availability.price || availability.teacher_rate || 500);
+  
+  const pricing = calculatePricing(teacherRate);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
@@ -75,25 +74,15 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
 
     setIsLoading(true);
     try {
-      console.log("Submitting session request with data:", {
-        user_id: user.id,
-        teacher_id: teacherId,
-        availability,
-        type,
-        message: values.message
-      });
-
-      const actualPrice = getActualPrice();
+      console.log("Submitting session request with pricing:", pricing);
 
       // Create proper date object for IST timezone
       let proposedDate;
       if (type === 'individual') {
-        // Combine date and time for individual sessions
         const dateStr = availability.available_date;
         const timeStr = availability.start_time;
         proposedDate = new Date(`${dateStr}T${timeStr}:00+05:30`).toISOString();
       } else {
-        // For courses, use current date
         proposedDate = new Date().toISOString();
       }
 
@@ -111,25 +100,43 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         status: "pending",
         course_id: type === 'course' ? availability.id : null,
         availability_id: type === 'individual' ? availability.id : null,
-        payment_amount: actualPrice,
-        payment_status: "completed", // Since we've already processed payment
+        payment_amount: pricing.studentAmount,
+        payment_status: "completed",
         session_type: type,
         priority_level: "normal"
       };
 
       console.log("Session data to insert:", sessionData);
 
-      const { data, error } = await supabase
+      // Insert session request
+      const { data: sessionRequest, error } = await supabase
         .from("session_requests")
         .insert(sessionData)
-        .select();
+        .select()
+        .single();
 
       if (error) {
         console.error("Supabase error:", error);
         throw error;
       }
 
-      console.log("Session request created successfully:", data);
+      console.log("Session request created successfully:", sessionRequest);
+
+      // Create payment record
+      try {
+        await createPaymentRecord(
+          user.id,
+          sessionRequest.id,
+          null,
+          pricing,
+          'student_payment',
+          'completed'
+        );
+        console.log("Payment record created successfully");
+      } catch (paymentError) {
+        console.error("Error creating payment record:", paymentError);
+        // Don't fail the entire flow if payment record creation fails
+      }
 
       // Update availability status if it's an individual session
       if (type === 'individual' && availability.id) {
@@ -163,8 +170,6 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
       setIsLoading(false);
     }
   };
-
-  const actualPrice = getActualPrice();
 
   return (
     <div className="space-y-6">
@@ -214,11 +219,22 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
                 </div>
               </>
             )}
-            <div>
-              <span className="font-medium">Amount Paid:</span>
-              <p className="text-sm text-muted-foreground text-green-600 font-semibold">
-                ₹{actualPrice} ✓ Paid
-              </p>
+            <div className="col-span-2">
+              <span className="font-medium">Payment Details:</span>
+              <div className="mt-2 bg-green-50 p-3 rounded-lg">
+                <div className="flex justify-between text-sm">
+                  <span>Teacher Rate:</span>
+                  <span>{formatCurrency(pricing.teacherRate)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Platform Fee (10%):</span>
+                  <span>+{formatCurrency(pricing.platformFee)}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-green-600 border-t pt-2 mt-2">
+                  <span>Amount Paid:</span>
+                  <span>{formatCurrency(pricing.studentAmount)} ✓ Paid</span>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

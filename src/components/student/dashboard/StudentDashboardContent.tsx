@@ -1,21 +1,19 @@
 
 import React from "react";
-import { DashboardHeader, DashboardShell } from "@/components/ui/dashboard-shell";
-import DashboardCard from "@/components/dashboard/DashboardCard";
-import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
-import SessionRequestForm from "@/components/student/SessionRequestForm";
 import OverviewTab from "./components/OverviewTab";
 import CoursesTab from "./components/CoursesTab";
 import SessionsTab from "./components/SessionsTab";
-import { Enrollment, Progress as StudentProgress, Session } from "@/hooks/types";
+import PaymentHistoryTab from "./components/PaymentHistoryTab";
+import SessionRequestForm from "../SessionRequestForm";
+import { StudentProfileForm } from "@/components/profile/student/StudentProfileForm";
 
 interface StudentDashboardContentProps {
   activeTab: string;
-  enrolledCourses: Enrollment[];
+  enrolledCourses: any[];
   coursesLoading: boolean;
-  upcomingSessions: Session[];
+  upcomingSessions: any[];
   sessionsLoading: boolean;
-  progress: StudentProgress[];
+  progress: any[];
   handleJoinClass: (sessionId: string) => Promise<void>;
 }
 
@@ -28,61 +26,63 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
   progress,
   handleJoinClass,
 }) => {
-  if (activeTab === "overview") {
-    return (
-      <OverviewTab
-        enrolledCourses={enrolledCourses}
-        coursesLoading={coursesLoading}
-        upcomingSessions={upcomingSessions}
-        sessionsLoading={sessionsLoading}
-        progress={progress}
-        handleJoinClass={handleJoinClass}
-      />
-    );
-  }
-  
-  if (activeTab === "courses") {
-    return (
-      <CoursesTab
-        enrolledCourses={enrolledCourses}
-        coursesLoading={coursesLoading}
-      />
-    );
-  }
-  
-  if (activeTab === "sessions") {
-    return (
-      <SessionsTab
-        upcomingSessions={upcomingSessions}
-        sessionsLoading={sessionsLoading}
-        handleJoinClass={handleJoinClass}
-      />
-    );
-  }
-  
-  if (activeTab === "request-session") {
-    return (
-      <DashboardShell>
-        <DashboardHeader heading="Request a Session" />
-        <DashboardCard>
-          <SessionRequestForm />
-        </DashboardCard>
-      </DashboardShell>
-    );
-  }
-  
-  if (activeTab === "profile") {
-    return (
-      <DashboardShell>
-        <DashboardHeader heading="Profile Settings" />
-        <DashboardCard>
-          <ProfileSettingsForm role="student" />
-        </DashboardCard>
-      </DashboardShell>
-    );
-  }
-  
-  return null;
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case "overview":
+        return (
+          <OverviewTab
+            enrolledCourses={enrolledCourses}
+            coursesLoading={coursesLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            progress={progress}
+          />
+        );
+      
+      case "courses":
+        return (
+          <CoursesTab
+            enrolledCourses={enrolledCourses}
+            coursesLoading={coursesLoading}
+          />
+        );
+      
+      case "sessions":
+        return (
+          <SessionsTab
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            handleJoinClass={handleJoinClass}
+          />
+        );
+
+      case "payments":
+        return <PaymentHistoryTab />;
+      
+      case "request-session":
+        return <SessionRequestForm />;
+      
+      case "profile":
+        return <StudentProfileForm activeTab="personal" />;
+      
+      default:
+        return (
+          <OverviewTab
+            enrolledCourses={enrolledCourses}
+            coursesLoading={coursesLoading}
+            upcomingSessions={upcomingSessions}
+            sessionsLoading={sessionsLoading}
+            progress={progress}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+      {renderActiveTab()}
+    </div>
+  );
 };
 
 export default StudentDashboardContent;

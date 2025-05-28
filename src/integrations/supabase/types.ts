@@ -124,7 +124,9 @@ export type Database = {
           price: number | null
           published_at: string | null
           sample_video: string | null
+          student_price: number | null
           teacher_id: string | null
+          teacher_rate: number | null
           title: string
           total_lessons: number
           updated_at: string | null
@@ -142,7 +144,9 @@ export type Database = {
           price?: number | null
           published_at?: string | null
           sample_video?: string | null
+          student_price?: number | null
           teacher_id?: string | null
+          teacher_rate?: number | null
           title: string
           total_lessons?: number
           updated_at?: string | null
@@ -160,7 +164,9 @@ export type Database = {
           price?: number | null
           published_at?: string | null
           sample_video?: string | null
+          student_price?: number | null
           teacher_id?: string | null
+          teacher_rate?: number | null
           title?: string
           total_lessons?: number
           updated_at?: string | null
@@ -294,6 +300,75 @@ export type Database = {
           verified?: boolean | null
         }
         Relationships: []
+      }
+      payment_history: {
+        Row: {
+          amount: number
+          created_at: string
+          gateway_response: Json | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          payment_status: string
+          payment_type: string
+          platform_fee: number
+          session_id: string | null
+          session_request_id: string | null
+          teacher_payout: number
+          transaction_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          gateway_response?: Json | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          payment_type: string
+          platform_fee?: number
+          session_id?: string | null
+          session_request_id?: string | null
+          teacher_payout?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          gateway_response?: Json | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          payment_type?: string
+          platform_fee?: number
+          session_id?: string | null
+          session_request_id?: string | null
+          teacher_payout?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_history_session_request_id_fkey"
+            columns: ["session_request_id"]
+            isOneToOne: false
+            referencedRelation: "session_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -797,8 +872,10 @@ export type Database = {
           start_date: string | null
           start_time: string
           status: string | null
+          student_price: number | null
           subject_id: string
           teacher_id: string
+          teacher_rate: number | null
         }
         Insert: {
           auto_cancel_at?: string | null
@@ -815,8 +892,10 @@ export type Database = {
           start_date?: string | null
           start_time: string
           status?: string | null
+          student_price?: number | null
           subject_id: string
           teacher_id: string
+          teacher_rate?: number | null
         }
         Update: {
           auto_cancel_at?: string | null
@@ -833,8 +912,10 @@ export type Database = {
           start_date?: string | null
           start_time?: string
           status?: string | null
+          student_price?: number | null
           subject_id?: string
           teacher_id?: string
+          teacher_rate?: number | null
         }
         Relationships: [
           {
@@ -849,6 +930,50 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_earnings: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          release_date: string | null
+          session_id: string | null
+          status: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          release_date?: string | null
+          session_id?: string | null
+          status?: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          release_date?: string | null
+          session_id?: string | null
+          status?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_earnings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -879,6 +1004,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_pricing: {
+        Args: { teacher_rate: number }
+        Returns: {
+          teacher_amount: number
+          student_amount: number
+          platform_fee: number
+        }[]
+      }
       generate_request_id: {
         Args: Record<PropertyKey, never>
         Returns: string

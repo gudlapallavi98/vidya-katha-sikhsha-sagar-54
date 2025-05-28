@@ -9,6 +9,7 @@ import TeacherCourses from "./TeacherCourses";
 import TeacherSchedule from "./TeacherSchedule";
 import TeacherSessionRequests from "./TeacherSessionRequests";
 import TeacherProfileSettings from "./TeacherProfileSettings";
+import EarningsTab from "./components/EarningsTab";
 import { EnhancedAvailabilityScheduler } from "../availability/EnhancedAvailabilityScheduler";
 
 interface TeacherDashboardContentProps {
@@ -94,6 +95,9 @@ const TeacherDashboardContent: React.FC<TeacherDashboardContentProps> = ({
             handleRejectSession={handleRejectSession}
           />
         );
+
+      case "earnings":
+        return <EarningsTab />;
       
       case "availability":
         return <EnhancedAvailabilityScheduler />;

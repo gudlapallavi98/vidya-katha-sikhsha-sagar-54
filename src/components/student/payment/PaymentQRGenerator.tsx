@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { QrCode, CreditCard, CheckCircle, Copy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { calculatePricing, formatCurrency } from '@/utils/pricingUtils';
 
 interface PaymentQRGeneratorProps {
   availability: any;
@@ -23,7 +24,13 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
-  const amount = type === 'individual' ? 500 : 2000;
+  // Get teacher rate from availability
+  const teacherRate = type === 'individual' 
+    ? (availability.price || availability.teacher_rate || 100) // fallback to 100 if no price set
+    : (availability.price || availability.teacher_rate || 500); // fallback to 500 for courses
+
+  // Calculate pricing with platform fee
+  const pricing = calculatePricing(teacherRate);
   const title = type === 'individual' ? availability.subject?.name : availability.title;
 
   // Dynamic UPI payment details
@@ -33,7 +40,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
   
   // Generate dynamic UPI payment URL
   const generateUPIUrl = () => {
-    return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+    return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${pricing.studentAmount}&cu=INR&tn=${encodeURIComponent(note)}`;
   };
 
   // Generate dynamic QR code URL using QR Server API
@@ -43,7 +50,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
   };
 
   const copyUPIDetails = () => {
-    const upiDetails = `UPI ID: ${upiId}\nPayee: ${payeeName}\nAmount: ₹${amount}\nNote: ${note}`;
+    const upiDetails = `UPI ID: ${upiId}\nPayee: ${payeeName}\nAmount: ${formatCurrency(pricing.studentAmount)}\nNote: ${note}`;
     navigator.clipboard.writeText(upiDetails);
     toast({
       title: "UPI Details Copied",
@@ -70,7 +77,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
       
       toast({
         title: "Payment Successful",
-        description: `Payment of ₹${amount} completed successfully`,
+        description: `Payment of ${formatCurrency(pricing.studentAmount)} completed successfully`,
       });
       
       // Auto-proceed after success
@@ -89,7 +96,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-green-600">Payment Successful!</h2>
           <p className="text-muted-foreground mt-2">
-            Your payment of ₹{amount} has been processed successfully.
+            Your payment of {formatCurrency(pricing.studentAmount)} has been processed successfully.
           </p>
           <p className="text-sm text-muted-foreground mt-1">
             Redirecting to session request form...
@@ -112,7 +119,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Payment Details
+            Payment Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -126,9 +133,24 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
               {type === 'individual' ? 'Individual Session' : 'Course'}
             </Badge>
           </div>
-          <div className="flex justify-between items-center text-lg font-bold">
-            <span>Total Amount:</span>
-            <span>₹{amount}</span>
+          <div className="border-t pt-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <span>Teacher Rate:</span>
+              <span>{formatCurrency(pricing.teacherRate)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm text-muted-foreground">
+              <span>Platform Fee (10%):</span>
+              <span>+{formatCurrency(pricing.platformFee)}</span>
+            </div>
+            <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
+              <span>Total Amount:</span>
+              <span className="text-blue-600">{formatCurrency(pricing.studentAmount)}</span>
+            </div>
+          </div>
+          <div className="bg-blue-50 p-3 rounded-lg text-sm">
+            <p className="text-blue-800">
+              💡 <strong>Pricing Info:</strong> Teacher gets {formatCurrency(pricing.teacherPayout)} after 10% platform fee
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -208,7 +230,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
           <ul className="text-sm text-blue-700 space-y-1">
             <li>• Open any UPI app (GPay, PhonePe, Paytm, etc.)</li>
             <li>• Scan the QR code above</li>
-            <li>• Verify amount: ₹{amount}</li>
+            <li>• Verify amount: {formatCurrency(pricing.studentAmount)}</li>
             <li>• Complete the payment</li>
             <li>• Return here to continue with session request</li>
           </ul>
@@ -217,7 +239,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
             <p className="text-xs font-medium">UPI Details:</p>
             <p className="text-xs">ID: {upiId}</p>
             <p className="text-xs">Name: {payeeName}</p>
-            <p className="text-xs">Amount: ₹{amount}</p>
+            <p className="text-xs">Amount: {formatCurrency(pricing.studentAmount)}</p>
           </div>
         </CardContent>
       </Card>
