@@ -59,6 +59,26 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
     },
   });
 
+  // Get current date in IST (India Standard Time)
+  const getCurrentDateIST = () => {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istTime = new Date(now.getTime() + istOffset);
+    return new Date(istTime.getFullYear(), istTime.getMonth(), istTime.getDate());
+  };
+
+  // Format date for IST display
+  const formatDateIST = (date: Date) => {
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(date.getTime() + istOffset);
+    return new Intl.DateTimeFormat('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata'
+    }).format(istDate);
+  };
+
   useEffect(() => {
     const fetchSubjects = async () => {
       if (!user) return;
@@ -193,7 +213,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
         </div>
 
         <div className="space-y-2">
-          <Label>Course Start Date</Label>
+          <Label>Course Start Date (IST)</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -205,7 +225,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {form.watch("start_date") ? (
-                  format(form.watch("start_date"), "PPP")
+                  formatDateIST(form.watch("start_date"))
                 ) : (
                   <span>Pick start date</span>
                 )}
@@ -216,6 +236,8 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
                 mode="single"
                 selected={form.watch("start_date")}
                 onSelect={(date) => date && form.setValue("start_date", date)}
+                disabled={(date) => date < getCurrentDateIST()}
+                defaultMonth={getCurrentDateIST()}
                 initialFocus
               />
             </PopoverContent>
@@ -226,7 +248,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
         </div>
 
         <div className="space-y-2">
-          <Label>Course End Date</Label>
+          <Label>Course End Date (IST)</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -238,7 +260,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {form.watch("end_date") ? (
-                  format(form.watch("end_date"), "PPP")
+                  formatDateIST(form.watch("end_date"))
                 ) : (
                   <span>Pick end date</span>
                 )}
@@ -249,6 +271,8 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
                 mode="single"
                 selected={form.watch("end_date")}
                 onSelect={(date) => date && form.setValue("end_date", date)}
+                disabled={(date) => date < getCurrentDateIST()}
+                defaultMonth={getCurrentDateIST()}
                 initialFocus
               />
             </PopoverContent>
@@ -274,7 +298,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
         </div>
 
         <div className="space-y-2">
-          <Label>Available Date</Label>
+          <Label>Available Date (IST)</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -286,7 +310,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {form.watch("available_date") ? (
-                  format(form.watch("available_date"), "PPP")
+                  formatDateIST(form.watch("available_date"))
                 ) : (
                   <span>Pick a date</span>
                 )}
@@ -297,6 +321,8 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
                 mode="single"
                 selected={form.watch("available_date")}
                 onSelect={(date) => date && form.setValue("available_date", date)}
+                disabled={(date) => date < getCurrentDateIST()}
+                defaultMonth={getCurrentDateIST()}
                 initialFocus
               />
             </PopoverContent>
@@ -307,7 +333,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="start_time">Start Time</Label>
+          <Label htmlFor="start_time">Start Time (IST)</Label>
           <Input
             id="start_time"
             type="time"
@@ -319,7 +345,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="end_time">End Time</Label>
+          <Label htmlFor="end_time">End Time (IST)</Label>
           <Input
             id="end_time"
             type="time"

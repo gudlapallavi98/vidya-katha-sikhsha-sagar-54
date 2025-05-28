@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,28 +53,32 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
   // Get current date in IST (India Standard Time)
   const getCurrentDateIST = () => {
     const now = new Date();
-    // Convert to IST (UTC+5:30)
-    const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istTime = new Date(now.getTime() + istOffset);
     return new Date(istTime.getFullYear(), istTime.getMonth(), istTime.getDate());
   };
 
   // Format date for IST display
   const formatDateIST = (date: Date) => {
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istDate = new Date(date.getTime() + istOffset);
     return new Intl.DateTimeFormat('en-IN', {
-      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
-    }).format(date);
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata'
+    }).format(istDate);
   };
 
   const handleFormSubmit = async (data: FormData) => {
     console.log("Form data before submission:", data);
     
     // Ensure date is properly formatted for IST
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const localDate = new Date(data.available_date.getTime() + istOffset);
     const formattedData = {
       ...data,
-      available_date: new Date(data.available_date.getFullYear(), data.available_date.getMonth(), data.available_date.getDate())
+      available_date: new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate())
     };
     
     console.log("Formatted data for IST:", formattedData);
@@ -136,17 +139,15 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
                 onSelect={(date) => {
                   console.log("Selected date (IST):", date);
                   if (date) {
-                    // Create date in local timezone (which should be IST for Indian users)
-                    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                    setValue("available_date", localDate);
+                    setValue("available_date", date);
                   }
                 }}
                 disabled={(date) => {
-                  // Disable past dates based on IST
                   const today = getCurrentDateIST();
                   return date < today;
                 }}
                 initialFocus
+                defaultMonth={getCurrentDateIST()}
               />
             </PopoverContent>
           </Popover>

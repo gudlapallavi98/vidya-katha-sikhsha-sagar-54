@@ -32,7 +32,6 @@ const LoginWithOTP = () => {
     try {
       console.log("Sending OTP to:", email);
       
-      // Send OTP via our edge function
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
         headers: {
@@ -96,31 +95,31 @@ const LoginWithOTP = () => {
     try {
       console.log("Verifying OTP:", otp, "against server OTP:", serverOtp);
       
-      // For login, verify the OTP against our stored server OTP
       if (otp !== serverOtp) {
         throw new Error("Invalid OTP code");
       }
 
-      // Check if user profile exists to determine role
+      // Check if user profile exists
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('role, first_name, last_name, id')
+        .select('role, first_name, last_name, id, profile_completed')
         .ilike('first_name', `%${email.split('@')[0]}%`)
         .limit(1);
 
       console.log("Profile lookup for OTP login:", profiles);
 
-      let userRole = 'student'; // default role
-      let userId = '';
       let userProfile = null;
+      let userRole = 'student';
+      let userId = '';
       
       if (profiles && profiles.length > 0) {
+        // Profile exists, use it
         userProfile = profiles[0];
         userRole = userProfile.role;
         userId = userProfile.id;
+        console.log("Using existing profile:", userProfile);
       } else {
-        // If no profile found, we need to create a user first through Supabase Auth
-        // For OTP login without existing profile, we'll create a temporary auth user
+        // No profile found, create one
         const tempUserId = crypto.randomUUID();
         
         const basicProfileData = {
@@ -145,9 +144,10 @@ const LoginWithOTP = () => {
         userProfile = newProfile;
         userRole = 'student';
         userId = newProfile.id;
+        console.log("Created new profile:", userProfile);
       }
 
-      // Store authentication info in localStorage for our auth context
+      // Store authentication info in localStorage
       const authData = {
         id: userId,
         email: email,
@@ -165,13 +165,11 @@ const LoginWithOTP = () => {
         description: "Welcome back!",
       });
 
-      // Navigate based on role with a small delay to ensure storage is set
+      // Navigate based on role
       setTimeout(() => {
         const targetRoute = userRole === 'teacher' ? '/teacher-dashboard' : '/student-dashboard';
         console.log("Redirecting to:", targetRoute);
         navigate(targetRoute, { replace: true });
-        
-        // Force a page reload to ensure auth context picks up the change
         window.location.href = targetRoute;
       }, 100);
       
