@@ -49,13 +49,13 @@ const EarningsTab: React.FC = () => {
     enabled: !!user,
   });
 
-  const totalEarnings = earnings.reduce((sum, earning) => sum + parseFloat(earning.amount), 0);
+  const totalEarnings = earnings.reduce((sum, earning) => sum + parseFloat(earning.amount.toString()), 0);
   const confirmedEarnings = earnings
     .filter(e => e.status === 'confirmed')
-    .reduce((sum, earning) => sum + parseFloat(earning.amount), 0);
+    .reduce((sum, earning) => sum + parseFloat(earning.amount.toString()), 0);
   const pendingEarnings = earnings
     .filter(e => e.status === 'pending')
-    .reduce((sum, earning) => sum + parseFloat(earning.amount), 0);
+    .reduce((sum, earning) => sum + parseFloat(earning.amount.toString()), 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -163,7 +163,7 @@ const EarningsTab: React.FC = () => {
                       )}
                     </TableCell>
                     <TableCell className="font-semibold">
-                      ₹{parseFloat(earning.amount).toFixed(2)}
+                      ₹{parseFloat(earning.amount.toString()).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(earning.status)}>
@@ -211,13 +211,13 @@ const EarningsTab: React.FC = () => {
                       {payment.session_requests?.proposed_title || payment.sessions?.title || 'Session'}
                     </TableCell>
                     <TableCell className="font-semibold">
-                      ₹{payment.amount.toFixed(2)}
+                      ₹{parseFloat(payment.amount.toString()).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-red-600">
-                      -₹{payment.platform_fee.toFixed(2)}
+                      -₹{parseFloat(payment.platform_fee.toString()).toFixed(2)}
                     </TableCell>
                     <TableCell className="font-semibold text-green-600">
-                      ₹{payment.teacher_payout.toFixed(2)}
+                      ₹{parseFloat(payment.teacher_payout.toString()).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(payment.payment_status)}>

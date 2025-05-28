@@ -36,6 +36,7 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
             upcomingSessions={upcomingSessions}
             sessionsLoading={sessionsLoading}
             progress={progress}
+            handleJoinClass={handleJoinClass}
           />
         );
       
@@ -73,6 +74,7 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
             upcomingSessions={upcomingSessions}
             sessionsLoading={sessionsLoading}
             progress={progress}
+            handleJoinClass={handleJoinClass}
           />
         );
     }
