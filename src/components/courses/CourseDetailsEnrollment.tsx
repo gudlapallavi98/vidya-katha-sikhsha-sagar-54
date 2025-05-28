@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,14 +45,34 @@ export const CourseDetailsEnrollment: React.FC<CourseDetailsEnrollmentProps> = (
       return;
     }
 
-    // Navigate to session request form with course data
-    navigate("/student-dashboard?tab=request-session", {
-      state: {
-        selectedTeacherId: course.teacher_id,
-        selectedCourse: course,
-        enrollmentMode: true
-      }
-    });
+    console.log("Enrolling in course:", course.id);
+    setIsEnrolling(true);
+    
+    try {
+      // Navigate to student dashboard with course enrollment data
+      navigate("/student-dashboard", {
+        state: {
+          activeTab: "request-session",
+          selectedTeacherId: course.teacher_id,
+          selectedCourse: course,
+          enrollmentMode: true
+        }
+      });
+      
+      toast({
+        title: "Redirecting to Enrollment",
+        description: "Please complete the enrollment process in your dashboard.",
+      });
+    } catch (error) {
+      console.error("Error during enrollment redirect:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to redirect to enrollment page.",
+      });
+    } finally {
+      setIsEnrolling(false);
+    }
   };
 
   return (

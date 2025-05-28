@@ -51,9 +51,35 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
   const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = form;
   const selectedDate = watch("available_date");
 
+  // Get current date in IST (India Standard Time)
+  const getCurrentDateIST = () => {
+    const now = new Date();
+    // Convert to IST (UTC+5:30)
+    const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    return new Date(istTime.getFullYear(), istTime.getMonth(), istTime.getDate());
+  };
+
+  // Format date for IST display
+  const formatDateIST = (date: Date) => {
+    return new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  };
+
   const handleFormSubmit = async (data: FormData) => {
     console.log("Form data before submission:", data);
-    await onSubmit(data);
+    
+    // Ensure date is properly formatted for IST
+    const formattedData = {
+      ...data,
+      available_date: new Date(data.available_date.getFullYear(), data.available_date.getMonth(), data.available_date.getDate())
+    };
+    
+    console.log("Formatted data for IST:", formattedData);
+    await onSubmit(formattedData);
     reset();
   };
 
@@ -65,14 +91,6 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
       timeOptions.push(timeString);
     }
   }
-
-  // Get current date in IST
-  const getCurrentDateIST = () => {
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const istTime = new Date(now.getTime() + istOffset);
-    return new Date(istTime.getFullYear(), istTime.getMonth(), istTime.getDate());
-  };
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -97,7 +115,7 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
         </div>
 
         <div>
-          <Label>Available Date</Label>
+          <Label>Available Date (IST)</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -108,7 +126,7 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
+                {selectedDate ? formatDateIST(selectedDate) : "Pick a date"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -116,11 +134,11 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
                 mode="single"
                 selected={selectedDate}
                 onSelect={(date) => {
-                  console.log("Selected date:", date);
+                  console.log("Selected date (IST):", date);
                   if (date) {
-                    // Create date in IST timezone
-                    const istDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                    setValue("available_date", istDate);
+                    // Create date in local timezone (which should be IST for Indian users)
+                    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    setValue("available_date", localDate);
                   }
                 }}
                 disabled={(date) => {
@@ -138,7 +156,7 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
         </div>
 
         <div>
-          <Label>Start Time</Label>
+          <Label>Start Time (IST)</Label>
           <Select onValueChange={(value) => setValue("start_time", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select start time" />
@@ -146,7 +164,7 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
             <SelectContent>
               {timeOptions.map((time) => (
                 <SelectItem key={time} value={time}>
-                  {time}
+                  {time} IST
                 </SelectItem>
               ))}
             </SelectContent>
@@ -157,7 +175,7 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
         </div>
 
         <div>
-          <Label>End Time</Label>
+          <Label>End Time (IST)</Label>
           <Select onValueChange={(value) => setValue("end_time", value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select end time" />
@@ -165,7 +183,7 @@ const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
             <SelectContent>
               {timeOptions.map((time) => (
                 <SelectItem key={time} value={time}>
-                  {time}
+                  {time} IST
                 </SelectItem>
               ))}
             </SelectContent>

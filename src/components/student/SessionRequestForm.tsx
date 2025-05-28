@@ -1,16 +1,38 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import SessionRequestList from "./SessionRequestList";
 import { AvailabilitySelector } from "./availability/AvailabilitySelector";
 import { PaymentQRGenerator } from "./payment/PaymentQRGenerator";
 import { SessionRequestFormFields } from "./session/SessionRequestFormFields";
 
-const SessionRequestForm = () => {
+interface SessionRequestFormProps {
+  initialState?: {
+    selectedTeacherId?: string;
+    selectedCourse?: any;
+    enrollmentMode?: boolean;
+  };
+}
+
+const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState }) => {
   const [step, setStep] = useState<"select-teacher" | "select-availability" | "payment" | "request-form">("select-teacher");
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [selectedAvailability, setSelectedAvailability] = useState<any>(null);
   const [availabilityType, setAvailabilityType] = useState<'individual' | 'course'>('individual');
+
+  // Handle initial state from navigation
+  useEffect(() => {
+    if (initialState?.selectedTeacherId) {
+      setSelectedTeacherId(initialState.selectedTeacherId);
+      if (initialState.enrollmentMode && initialState.selectedCourse) {
+        setSelectedAvailability(initialState.selectedCourse);
+        setAvailabilityType('course');
+        setStep("payment");
+      } else {
+        setStep("select-availability");
+      }
+    }
+  }, [initialState]);
 
   const handleSelectTeacher = (teacherId: string) => {
     setSelectedTeacherId(teacherId);
@@ -40,7 +62,7 @@ const SessionRequestForm = () => {
 
   return (
     <Card className="p-6">
-      {step === "select-teacher" && (
+      {step === "select-teacher" && !initialState?.selectedTeacherId && (
         <SessionRequestList onSelectTeacher={handleSelectTeacher} />
       )}
       

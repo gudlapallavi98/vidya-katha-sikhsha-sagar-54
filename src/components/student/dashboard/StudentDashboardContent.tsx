@@ -1,5 +1,6 @@
 
-import React from "react";
+import React, { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import OverviewTab from "./components/OverviewTab";
 import CoursesTab from "./components/CoursesTab";
 import SessionsTab from "./components/SessionsTab";
@@ -9,6 +10,7 @@ import { StudentProfileForm } from "@/components/profile/student/StudentProfileF
 
 interface StudentDashboardContentProps {
   activeTab: string;
+  setActiveTab?: (tab: string) => void;
   enrolledCourses: any[];
   coursesLoading: boolean;
   upcomingSessions: any[];
@@ -19,6 +21,7 @@ interface StudentDashboardContentProps {
 
 const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
   activeTab,
+  setActiveTab,
   enrolledCourses,
   coursesLoading,
   upcomingSessions,
@@ -26,6 +29,15 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
   progress,
   handleJoinClass,
 }) => {
+  const location = useLocation();
+
+  // Handle navigation state for course enrollment
+  useEffect(() => {
+    if (location.state?.activeTab && setActiveTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state, setActiveTab]);
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case "overview":
@@ -61,7 +73,11 @@ const StudentDashboardContent: React.FC<StudentDashboardContentProps> = ({
         return <PaymentHistoryTab />;
       
       case "request-session":
-        return <SessionRequestForm />;
+        return (
+          <SessionRequestForm 
+            initialState={location.state}
+          />
+        );
       
       case "profile":
         return <StudentProfileForm activeTab="personal" />;

@@ -36,6 +36,15 @@ const StudentDashboard = () => {
     session.status === 'scheduled' || session.status === 'in_progress'
   );
 
+  const handleJoinClass = async (sessionId: string) => {
+    try {
+      console.log("Joining session:", sessionId);
+      // Implementation for joining class
+    } catch (error) {
+      console.error("Error joining class:", error);
+    }
+  };
+
   if (isChecking) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -56,12 +65,13 @@ const StudentDashboard = () => {
         children={
           <StudentDashboardContent 
             activeTab={activeTab}
+            setActiveTab={handleTabChange}
             enrolledCourses={enrolledCourses}
             coursesLoading={coursesLoading}
             upcomingSessions={filteredSessions}
             sessionsLoading={sessionsLoading}
-            progress={[]}  // This will need to be fetched from an API or provided from parent
-            handleJoinClass={(sessionId) => Promise.resolve()}  // Placeholder implementation
+            progress={[]}
+            handleJoinClass={handleJoinClass}
           />
         }
       />

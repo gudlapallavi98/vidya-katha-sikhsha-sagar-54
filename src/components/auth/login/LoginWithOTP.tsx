@@ -30,7 +30,9 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // Send OTP via Resend using our edge function
+      console.log("Sending OTP to:", email);
+      
+      // Send OTP via our edge function
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
         headers: {
@@ -92,6 +94,8 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
+      console.log("Verifying OTP:", otp, "against server OTP:", serverOtp);
+      
       // For login, verify the OTP against our stored server OTP
       if (otp !== serverOtp) {
         throw new Error("Invalid OTP code");
@@ -101,40 +105,56 @@ const LoginWithOTP = () => {
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('role, first_name, last_name, id')
-        .eq('first_name', email.split('@')[0])
+        .ilike('first_name', `%${email.split('@')[0]}%`)
         .limit(1);
 
       console.log("Profile lookup for OTP login:", profiles);
 
       let userRole = 'student'; // default role
       let userId = '';
+      let userProfile = null;
       
       if (profiles && profiles.length > 0) {
-        userRole = profiles[0].role;
-        userId = profiles[0].id;
+        userProfile = profiles[0];
+        userRole = userProfile.role;
+        userId = userProfile.id;
       } else {
-        // If no profile found, try by email domain matching
-        const emailDomain = email.split('@')[0];
-        const { data: emailProfiles, error: emailError } = await supabase
+        // If no profile found, create a basic student profile
+        const basicProfileData = {
+          first_name: email.split('@')[0],
+          last_name: '',
+          role: 'student',
+          profile_completed: false
+        };
+        
+        const { data: newProfile, error: createError } = await supabase
           .from('profiles')
-          .select('role, first_name, last_name, id')
-          .ilike('first_name', `%${emailDomain}%`)
-          .limit(1);
+          .insert(basicProfileData)
+          .select()
+          .single();
           
-        if (emailProfiles && emailProfiles.length > 0) {
-          userRole = emailProfiles[0].role;
-          userId = emailProfiles[0].id;
+        if (createError) {
+          console.error("Error creating profile:", createError);
+          throw new Error("Failed to create user profile");
         }
+        
+        userProfile = newProfile;
+        userRole = 'student';
+        userId = newProfile.id;
       }
 
       // Store authentication info in localStorage for our auth context
-      localStorage.setItem('authenticated_user', JSON.stringify({
+      const authData = {
         id: userId,
         email: email,
         loginMethod: 'otp',
         role: userRole,
-        first_name: email.split('@')[0]
-      }));
+        first_name: userProfile.first_name,
+        last_name: userProfile.last_name,
+        profile_completed: userProfile.profile_completed || false
+      };
+      
+      localStorage.setItem('authenticated_user', JSON.stringify(authData));
       
       toast({
         title: "Login Successful",

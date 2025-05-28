@@ -7,12 +7,22 @@ export interface PricingCalculation {
 }
 
 export const calculatePricing = (teacherRate: number): PricingCalculation => {
-  const platformFee = Math.round(teacherRate * 0.1 * 100) / 100; // 10% platform fee
-  const studentAmount = Math.round((teacherRate + platformFee) * 100) / 100; // Teacher rate + platform fee
-  const teacherPayout = Math.round((teacherRate - platformFee) * 100) / 100; // Teacher rate - platform fee
+  // Round to 2 decimal places for accurate calculations
+  const rate = Math.round(teacherRate * 100) / 100;
+  const platformFee = Math.round(rate * 0.1 * 100) / 100; // 10% platform fee
+  const studentAmount = Math.round((rate + platformFee) * 100) / 100; // Teacher rate + platform fee  
+  const teacherPayout = Math.round((rate - platformFee) * 100) / 100; // Teacher rate - platform fee (90% of original rate)
+
+  console.log("Pricing calculation:", {
+    originalRate: teacherRate,
+    adjustedRate: rate,
+    platformFee,
+    studentAmount,
+    teacherPayout
+  });
 
   return {
-    teacherRate,
+    teacherRate: rate,
     studentAmount,
     platformFee,
     teacherPayout
@@ -35,6 +45,17 @@ export const createPaymentRecord = async (
   
   const amount = paymentType === 'student_payment' ? pricing.studentAmount : pricing.teacherPayout;
   
+  console.log("Creating payment record:", {
+    userId,
+    sessionRequestId,
+    sessionId,
+    amount,
+    platformFee: pricing.platformFee,
+    teacherPayout: pricing.teacherPayout,
+    paymentType,
+    paymentStatus
+  });
+  
   const { data, error } = await supabase
     .from('payment_history')
     .insert({
@@ -51,6 +72,11 @@ export const createPaymentRecord = async (
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Payment record creation error:", error);
+    throw error;
+  }
+  
+  console.log("Payment record created successfully:", data);
   return data;
 };

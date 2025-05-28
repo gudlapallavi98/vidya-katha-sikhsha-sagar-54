@@ -62,6 +62,27 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
   
   const pricing = calculatePricing(teacherRate);
 
+  // Format date and time for IST
+  const formatDateTimeIST = (dateStr: string, timeStr?: string) => {
+    try {
+      if (type === 'individual' && dateStr && timeStr) {
+        // For individual sessions, combine date and time
+        const dateTime = new Date(`${dateStr}T${timeStr}:00`);
+        // Convert to IST by adding 5:30 hours offset
+        const istDateTime = new Date(dateTime.getTime() + (5.5 * 60 * 60 * 1000));
+        return istDateTime.toISOString();
+      } else {
+        // For course enrollment, use current time
+        const now = new Date();
+        const istNow = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+        return istNow.toISOString();
+      }
+    } catch (error) {
+      console.error("Error formatting date time:", error);
+      return new Date().toISOString();
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
       toast({
@@ -77,14 +98,10 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
       console.log("Submitting session request with pricing:", pricing);
 
       // Create proper date object for IST timezone
-      let proposedDate;
-      if (type === 'individual') {
-        const dateStr = availability.available_date;
-        const timeStr = availability.start_time;
-        proposedDate = new Date(`${dateStr}T${timeStr}:00+05:30`).toISOString();
-      } else {
-        proposedDate = new Date().toISOString();
-      }
+      const proposedDate = formatDateTimeIST(
+        availability.available_date,
+        availability.start_time
+      );
 
       const sessionData = {
         student_id: user.id,
@@ -171,6 +188,21 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
     }
   };
 
+  // Format display date for IST
+  const formatDisplayDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr + 'T00:00:00');
+      return new Intl.DateTimeFormat('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }).format(date);
+    } catch (error) {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -203,12 +235,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
                 <div>
                   <span className="font-medium">Date:</span>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(availability.available_date + 'T00:00:00+05:30').toLocaleDateString('en-IN', {
-                      timeZone: 'Asia/Kolkata',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    {formatDisplayDate(availability.available_date)}
                   </p>
                 </div>
                 <div>
