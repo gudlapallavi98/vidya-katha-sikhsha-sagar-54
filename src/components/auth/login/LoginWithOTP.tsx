@@ -30,7 +30,23 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      console.log("Sending OTP to:", email);
+      // First check if user exists
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, first_name, last_name, id, profile_completed')
+        .ilike('first_name', `%${email.split('@')[0]}%`)
+        .limit(1);
+
+      if (profileError) {
+        console.error("Error checking user profile:", profileError);
+        throw new Error("Failed to verify user account");
+      }
+
+      if (!profiles || profiles.length === 0) {
+        throw new Error("No account found with this email. Please register first or use password login.");
+      }
+
+      console.log("Sending OTP to existing user:", email);
       
       const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
         method: "POST",
@@ -99,7 +115,7 @@ const LoginWithOTP = () => {
         throw new Error("Invalid OTP code");
       }
 
-      // Check if user profile exists
+      // Get existing user profile
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
         .select('role, first_name, last_name, id, profile_completed')
@@ -108,44 +124,13 @@ const LoginWithOTP = () => {
 
       console.log("Profile lookup for OTP login:", profiles);
 
-      let userProfile = null;
-      let userRole = 'student';
-      let userId = '';
-      
-      if (profiles && profiles.length > 0) {
-        // Profile exists, use it
-        userProfile = profiles[0];
-        userRole = userProfile.role;
-        userId = userProfile.id;
-        console.log("Using existing profile:", userProfile);
-      } else {
-        // No profile found, create one
-        const tempUserId = crypto.randomUUID();
-        
-        const basicProfileData = {
-          id: tempUserId,
-          first_name: email.split('@')[0],
-          last_name: '',
-          role: 'student',
-          profile_completed: false
-        };
-        
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert(basicProfileData)
-          .select()
-          .single();
-          
-        if (createError) {
-          console.error("Error creating profile:", createError);
-          throw new Error("Failed to create user profile");
-        }
-        
-        userProfile = newProfile;
-        userRole = 'student';
-        userId = newProfile.id;
-        console.log("Created new profile:", userProfile);
+      if (profileError || !profiles || profiles.length === 0) {
+        throw new Error("User account not found");
       }
+
+      const userProfile = profiles[0];
+      const userRole = userProfile.role;
+      const userId = userProfile.id;
 
       // Store authentication info in localStorage
       const authData = {
@@ -177,7 +162,7 @@ const LoginWithOTP = () => {
       console.error("Error verifying OTP:", error);
       toast({
         variant: "destructive",
-        title: "Invalid OTP",
+        title: "Login Failed",
         description: error instanceof Error ? error.message : "Please check your code and try again",
       });
     } finally {
@@ -250,7 +235,7 @@ const LoginWithOTP = () => {
       <div className="text-center">
         <h3 className="text-lg font-semibold">Login with OTP</h3>
         <p className="text-sm text-muted-foreground mt-2">
-          Enter your email to receive a verification code
+          Enter your email to receive a verification code (for existing users only)
         </p>
       </div>
 
@@ -262,13 +247,13 @@ const LoginWithOTP = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
+            placeholder="Enter your registered email"
             required
           />
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Sending..." : "Send Verification Code"}
+          {isLoading ? "Checking..." : "Send Verification Code"}
         </Button>
       </form>
     </div>

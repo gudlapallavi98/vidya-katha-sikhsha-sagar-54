@@ -43,6 +43,22 @@ export function AvailabilityList({ availabilities = [], onAvailabilityRemoved }:
     }
   };
 
+  // Format date for IST display
+  const formatDateIST = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      timeZone: 'Asia/Kolkata'
+    }).format(date);
+  };
+
+  // Format time for IST display
+  const formatTimeIST = (timeString: string) => {
+    return `${timeString} IST`;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -91,11 +107,11 @@ export function AvailabilityList({ availabilities = [], onAvailabilityRemoved }:
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>{new Date(availability.available_date).toLocaleDateString()}</span>
+                <span>{formatDateIST(availability.available_date)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>{availability.start_time} - {availability.end_time}</span>
+                <span>{formatTimeIST(availability.start_time)} - {formatTimeIST(availability.end_time)}</span>
               </div>
               {availability.session_type === 'live_course' && (
                 <div className="flex items-center gap-2">

@@ -42,6 +42,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [currentTab, setCurrentTab] = useState(activeTab);
   
   const {
     form, 
@@ -54,6 +55,11 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
   } = useProfileFormData(formSchema);
   
   const updateProfile = useUpdateProfile();
+
+  // Update current tab when activeTab prop changes
+  useEffect(() => {
+    setCurrentTab(activeTab);
+  }, [activeTab]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) return;
@@ -99,7 +105,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs value={activeTab}>
+        <Tabs value={currentTab} onValueChange={setCurrentTab}>
           <TabsList className="grid grid-cols-4 mb-8">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             <TabsTrigger value="experience">Experience</TabsTrigger>
