@@ -30,20 +30,30 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // First check if user exists
-      const { data: profiles, error: profileError } = await supabase
+      // Check if user exists by looking up profiles table with the exact email
+      const { data: existingUsers, error: userError } = await supabase
         .from('profiles')
-        .select('role, first_name, last_name, id, profile_completed')
-        .ilike('first_name', `%${email.split('@')[0]}%`)
+        .select('id, first_name, last_name, role, profile_completed')
+        .eq('id', (await supabase.auth.admin.listUsers()).data.users.find(user => user.email === email)?.id || '')
         .limit(1);
 
-      if (profileError) {
-        console.error("Error checking user profile:", profileError);
-        throw new Error("Failed to verify user account");
+      // Alternative approach - get auth users and check email
+      const { data: authUsers } = await supabase.auth.admin.listUsers();
+      const matchingUser = authUsers.users.find(user => user.email === email);
+      
+      if (!matchingUser) {
+        throw new Error("No account found with this email. Please register first or use password login.");
       }
 
-      if (!profiles || profiles.length === 0) {
-        throw new Error("No account found with this email. Please register first or use password login.");
+      // Get profile data for the matching user
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, first_name, last_name, profile_completed')
+        .eq('id', matchingUser.id)
+        .single();
+
+      if (profileError || !userProfile) {
+        throw new Error("User profile not found. Please contact support.");
       }
 
       console.log("Sending OTP to existing user:", email);
@@ -56,7 +66,7 @@ const LoginWithOTP = () => {
         },
         body: JSON.stringify({
           email: email,
-          name: email.split('@')[0],
+          name: userProfile.first_name || email.split('@')[0],
           type: "login"
         })
       });
@@ -115,22 +125,27 @@ const LoginWithOTP = () => {
         throw new Error("Invalid OTP code");
       }
 
-      // Get existing user profile
-      const { data: profiles, error: profileError } = await supabase
-        .from('profiles')
-        .select('role, first_name, last_name, id, profile_completed')
-        .ilike('first_name', `%${email.split('@')[0]}%`)
-        .limit(1);
-
-      console.log("Profile lookup for OTP login:", profiles);
-
-      if (profileError || !profiles || profiles.length === 0) {
+      // Get auth users and find matching user
+      const { data: authUsers } = await supabase.auth.admin.listUsers();
+      const matchingUser = authUsers.users.find(user => user.email === email);
+      
+      if (!matchingUser) {
         throw new Error("User account not found");
       }
 
-      const userProfile = profiles[0];
+      // Get user profile
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, first_name, last_name, profile_completed')
+        .eq('id', matchingUser.id)
+        .single();
+
+      if (profileError || !userProfile) {
+        throw new Error("User profile not found");
+      }
+
       const userRole = userProfile.role;
-      const userId = userProfile.id;
+      const userId = matchingUser.id;
 
       // Store authentication info in localStorage
       const authData = {

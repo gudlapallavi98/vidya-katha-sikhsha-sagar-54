@@ -29,6 +29,11 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
     { id: "profile", label: "Profile Settings", icon: Settings },
   ];
 
+  const handleTabClick = (tabId: string) => {
+    console.log("Switching to tab:", tabId);
+    setActiveTab(tabId);
+  };
+
   return (
     <Card className="h-full">
       <CardContent className="p-6">
@@ -39,8 +44,8 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
               <Button
                 key={item.id}
                 variant={activeTab === item.id ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab(item.id)}
+                className="w-full justify-start cursor-pointer"
+                onClick={() => handleTabClick(item.id)}
               >
                 <Icon className="mr-2 h-4 w-4" />
                 {item.label}

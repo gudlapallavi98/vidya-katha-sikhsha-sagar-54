@@ -15,6 +15,7 @@ const TeacherProfileSettings: React.FC = () => {
       
       <TeacherProfileForm 
         activeTab={activeTab} 
+        onTabChange={handleTabChange}
         onCompleted={() => {
           console.log("Profile update completed");
         }}
