@@ -119,8 +119,12 @@ const LoginWithOTP = () => {
         userRole = userProfile.role;
         userId = userProfile.id;
       } else {
-        // If no profile found, create a basic student profile
+        // If no profile found, we need to create a user first through Supabase Auth
+        // For OTP login without existing profile, we'll create a temporary auth user
+        const tempUserId = crypto.randomUUID();
+        
         const basicProfileData = {
+          id: tempUserId,
           first_name: email.split('@')[0],
           last_name: '',
           role: 'student',
