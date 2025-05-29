@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,20 +35,17 @@ const LoginWithOTP = () => {
         .from('profiles')
         .select('id, first_name, role')
         .eq('email', email)
-        .maybeSingle();
+        .single();
 
       if (profileError) {
         console.error("Error checking user profile:", profileError);
-        throw new Error("Unable to verify user account. Please try again.");
+        throw new Error("No account found with this email address. Please check your email or sign up first.");
       }
 
       if (!profileData) {
         throw new Error("No account found with this email address. Please check your email or sign up first.");
       }
 
-      // Get the current session to get the auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      
       // Use Supabase's built-in function invocation
       const { data: result, error: functionError } = await supabase.functions.invoke('send-email/send-otp', {
         body: {
