@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,48 +30,19 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // Check if user exists in profiles table instead of auth.users
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role, first_name, last_name, profile_completed')
-        .eq('id', email) // This won't work, we need to check by email in auth
-        .single();
-
-      // Better approach: try to sign in with magic link first to verify user exists
-      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+      // Check if user exists by trying to send OTP through Supabase
+      const { error: otpError } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
           shouldCreateUser: false
         }
       });
 
-      if (magicLinkError) {
+      if (otpError) {
         throw new Error("No account found with this email. Please register first or use password login.");
       }
 
-      console.log("Sending OTP to existing user:", email);
-      
-      const response = await fetch("https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/send-email/send-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im54ZHNzemRvYmdiaWtybnFxcnVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwOTQzMTYsImV4cCI6MjA2MTY3MDMxNn0.G98OnCs8p1nglvP0qmnaOllhUFIJIuSw2iiaci1OOJo`,
-        },
-        body: JSON.stringify({
-          email: email,
-          name: email.split('@')[0],
-          type: "login"
-        })
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Failed to send OTP");
-      }
-
-      console.log("OTP sent successfully:", result);
-      setServerOtp(result.otp || "");
+      console.log("OTP sent successfully via Supabase to:", email);
       
       toast({
         title: "OTP Sent",
@@ -111,63 +83,42 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      console.log("Verifying OTP:", otp, "against server OTP:", serverOtp);
+      console.log("Verifying OTP:", otp);
       
-      if (otp !== serverOtp) {
-        throw new Error("Invalid OTP code");
-      }
-
-      // Get user profile by email using a different approach
-      // First, let's try to get user session using the OTP
-      const { data: authData, error: authError } = await supabase.auth.signInWithOtp({
+      // Use Supabase's built-in OTP verification
+      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
         email: email,
         token: otp,
         type: 'email'
       });
 
       if (authError) {
-        // If that fails, we'll create a custom session
-        // Get user profile from profiles table using email lookup
-        const { data: profiles, error: profileError } = await supabase
+        throw new Error("Invalid OTP code. Please check your email and try again.");
+      }
+
+      console.log("OTP verification successful:", authData);
+      
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
+
+      // Get user profile to determine redirect
+      if (authData.user) {
+        const { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, first_name, last_name, profile_completed')
-          .limit(100); // Get all profiles to search by email
+          .select('role')
+          .eq('id', authData.user.id)
+          .single();
 
-        if (profileError) {
-          throw new Error("User profile not found");
+        // Navigate based on user role
+        if (profile?.role === 'teacher') {
+          navigate('/teacher-dashboard', { replace: true });
+        } else {
+          navigate('/student-dashboard', { replace: true });
         }
-
-        // Since we can't search by email directly, we'll need to use the authenticated approach
-        // For now, let's use a simpler approach with localStorage
-        const authSessionData = {
-          email: email,
-          loginMethod: 'otp',
-          // We'll set role and other details after successful login
-          timestamp: Date.now()
-        };
-        
-        localStorage.setItem('authenticated_user', JSON.stringify(authSessionData));
-        
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!",
-        });
-
-        // Navigate to default dashboard - we'll determine role later
-        setTimeout(() => {
-          navigate('/student-dashboard', { replace: true });
-        }, 100);
       } else {
-        // Successful auth with Supabase
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!",
-        });
-
-        // Navigate based on user session
-        setTimeout(() => {
-          navigate('/student-dashboard', { replace: true });
-        }, 100);
+        navigate('/student-dashboard', { replace: true });
       }
       
     } catch (error) {
