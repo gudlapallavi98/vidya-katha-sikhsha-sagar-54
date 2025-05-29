@@ -4,7 +4,7 @@ import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { TeacherProfileForm } from "@/components/profile/teacher/TeacherProfileForm";
 
 const TeacherProfileSettings: React.FC = () => {
-  const { activeTab, handleTabChange } = useTabNavigation("personal");
+  const { activeTab } = useTabNavigation("personal");
 
   return (
     <div className="space-y-6">
@@ -15,7 +15,6 @@ const TeacherProfileSettings: React.FC = () => {
       
       <TeacherProfileForm 
         activeTab={activeTab} 
-        onTabChange={handleTabChange}
         onCompleted={() => {
           console.log("Profile update completed");
         }}

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,15 +29,13 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // Check if user exists by looking up profiles table with the exact email
-      const { data: existingUsers, error: userError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, role, profile_completed')
-        .eq('id', (await supabase.auth.admin.listUsers()).data.users.find(user => user.email === email)?.id || '')
-        .limit(1);
+      // Get auth users and check email
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error("Unable to verify user account. Please try again.");
+      }
 
-      // Alternative approach - get auth users and check email
-      const { data: authUsers } = await supabase.auth.admin.listUsers();
       const matchingUser = authUsers.users.find(user => user.email === email);
       
       if (!matchingUser) {
@@ -126,7 +123,12 @@ const LoginWithOTP = () => {
       }
 
       // Get auth users and find matching user
-      const { data: authUsers } = await supabase.auth.admin.listUsers();
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) {
+        throw new Error("Unable to verify user account");
+      }
+      
       const matchingUser = authUsers.users.find(user => user.email === email);
       
       if (!matchingUser) {
