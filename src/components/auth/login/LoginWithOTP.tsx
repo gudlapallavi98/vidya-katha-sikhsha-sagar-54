@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useNavigate } from "react-router-dom";
+import type { User } from "@supabase/supabase-js";
 
 const LoginWithOTP = () => {
   const [email, setEmail] = useState("");
@@ -36,7 +37,7 @@ const LoginWithOTP = () => {
         throw new Error("Unable to verify user account. Please try again.");
       }
 
-      const matchingUser = authUsers.users.find(user => user.email === email);
+      const matchingUser = authUsers.users.find((user: User) => user.email === email);
       
       if (!matchingUser || !matchingUser.email) {
         throw new Error("No account found with this email. Please register first or use password login.");
@@ -129,7 +130,7 @@ const LoginWithOTP = () => {
         throw new Error("Unable to verify user account");
       }
       
-      const matchingUser = authUsers.users.find(user => user.email === email);
+      const matchingUser = authUsers.users.find((user: User) => user.email === email);
       
       if (!matchingUser || !matchingUser.email) {
         throw new Error("User account not found");
