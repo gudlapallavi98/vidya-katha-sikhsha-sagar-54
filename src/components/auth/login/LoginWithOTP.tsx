@@ -38,7 +38,7 @@ const LoginWithOTP = () => {
 
       const matchingUser = authUsers.users.find(user => user.email === email);
       
-      if (!matchingUser) {
+      if (!matchingUser || !matchingUser.email) {
         throw new Error("No account found with this email. Please register first or use password login.");
       }
 
@@ -131,7 +131,7 @@ const LoginWithOTP = () => {
       
       const matchingUser = authUsers.users.find(user => user.email === email);
       
-      if (!matchingUser) {
+      if (!matchingUser || !matchingUser.email) {
         throw new Error("User account not found");
       }
 
