@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useNavigate } from "react-router-dom";
+
+// Define a simple interface for the profile data to help TypeScript
+interface ProfileData {
+  id: string;
+  first_name: string | null;
+  role: string;
+}
 
 const LoginWithOTP = () => {
   const [email, setEmail] = useState("");
@@ -30,11 +36,12 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // First check if user exists by trying to get their profile
+      // First check if user exists by trying to get their profile with explicit typing
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, first_name, role')
         .eq('email', email)
+        .returns<ProfileData[]>()
         .single();
 
       if (profileError) {
