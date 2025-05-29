@@ -24,8 +24,6 @@ const StudentDashboardWithQueryClient = () => {
 
 const StudentDashboard = () => {
   const { activeTab, handleTabChange } = useTabNavigation("overview");
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const { isAuthenticated, isChecking } = useAuthStatus();
 
   const { data: enrolledCourses = [], isLoading: coursesLoading } = useStudentCourses();
@@ -65,7 +63,6 @@ const StudentDashboard = () => {
         children={
           <StudentDashboardContent 
             activeTab={activeTab}
-            setActiveTab={handleTabChange}
             enrolledCourses={enrolledCourses}
             coursesLoading={coursesLoading}
             upcomingSessions={filteredSessions}
