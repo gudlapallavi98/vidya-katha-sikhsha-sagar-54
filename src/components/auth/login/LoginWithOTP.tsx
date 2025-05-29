@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,37 +29,44 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // First check if user exists in profiles table
+      // First check if user exists by trying to get their profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, first_name')
-        .eq('id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+        .select('id, first_name, role')
+        .eq('email', email)
+        .maybeSingle();
 
-      // Check if user exists by email in auth.users (we need to use a different approach)
-      const { data: existingUser, error: userError } = await supabase.auth.getUser();
-      
-      // Let's use our custom send-otp function instead
-      const response = await fetch('/functions/v1/send-email/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
-        },
-        body: JSON.stringify({
-          email: email,
-          name: "User", // We'll use a default name since we can't fetch it easily
-          type: "login"
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Failed to send OTP");
+      if (profileError) {
+        console.error("Error checking user profile:", profileError);
+        throw new Error("Unable to verify user account. Please try again.");
       }
 
-      console.log("OTP sent successfully via custom function to:", email);
+      if (!profileData) {
+        throw new Error("No account found with this email address. Please check your email or sign up first.");
+      }
+
+      // Get the current session to get the auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Use Supabase's built-in function invocation
+      const { data: result, error: functionError } = await supabase.functions.invoke('send-email/send-otp', {
+        body: {
+          email: email,
+          name: profileData.first_name || "User",
+          type: "login"
+        }
+      });
+
+      if (functionError) {
+        console.error("Function error:", functionError);
+        throw new Error("Failed to send OTP. Please try again.");
+      }
+
+      if (!result?.success) {
+        throw new Error(result?.error || "Failed to send OTP");
+      }
+
+      console.log("OTP sent successfully via Resend to:", email);
       
       // Store the OTP for verification (in production, this should be server-side)
       setServerOtp(result.otp);
