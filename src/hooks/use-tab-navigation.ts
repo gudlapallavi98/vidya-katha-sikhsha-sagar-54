@@ -1,10 +1,9 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 export const useTabNavigation = (defaultTab: string = "overview") => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const tabFromUrl = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab);
 
@@ -17,7 +16,7 @@ export const useTabNavigation = (defaultTab: string = "overview") => {
       // If no tab in URL, set to default
       setActiveTab(defaultTab);
     }
-  }, [tabFromUrl, defaultTab]);
+  }, [tabFromUrl, defaultTab, activeTab]);
 
   const handleTabChange = useCallback((tab: string) => {
     console.log("handleTabChange called with:", tab);

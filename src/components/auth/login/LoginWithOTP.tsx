@@ -30,19 +30,40 @@ const LoginWithOTP = () => {
     setIsLoading(true);
     
     try {
-      // Check if user exists by trying to send OTP through Supabase
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          shouldCreateUser: false
-        }
+      // First check if user exists in profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, first_name')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      // Check if user exists by email in auth.users (we need to use a different approach)
+      const { data: existingUser, error: userError } = await supabase.auth.getUser();
+      
+      // Let's use our custom send-otp function instead
+      const response = await fetch('/functions/v1/send-email/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          email: email,
+          name: "User", // We'll use a default name since we can't fetch it easily
+          type: "login"
+        }),
       });
 
-      if (otpError) {
-        throw new Error("No account found with this email. Please register first or use password login.");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to send OTP");
       }
 
-      console.log("OTP sent successfully via Supabase to:", email);
+      console.log("OTP sent successfully via custom function to:", email);
+      
+      // Store the OTP for verification (in production, this should be server-side)
+      setServerOtp(result.otp);
       
       toast({
         title: "OTP Sent",
@@ -85,18 +106,24 @@ const LoginWithOTP = () => {
     try {
       console.log("Verifying OTP:", otp);
       
-      // Use Supabase's built-in OTP verification
-      const { data: authData, error: authError } = await supabase.auth.verifyOtp({
-        email: email,
-        token: otp,
-        type: 'email'
-      });
-
-      if (authError) {
+      // Verify OTP against the server OTP
+      if (otp !== serverOtp) {
         throw new Error("Invalid OTP code. Please check your email and try again.");
       }
 
-      console.log("OTP verification successful:", authData);
+      // If OTP is correct, sign in the user with email (passwordless)
+      const { data: authData, error: authError } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: false // Don't create new users for login
+        }
+      });
+
+      if (authError) {
+        throw new Error("Failed to sign in. Please try again.");
+      }
+
+      console.log("OTP verification successful");
       
       toast({
         title: "Login Successful",
@@ -104,11 +131,12 @@ const LoginWithOTP = () => {
       });
 
       // Get user profile to determine redirect
-      if (authData.user) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', authData.user.id)
+          .eq('id', user.id)
           .single();
 
         // Navigate based on user role

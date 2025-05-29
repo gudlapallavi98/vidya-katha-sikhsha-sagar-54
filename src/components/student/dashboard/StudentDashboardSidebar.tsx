@@ -31,13 +31,7 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
 
   const handleTabClick = (tabId: string) => {
     console.log("StudentDashboard: Switching to tab:", tabId);
-    // Force the tab change
     setActiveTab(tabId);
-    
-    // Also update URL to reflect the change
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', tabId);
-    window.history.replaceState({}, '', url.toString());
   };
 
   return (
