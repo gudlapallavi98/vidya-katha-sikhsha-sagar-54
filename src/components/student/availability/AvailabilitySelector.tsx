@@ -1,224 +1,219 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Calendar, Clock, DollarSign, BookOpen } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, User, Book } from "lucide-react";
+import { format } from "date-fns";
 
-interface AvailabilitySelectorProps {
-  teacherId: string;
-  onSelectAvailability: (availability: any, type: 'individual' | 'course') => void;
-  onBack: () => void;
-}
-
-interface IndividualAvailability {
+interface AvailabilitySlot {
   id: string;
   teacher_id: string;
   subject_id: string;
   available_date: string;
   start_time: string;
   end_time: string;
-  status: string;
+  session_type: string;
   price: number;
+  teacher_rate: number;
+  student_price: number;
+  status: string;
+  booked_students: number;
+  max_students: number;
+  notes?: string;
+  teacher?: {
+    first_name: string;
+    last_name: string;
+    display_name?: string;
+  };
   subject?: {
-    id: string;
     name: string;
   };
 }
 
-interface CourseAvailability {
-  id: string;
-  title: string;
-  description: string;
-  total_lessons: number;
-  teacher_id: string;
-  category: string;
-  price: number;
-  image_url: string | null;
-  course_link: string | null;
-  created_at: string;
-  updated_at: string;
+interface AvailabilitySelectorProps {
+  subjectId?: string;
+  teacherId?: string;
+  onSelectSlot: (slot: AvailabilitySlot) => void;
 }
 
-export const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
+const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
+  subjectId,
   teacherId,
-  onSelectAvailability,
-  onBack
+  onSelectSlot,
 }) => {
-  const [selectedType, setSelectedType] = useState<'individual' | 'course'>('individual');
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
-  // Fetch individual availability with prices
-  const { data: individualAvailability = [], isLoading: loadingIndividual } = useQuery<IndividualAvailability[]>({
-    queryKey: ['individual_availability', teacherId],
+  const { data: availabilitySlots = [], isLoading } = useQuery({
+    queryKey: ['teacher_availability', teacherId, subjectId],
     queryFn: async () => {
-      const now = new Date();
-      const currentDate = now.toISOString().split('T')[0];
-      const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('teacher_availability')
         .select(`
           *,
-          subject:subjects(id, name)
+          teacher:profiles!teacher_availability_teacher_id_fkey(first_name, last_name, display_name),
+          subject:subjects(name)
         `)
-        .eq('teacher_id', teacherId)
-        .eq('status', 'available')
-        .or(`available_date.gt.${currentDate},and(available_date.eq.${currentDate},start_time.gt.${currentTime})`)
+        .eq('status', 'available') // Only show available slots
+        .gte('available_date', new Date().toISOString().split('T')[0]) // Future dates only
         .order('available_date', { ascending: true })
         .order('start_time', { ascending: true });
+
+      if (teacherId) {
+        query = query.eq('teacher_id', teacherId);
+      }
+
+      if (subjectId) {
+        query = query.eq('subject_id', subjectId);
+      }
+
+      const { data, error } = await query;
       
       if (error) throw error;
-      return data || [];
+      return data as AvailabilitySlot[];
     },
+    enabled: true,
   });
 
-  // Fetch course availability with prices
-  const { data: courseAvailability = [], isLoading: loadingCourse } = useQuery<CourseAvailability[]>({
-    queryKey: ['course_availability', teacherId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('teacher_id', teacherId)
-        .eq('is_published', true);
-      
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  // Filter out fully booked slots
+  const availableSlots = availabilitySlots.filter(slot => 
+    slot.status === 'available' && 
+    slot.booked_students < slot.max_students
+  );
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  // Group slots by date
+  const slotsByDate = availableSlots.reduce((acc, slot) => {
+    const date = slot.available_date;
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(slot);
+    return acc;
+  }, {} as Record<string, AvailabilitySlot[]>);
 
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const filteredSlots = selectedDate 
+    ? slotsByDate[selectedDate] || []
+    : availableSlots;
 
-  if (loadingIndividual || loadingCourse) {
-    return <div className="p-6 text-center">Loading availability...</div>;
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Available Time Slots</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">Loading available slots...</div>
+        </CardContent>
+      </Card>
+    );
   }
 
+  const uniqueDates = Object.keys(slotsByDate).sort();
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Select Availability</h2>
-        <Button variant="outline" onClick={onBack}>
-          Back to Teachers
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Date</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Button
+              variant={selectedDate === "" ? "default" : "outline"}
+              onClick={() => setSelectedDate("")}
+              className="text-sm"
+            >
+              All Dates
+            </Button>
+            {uniqueDates.map((date) => (
+              <Button
+                key={date}
+                variant={selectedDate === date ? "default" : "outline"}
+                onClick={() => setSelectedDate(date)}
+                className="text-sm"
+              >
+                {format(new Date(date), 'MMM dd')}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-      <Tabs value={selectedType} onValueChange={(value) => setSelectedType(value as 'individual' | 'course')}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="individual">Individual Sessions</TabsTrigger>
-          <TabsTrigger value="course">Course Sessions</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle>Available Time Slots</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {filteredSlots.length > 0 ? (
+            <div className="grid gap-4">
+              {filteredSlots.map((slot) => (
+                <div
+                  key={slot.id}
+                  className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => onSelectSlot(slot)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {format(new Date(slot.available_date), 'EEEE, MMM dd, yyyy')}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span>{slot.start_time} - {slot.end_time}</span>
+                      </div>
 
-        <TabsContent value="individual" className="space-y-4">
-          {individualAvailability.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {individualAvailability.map((availability) => (
-                <Card key={availability.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5" />
-                      {availability.subject?.name}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{formatDate(availability.available_date)}</span>
+                      {!teacherId && slot.teacher && (
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span>
+                            {slot.teacher.display_name || 
+                             `${slot.teacher.first_name} ${slot.teacher.last_name}`}
+                          </span>
+                        </div>
+                      )}
+
+                      {!subjectId && slot.subject && (
+                        <div className="flex items-center gap-2">
+                          <Book className="h-4 w-4 text-muted-foreground" />
+                          <span>{slot.subject.name}</span>
+                        </div>
+                      )}
+
+                      <div className="text-sm text-muted-foreground">
+                        {slot.session_type === 'individual' ? 'One-on-One' : 'Group'} Session
+                      </div>
+
+                      {slot.notes && (
+                        <div className="text-sm text-muted-foreground">
+                          Note: {slot.notes}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        {formatTime(availability.start_time)} - {formatTime(availability.end_time)}
-                      </span>
+
+                    <div className="text-right">
+                      <div className="font-bold text-lg">₹{slot.student_price}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {slot.max_students - slot.booked_students} spot{slot.max_students - slot.booked_students !== 1 ? 's' : ''} left
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        ₹{availability.price || 500}/hour
-                      </span>
-                    </div>
-                    <Badge variant="secondary" className="w-fit">
-                      Individual Session
-                    </Badge>
-                    <Button 
-                      className="w-full"
-                      onClick={() => onSelectAvailability(availability, 'individual')}
-                    >
-                      Select This Slot
-                    </Button>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground">No individual availability slots found.</p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="course" className="space-y-4">
-          {courseAvailability.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {courseAvailability.map((course) => (
-                <Card key={course.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle>{course.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {course.description}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{course.total_lessons} lessons</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">
-                        ₹{course.price || 0}
-                      </span>
-                    </div>
-                    <Badge variant="secondary" className="w-fit">
-                      Course
-                    </Badge>
-                    <Button 
-                      className="w-full"
-                      onClick={() => onSelectAvailability(course, 'course')}
-                    >
-                      Enroll in Course
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-8 text-muted-foreground">
+              No available time slots found.
             </div>
-          ) : (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <p className="text-muted-foreground">No courses available.</p>
-              </CardContent>
-            </Card>
           )}
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
+
+export default AvailabilitySelector;

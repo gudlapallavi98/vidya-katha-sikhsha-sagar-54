@@ -4,6 +4,7 @@ import { BookOpen, Calendar, Video, Check, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Session, SessionRequest } from "@/hooks/types";
+import { format } from "date-fns";
 
 interface TeacherOverviewProps {
   teacherCourses: any[];
@@ -33,6 +34,9 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({
   handleRejectSession,
   handleStartClass,
 }) => {
+  // Filter to only show pending requests in overview
+  const pendingRequests = sessionRequests.filter(request => request.status === 'pending');
+  
   return (
     <>
       <h1 className="font-sanskrit text-3xl font-bold mb-6">Teacher Dashboard</h1>
@@ -53,8 +57,8 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({
         <Card className="bg-gradient-to-br from-indian-saffron/10 to-indian-saffron/5">
           <CardContent className="p-6 flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Session Requests</p>
-              <h3 className="text-2xl font-bold">{sessionRequests.length}</h3>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Pending Requests</p>
+              <h3 className="text-2xl font-bold">{pendingRequests.length}</h3>
             </div>
             <div className="h-12 w-12 rounded-full bg-indian-saffron/20 flex items-center justify-center">
               <Calendar className="h-6 w-6 text-indian-saffron" />
@@ -80,36 +84,28 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({
       <div className="grid grid-cols-1 gap-6 mb-8">
         <Card>
           <CardHeader>
-            <CardTitle>Session Requests</CardTitle>
-            <CardDescription>Pending student session requests</CardDescription>
+            <CardTitle>Pending Session Requests</CardTitle>
+            <CardDescription>Student session requests waiting for your response</CardDescription>
           </CardHeader>
           <CardContent>
             {requestsLoading ? (
               <div className="text-center py-8">Loading session requests...</div>
-            ) : sessionRequests.length > 0 ? (
+            ) : pendingRequests.length > 0 ? (
               <div className="space-y-4">
-                {sessionRequests.map((request) => (
+                {pendingRequests.map((request) => (
                   <div key={request.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-muted rounded-lg">
                     <div>
                       <h4 className="font-medium">{request.proposed_title}</h4>
                       <p className="text-sm text-muted-foreground">
-                        from {request.student?.first_name} {request.student?.last_name} for {request.course?.title}
+                        from {request.student?.first_name} {request.student?.last_name} {request.course?.title && `for ${request.course.title}`}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {new Date(request.proposed_date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
+                          {format(new Date(request.proposed_date), 'MMM dd, yyyy')} at {format(new Date(request.proposed_date), 'h:mm a')}
                         </span>
                         <span className="text-sm">
-                          {new Date(request.proposed_date).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })} 
-                          {` (${request.proposed_duration} min)`}
+                          ({request.proposed_duration} min)
                         </span>
                       </div>
                     </div>
@@ -153,25 +149,11 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({
                   <div key={session.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-muted rounded-lg">
                     <div>
                       <h4 className="font-medium">{session.title}</h4>
-                      <p className="text-sm text-muted-foreground">for {session.course?.title}</p>
+                      <p className="text-sm text-muted-foreground">{session.course?.title && `for ${session.course.title}`}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {new Date(session.start_time).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </span>
-                        <span className="text-sm">
-                          {new Date(session.start_time).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })} - 
-                          {new Date(session.end_time).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {format(new Date(session.start_time), 'MMM dd, yyyy')} at {format(new Date(session.start_time), 'h:mm a')} - {format(new Date(session.end_time), 'h:mm a')}
                         </span>
                       </div>
                     </div>

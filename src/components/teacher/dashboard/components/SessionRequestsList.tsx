@@ -17,12 +17,11 @@ const SessionRequestsList: React.FC<SessionRequestsListProps> = ({
   status
 }) => {
   // Filter requests based on status
-  // For "accepted" tab, we should look for "accepted" or "approved" status
   const getFilteredRequests = () => {
     if (status === "accepted") {
       return requests.filter(req => 
-        req.status === "accepted" || 
         req.status === "approved" || 
+        req.status === "accepted" || 
         req.status === "confirmed"
       );
     }
@@ -32,13 +31,13 @@ const SessionRequestsList: React.FC<SessionRequestsListProps> = ({
   const filteredRequests = getFilteredRequests();
   
   if (filteredRequests.length === 0) {
-    const displayStatus = status === "accepted" ? "accepted/approved" : status;
+    const displayStatus = status === "accepted" ? "approved" : status;
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">No {displayStatus} session requests</p>
         {status === "accepted" && (
           <p className="text-sm text-muted-foreground mt-2">
-            Accepted requests will appear here once you approve student session requests.
+            Approved requests will appear here once you accept student session requests.
           </p>
         )}
       </div>

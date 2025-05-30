@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { calculatePricing, createPaymentRecord } from '@/utils/pricingUtils';
 
@@ -13,6 +12,36 @@ export const acceptSessionRequest = async (requestId: string) => {
       .single();
       
     if (fetchError) throw fetchError;
+    
+    // Update the request status to 'approved' (not 'accepted' to avoid confusion)
+    const { error: updateError } = await supabase
+      .from('session_requests')
+      .update({ 
+        status: 'approved',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+      
+    if (updateError) {
+      console.error("Request update error:", updateError);
+      throw updateError;
+    }
+
+    // If there's an availability_id, update the availability to mark it as booked
+    if (request.availability_id) {
+      const { error: availabilityError } = await supabase
+        .from('teacher_availability')
+        .update({ 
+          status: 'booked',
+          booked_students: 1 // For one-to-one sessions
+        })
+        .eq('id', request.availability_id);
+        
+      if (availabilityError) {
+        console.error("Availability update error:", availabilityError);
+        // Don't throw here as the main operation succeeded
+      }
+    }
     
     // Create a session based on the request
     const { data: session, error: sessionError } = await supabase
@@ -41,17 +70,6 @@ export const acceptSessionRequest = async (requestId: string) => {
     }
     
     const newSession = session[0];
-    
-    // Update the request status
-    const { error: updateError } = await supabase
-      .from('session_requests')
-      .update({ status: 'approved' })
-      .eq('id', requestId);
-      
-    if (updateError) {
-      console.error("Request update error:", updateError);
-      throw updateError;
-    }
     
     // Create session attendance entry for the student
     const { error: attendeeError } = await supabase
@@ -94,14 +112,48 @@ export const acceptSessionRequest = async (requestId: string) => {
 };
 
 export const rejectSessionRequest = async (requestId: string) => {
-  const { error } = await supabase
-    .from('session_requests')
-    .update({ status: 'rejected' })
-    .eq('id', requestId);
+  try {
+    // Get the request details first to free up availability if needed
+    const { data: request, error: fetchError } = await supabase
+      .from('session_requests')
+      .select('availability_id')
+      .eq('id', requestId)
+      .single();
+      
+    if (fetchError) throw fetchError;
+
+    // Update the request status
+    const { error } = await supabase
+      .from('session_requests')
+      .update({ 
+        status: 'rejected',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+      
+    if (error) throw error;
+
+    // If there was an availability slot, make it available again
+    if (request.availability_id) {
+      const { error: availabilityError } = await supabase
+        .from('teacher_availability')
+        .update({ 
+          status: 'available',
+          booked_students: 0
+        })
+        .eq('id', request.availability_id);
+        
+      if (availabilityError) {
+        console.error("Availability update error:", availabilityError);
+        // Don't throw here as the main operation succeeded
+      }
+    }
     
-  if (error) throw error;
-  
-  return true;
+    return true;
+  } catch (error) {
+    console.error("Error rejecting session request:", error);
+    throw error;
+  }
 };
 
 // Session management
