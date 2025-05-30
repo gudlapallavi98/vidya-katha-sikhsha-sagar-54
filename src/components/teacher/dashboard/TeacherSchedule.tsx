@@ -4,7 +4,7 @@ import { Calendar, Clock, Users, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, addMinutes, subMinutes } from "date-fns";
 
 export interface TeacherScheduleProps {
   teacherSessions: any[];
@@ -47,10 +47,50 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
   const canStartSession = (session: any) => {
     const now = new Date();
     const sessionStart = new Date(session.start_time);
-    const timeDiff = sessionStart.getTime() - now.getTime();
-    const minutesDiff = timeDiff / (1000 * 60);
+    const sessionEnd = new Date(session.end_time);
     
-    return minutesDiff <= 15 && minutesDiff >= -5 && session.status === 'scheduled';
+    // Can start 15 minutes before and up to 5 minutes after start time
+    const canStartTime = subMinutes(sessionStart, 15);
+    const lateStartTime = addMinutes(sessionStart, 5);
+    
+    return isAfter(now, canStartTime) && isBefore(now, lateStartTime) && session.status === 'scheduled';
+  };
+
+  const canJoinSession = (session: any) => {
+    const now = new Date();
+    const sessionStart = new Date(session.start_time);
+    const sessionEnd = new Date(session.end_time);
+    
+    return session.status === 'in_progress' && 
+           isAfter(now, sessionStart) && 
+           isBefore(now, sessionEnd) && 
+           session.meeting_link;
+  };
+
+  const getSessionStatus = (session: any) => {
+    const now = new Date();
+    const sessionStart = new Date(session.start_time);
+    const sessionEnd = new Date(session.end_time);
+    
+    if (session.status === 'completed') return 'Completed';
+    if (session.status === 'cancelled') return 'Cancelled';
+    if (session.status === 'in_progress') return 'Live Now';
+    
+    if (isBefore(now, sessionStart)) {
+      const timeDiff = sessionStart.getTime() - now.getTime();
+      const minutesDiff = Math.floor(timeDiff / (1000 * 60));
+      const hoursDiff = Math.floor(minutesDiff / 60);
+      
+      if (hoursDiff > 0) {
+        return `Starts in ${hoursDiff}h ${minutesDiff % 60}m`;
+      } else {
+        return `Starts in ${minutesDiff}m`;
+      }
+    }
+    
+    if (isAfter(now, sessionEnd)) return 'Ended';
+    
+    return 'Scheduled';
   };
 
   return (
@@ -73,7 +113,7 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
                     </p>
                   </div>
                   <Badge className={getStatusColor(session.status)}>
-                    {session.status.replace('_', ' ').toUpperCase()}
+                    {getSessionStatus(session)}
                   </Badge>
                 </div>
               </CardHeader>
@@ -113,7 +153,7 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
                       Start Class
                     </Button>
                   )}
-                  {session.meeting_link && session.status === 'in_progress' && (
+                  {canJoinSession(session) && (
                     <Button 
                       variant="outline"
                       onClick={() => window.open(session.meeting_link, '_blank')}

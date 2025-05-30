@@ -97,10 +97,10 @@ function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
                   Education
                 </TabsTrigger>
                 <TabsTrigger value="preferences">
-                  Preferences
+                  Learning Preferences
                 </TabsTrigger>
-                <TabsTrigger value="exams">
-                  Exam History
+                <TabsTrigger value="academic">
+                  Academic History
                 </TabsTrigger>
               </>
             ) : (
@@ -134,7 +134,7 @@ function ProfileSettingsForm({ role, onCompleted }: ProfileSettingsFormProps) {
               <TabsContent value="preferences">
                 <StudentProfileForm activeTab="preferences" onCompleted={onCompleted} />
               </TabsContent>
-              <TabsContent value="exams">
+              <TabsContent value="academic">
                 <StudentProfileForm activeTab="exams" onCompleted={onCompleted} />
               </TabsContent>
             </>
