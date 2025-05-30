@@ -28,26 +28,57 @@ interface Course {
   };
 }
 
-export const FeaturedCourses: React.FC = () => {
+interface FeaturedCoursesProps {
+  searchQuery?: string;
+  selectedCategory?: string;
+  selectedSubcategory?: string | null;
+}
+
+export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({ 
+  searchQuery = "",
+  selectedCategory = "all",
+  selectedSubcategory = null
+}) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
   const { data: courses = [], isLoading } = useQuery({
-    queryKey: ['featured-courses'],
+    queryKey: ['featured-courses', searchQuery, selectedCategory, selectedSubcategory],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('courses')
         .select(`
           *,
           teacher:profiles!courses_teacher_id_fkey(first_name, last_name)
         `)
-        .eq('is_published', true)
+        .eq('is_published', true);
+
+      // Apply category filter
+      if (selectedCategory && selectedCategory !== "all") {
+        query = query.eq('category', selectedCategory);
+      }
+
+      // Apply search filter
+      if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: false })
-        .limit(6);
+        .limit(50);
       
       if (error) throw error;
-      return data as Course[];
+      
+      // Filter by subcategory on the client side if needed
+      let filteredData = data as Course[];
+      if (selectedSubcategory) {
+        // For now, we'll just return all courses since subcategory logic needs to be defined
+        // This can be extended based on how subcategories are stored in the database
+        filteredData = data as Course[];
+      }
+      
+      return filteredData;
     },
   });
 
@@ -127,74 +158,82 @@ export const FeaturedCourses: React.FC = () => {
 
   if (isLoading) {
     return (
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Featured Courses</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, index) => (
-              <Card key={index} className="animate-pulse">
-                <div className="h-48 bg-gray-200 rounded-t-lg"></div>
-                <CardContent className="p-6">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="py-16 bg-gray-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-12">Featured Courses</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {courses.map((course) => (
-            <Card key={course.id} className="hover:shadow-lg transition-shadow duration-300">
-              <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
-                <BookOpen className="h-16 w-16 text-white" />
-              </div>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
-                  <Badge variant="secondary">{course.category}</Badge>
-                </div>
-                <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Users className="h-4 w-4 mr-1" />
-                    <span>Teacher: {course.teacher?.first_name} {course.teacher?.last_name}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>{course.total_lessons} lessons</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                    <span className="text-sm text-gray-500">4.8 (124 reviews)</span>
-                  </div>
-                </div>
+          {[...Array(6)].map((_, index) => (
+            <Card key={index} className="animate-pulse">
+              <div className="h-48 bg-gray-200 rounded-t-lg"></div>
+              <CardContent className="p-6">
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
               </CardContent>
-              <CardFooter className="pt-0">
-                <div className="flex justify-between items-center w-full">
-                  <div className="text-2xl font-bold text-green-600">
-                    ₹{course.student_price || course.price}
-                  </div>
-                  <Button onClick={() => handleEnrollment(course)}>
-                    Enroll Now
-                  </Button>
-                </div>
-              </CardFooter>
             </Card>
           ))}
         </div>
       </div>
-    </section>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="container mx-auto px-4">
+        <div className="flex h-[400px] flex-col items-center justify-center space-y-2">
+          <BookOpen className="h-16 w-16 text-muted-foreground/60" />
+          <h3 className="text-xl font-medium">No Courses Found</h3>
+          <p className="text-sm text-muted-foreground">
+            {searchQuery ? `No courses found for "${searchQuery}"` : "No courses available in this category"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {courses.map((course) => (
+          <Card key={course.id} className="hover:shadow-lg transition-shadow duration-300">
+            <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center">
+              <BookOpen className="h-16 w-16 text-white" />
+            </div>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
+                <Badge variant="secondary">{course.category}</Badge>
+              </div>
+              <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm text-gray-500">
+                  <Users className="h-4 w-4 mr-1" />
+                  <span>Teacher: {course.teacher?.first_name} {course.teacher?.last_name}</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-500">
+                  <Clock className="h-4 w-4 mr-1" />
+                  <span>{course.total_lessons} lessons</span>
+                </div>
+                <div className="flex items-center">
+                  <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                  <span className="text-sm text-gray-500">4.8 (124 reviews)</span>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="pt-0">
+              <div className="flex justify-between items-center w-full">
+                <div className="text-2xl font-bold text-green-600">
+                  ₹{course.student_price || course.price}
+                </div>
+                <Button onClick={() => handleEnrollment(course)}>
+                  Enroll Now
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 };
 
