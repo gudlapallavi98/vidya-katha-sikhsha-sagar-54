@@ -68,14 +68,10 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
       if (type === 'individual' && dateStr && timeStr) {
         // For individual sessions, combine date and time
         const dateTime = new Date(`${dateStr}T${timeStr}:00`);
-        // Convert to IST by adding 5:30 hours offset
-        const istDateTime = new Date(dateTime.getTime() + (5.5 * 60 * 60 * 1000));
-        return istDateTime.toISOString();
+        return dateTime.toISOString();
       } else {
         // For course enrollment, use current time
-        const now = new Date();
-        const istNow = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-        return istNow.toISOString();
+        return new Date().toISOString();
       }
     } catch (error) {
       console.error("Error formatting date time:", error);
@@ -95,7 +91,13 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
 
     setIsLoading(true);
     try {
-      console.log("Submitting session request with pricing:", pricing);
+      console.log("Submitting session request with data:", {
+        user: user.id,
+        teacherId,
+        availability,
+        type,
+        pricing
+      });
 
       // Create proper date object for IST timezone
       const proposedDate = formatDateTimeIST(

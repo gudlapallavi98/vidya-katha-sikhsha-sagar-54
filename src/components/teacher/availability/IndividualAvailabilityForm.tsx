@@ -1,242 +1,268 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { DatePickerField } from "./DatePickerField";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  subject_id: z.string().min(1, "Please select a subject"),
+  subject_id: z.string().min(1, "Subject is required"),
   available_date: z.date({
     required_error: "Please select a date",
   }),
-  start_time: z.string().min(1, "Please select start time"),
-  end_time: z.string().min(1, "Please select end time"),
-  price: z.number().min(0, "Price must be 0 or greater"),
-  max_students: z.number().min(1, "Must allow at least 1 student"),
+  start_time: z.string().min(1, "Start time is required"),
+  end_time: z.string().min(1, "End time is required"),
+  price: z.number().min(0, "Price must be positive"),
   notes: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
-
 interface IndividualAvailabilityFormProps {
   subjects: Array<{ id: string; name: string }>;
-  onSubmit: (data: FormData) => Promise<void>;
-  isLoading: boolean;
+  onSuccess: () => void;
+  onCancel: () => void;
 }
 
-const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
+export const IndividualAvailabilityForm: React.FC<IndividualAvailabilityFormProps> = ({
   subjects,
-  onSubmit,
-  isLoading,
+  onSuccess,
+  onCancel
 }) => {
-  const form = useForm<FormData>({
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      max_students: 1,
-      price: 500,
+      subject_id: "",
+      start_time: "",
+      end_time: "",
+      price: 100,
       notes: "",
     },
   });
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = form;
-  const selectedDate = watch("available_date");
-
-  // Get current date in IST (India Standard Time)
-  const getCurrentDateIST = () => {
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const istTime = new Date(now.getTime() + istOffset);
-    return new Date(istTime.getFullYear(), istTime.getMonth(), istTime.getDate());
-  };
-
-  // Format date for IST display
-  const formatDateIST = (date: Date) => {
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istDate = new Date(date.getTime() + istOffset);
-    return new Intl.DateTimeFormat('en-IN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      timeZone: 'Asia/Kolkata'
-    }).format(istDate);
-  };
-
-  const handleFormSubmit = async (data: FormData) => {
-    console.log("Form data before submission:", data);
-    
-    // Ensure date is properly formatted for IST
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const localDate = new Date(data.available_date.getTime() + istOffset);
-    const formattedData = {
-      ...data,
-      available_date: new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate())
-    };
-    
-    console.log("Formatted data for IST:", formattedData);
-    await onSubmit(formattedData);
-    reset();
-  };
-
-  // Generate time options
-  const timeOptions = [];
-  for (let hour = 6; hour <= 22; hour++) {
-    for (let minute = 0; minute < 60; minute += 30) {
-      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-      timeOptions.push(timeString);
+  const generateTimeOptions = () => {
+    const times = [];
+    for (let hour = 6; hour <= 23; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        times.push(timeString);
+      }
     }
-  }
+    return times;
+  };
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "Please log in to create availability",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Calculate auto-cancel time (24 hours before the session)
+      const sessionDateTime = new Date(values.available_date);
+      const [hours, minutes] = values.start_time.split(':');
+      sessionDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      const autoCancelAt = new Date(sessionDateTime.getTime() - 24 * 60 * 60 * 1000);
+
+      const { error } = await supabase
+        .from("teacher_availability")
+        .insert({
+          teacher_id: user.id,
+          subject_id: values.subject_id,
+          available_date: format(values.available_date, 'yyyy-MM-dd'),
+          start_time: values.start_time,
+          end_time: values.end_time,
+          price: values.price,
+          teacher_rate: values.price,
+          student_price: values.price * 1.1, // Add 10% platform fee
+          notes: values.notes,
+          status: "available",
+          session_type: "individual",
+          max_students: 1,
+          booked_students: 0,
+          auto_cancel_at: autoCancelAt.toISOString()
+        });
+
+      if (error) {
+        console.error("Error creating availability:", error);
+        throw error;
+      }
+
+      toast({
+        title: "Availability Created",
+        description: "Your availability has been added successfully.",
+      });
+
+      onSuccess();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create availability",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>Subject</Label>
-          <Select onValueChange={(value) => setValue("subject_id", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a subject" />
-            </SelectTrigger>
-            <SelectContent>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.id} value={subject.id}>
-                  {subject.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.subject_id && (
-            <p className="text-sm text-red-500 mt-1">{errors.subject_id.message}</p>
-          )}
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Add Individual Session Availability</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="subject_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a subject" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div>
-          <Label>Available Date (IST)</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !selectedDate && "text-muted-foreground"
+            <DatePickerField
+              control={form.control}
+              name="available_date"
+              label="Available Date"
+              placeholder="Select date"
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="start_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Time</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select start time" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {generateTimeOptions().map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? formatDateIST(selectedDate) : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  console.log("Selected date (IST):", date);
-                  if (date) {
-                    setValue("available_date", date);
-                  }
-                }}
-                disabled={(date) => {
-                  const today = getCurrentDateIST();
-                  return date < today;
-                }}
-                initialFocus
-                defaultMonth={getCurrentDateIST()}
               />
-            </PopoverContent>
-          </Popover>
-          {errors.available_date && (
-            <p className="text-sm text-red-500 mt-1">{errors.available_date.message}</p>
-          )}
-        </div>
 
-        <div>
-          <Label>Start Time (IST)</Label>
-          <Select onValueChange={(value) => setValue("start_time", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select start time" />
-            </SelectTrigger>
-            <SelectContent>
-              {timeOptions.map((time) => (
-                <SelectItem key={time} value={time}>
-                  {time} IST
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.start_time && (
-            <p className="text-sm text-red-500 mt-1">{errors.start_time.message}</p>
-          )}
-        </div>
+              <FormField
+                control={form.control}
+                name="end_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select end time" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {generateTimeOptions().map((time) => (
+                          <SelectItem key={time} value={time}>
+                            {time}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <div>
-          <Label>End Time (IST)</Label>
-          <Select onValueChange={(value) => setValue("end_time", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select end time" />
-            </SelectTrigger>
-            <SelectContent>
-              {timeOptions.map((time) => (
-                <SelectItem key={time} value={time}>
-                  {time} IST
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.end_time && (
-            <p className="text-sm text-red-500 mt-1">{errors.end_time.message}</p>
-          )}
-        </div>
+            <FormField
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Price per Session (₹)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="100"
+                      {...field}
+                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div>
-          <Label htmlFor="price">Price per Hour (₹)</Label>
-          <Input
-            id="price"
-            type="number"
-            min="0"
-            step="10"
-            {...register("price", { valueAsNumber: true })}
-          />
-          {errors.price && (
-            <p className="text-sm text-red-500 mt-1">{errors.price.message}</p>
-          )}
-        </div>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Any additional information about this session..."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div>
-          <Label htmlFor="max_students">Maximum Students</Label>
-          <Input
-            id="max_students"
-            type="number"
-            min="1"
-            max="10"
-            {...register("max_students", { valueAsNumber: true })}
-          />
-          {errors.max_students && (
-            <p className="text-sm text-red-500 mt-1">{errors.max_students.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="notes">Notes (Optional)</Label>
-        <Textarea
-          id="notes"
-          placeholder="Any additional notes about this session..."
-          {...register("notes")}
-        />
-      </div>
-
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? "Creating..." : "Create Availability"}
-      </Button>
-    </form>
+            <div className="flex gap-4">
+              <Button type="submit" disabled={isLoading} className="flex-1">
+                {isLoading ? "Creating..." : "Create Availability"}
+              </Button>
+              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
-
-export default IndividualAvailabilityForm;
