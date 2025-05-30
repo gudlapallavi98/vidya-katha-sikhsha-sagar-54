@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   useTeacherCourses, 
@@ -6,7 +7,7 @@ import {
 } from "@/hooks/use-dashboard-data";
 import { useToast } from "@/hooks/use-toast";
 import { acceptSessionRequest, rejectSessionRequest, startSession } from "@/api/dashboard";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { useNavigate } from "react-router-dom";
 import { useAuthStatus } from "@/hooks/use-auth-status";
@@ -16,24 +17,13 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TeacherDashboardSidebar from "@/components/teacher/dashboard/TeacherDashboardSidebar";
 import TeacherDashboardContent from "@/components/teacher/dashboard/TeacherDashboardContent";
 
-// Create a client
-const queryClient = new QueryClient();
-
-// Wrapper component to provide React Query context
-const TeacherDashboardWithQueryClient = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TeacherDashboard />
-    </QueryClientProvider>
-  );
-};
-
 const TeacherDashboard = () => {
   const { activeTab, handleTabChange } = useTabNavigation("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isAuthenticated, isChecking } = useAuthStatus();
+  const queryClient = useQueryClient();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
@@ -155,4 +145,4 @@ const TeacherDashboard = () => {
   );
 };
 
-export default TeacherDashboardWithQueryClient;
+export default TeacherDashboard;

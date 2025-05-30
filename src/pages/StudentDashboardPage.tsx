@@ -2,25 +2,12 @@
 import { useState } from "react";
 import { useStudentCourses, useStudentSessions } from "@/hooks/use-dashboard-data";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 import { AnimatedBackground } from "@/components/ui/animated-background";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StudentDashboardSidebar from "@/components/student/dashboard/StudentDashboardSidebar";
 import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
-
-// Create a client
-const queryClient = new QueryClient();
-
-// Wrapper component to provide React Query context
-const StudentDashboardWithQueryClient = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <StudentDashboard />
-    </QueryClientProvider>
-  );
-};
 
 const StudentDashboard = () => {
   const { activeTab, handleTabChange } = useTabNavigation("overview");
@@ -76,4 +63,4 @@ const StudentDashboard = () => {
   );
 };
 
-export default StudentDashboardWithQueryClient;
+export default StudentDashboard;
