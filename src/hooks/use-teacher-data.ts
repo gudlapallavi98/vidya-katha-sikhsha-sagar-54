@@ -57,16 +57,20 @@ export const useSessionRequests = (searchQuery = '') => {
           student:profiles!session_requests_student_id_fkey(id, first_name, last_name),
           course:courses(title)
         `)
-        .eq('teacher_id', user?.id)
-        .eq('status', 'pending');
+        .eq('teacher_id', user?.id);
+
+      // Don't filter by status here - get all requests and let the component filter them
+      // This allows us to show pending, accepted, and rejected requests in different tabs
 
       if (searchQuery) {
         query = query.or(`student.first_name.ilike.%${searchQuery}%,student.last_name.ilike.%${searchQuery}%,course.title.ilike.%${searchQuery}%,proposed_title.ilike.%${searchQuery}%`);
       }
       
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
         
       if (error) throw error;
+      
+      console.log("Session requests data:", data);
       
       // Type assertion to ensure compatibility
       return (data as unknown) as SessionRequest[];

@@ -42,7 +42,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [currentTab, setCurrentTab] = useState(activeTab);
+  const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
   
   const {
     form, 
@@ -56,9 +56,9 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
   
   const updateProfile = useUpdateProfile();
 
-  // Update current tab when activeTab prop changes
+  // Update internal tab when activeTab prop changes
   useEffect(() => {
-    setCurrentTab(activeTab);
+    setInternalActiveTab(activeTab);
   }, [activeTab]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -105,7 +105,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs value={currentTab} onValueChange={setCurrentTab}>
+        <Tabs value={internalActiveTab} onValueChange={setInternalActiveTab}>
           <TabsList className="grid grid-cols-4 mb-8">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             <TabsTrigger value="experience">Experience</TabsTrigger>
@@ -113,7 +113,7 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
             <TabsTrigger value="certifications">Certifications</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="personal">
+          <TabsContent value="personal" className="space-y-6">
             <PersonalInfoTab 
               form={form} 
               avatarUrl={avatarUrl} 
@@ -122,18 +122,18 @@ export function TeacherProfileForm({ activeTab, onCompleted }: TeacherProfileFor
             />
           </TabsContent>
           
-          <TabsContent value="experience">
+          <TabsContent value="experience" className="space-y-6">
             <TeachingExperienceTab form={form} />
           </TabsContent>
           
-          <TabsContent value="subjects">
+          <TabsContent value="subjects" className="space-y-6">
             <SubjectsTab 
               selectedSubjects={selectedSubjects} 
               setSelectedSubjects={setSelectedSubjects} 
             />
           </TabsContent>
           
-          <TabsContent value="certifications">
+          <TabsContent value="certifications" className="space-y-6">
             <CertificationsTab 
               certificates={certificates} 
               setCertificates={setCertificates} 

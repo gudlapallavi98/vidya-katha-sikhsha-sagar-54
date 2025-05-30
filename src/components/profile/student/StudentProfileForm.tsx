@@ -120,33 +120,52 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
     switch(activeTab) {
       case "personal":
         return (
-          <PersonalInfoTab 
-            form={form} 
-            avatarUrl={avatarUrl} 
-            setAvatarUrl={setAvatarUrl} 
-            userId={user?.id || ""}
-          />
+          <div className="space-y-6">
+            <PersonalInfoTab 
+              form={form} 
+              avatarUrl={avatarUrl} 
+              setAvatarUrl={setAvatarUrl} 
+              userId={user?.id || ""}
+            />
+          </div>
         );
       case "education":
-        return <EducationTab form={form} />;
+        return (
+          <div className="space-y-6">
+            <EducationTab form={form} />
+          </div>
+        );
       case "preferences":
         return (
-          <PreferencesTab 
-            selectedSubjects={selectedSubjects} 
-            setSelectedSubjects={setSelectedSubjects} 
-            studyPreferences={studyPreferences}
-            setStudyPreferences={setStudyPreferences}
-          />
+          <div className="space-y-6">
+            <PreferencesTab 
+              selectedSubjects={selectedSubjects} 
+              setSelectedSubjects={setSelectedSubjects} 
+              studyPreferences={studyPreferences}
+              setStudyPreferences={setStudyPreferences}
+            />
+          </div>
         );
       case "exams":
         return (
-          <ExamsTab 
-            examHistory={examHistory} 
-            setExamHistory={setExamHistory} 
-          />
+          <div className="space-y-6">
+            <ExamsTab 
+              examHistory={examHistory} 
+              setExamHistory={setExamHistory} 
+            />
+          </div>
         );
       default:
-        return null;
+        return (
+          <div className="space-y-6">
+            <PersonalInfoTab 
+              form={form} 
+              avatarUrl={avatarUrl} 
+              setAvatarUrl={setAvatarUrl} 
+              userId={user?.id || ""}
+            />
+          </div>
+        );
     }
   };
 
