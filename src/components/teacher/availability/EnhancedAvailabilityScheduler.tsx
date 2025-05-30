@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import IndividualAvailabilityForm from "./IndividualAvailabilityForm";
+import { IndividualAvailabilityForm } from "./IndividualAvailabilityForm";
 import LiveCourseAvailabilityForm from "./LiveCourseAvailabilityForm";
 import { AvailabilityList } from "./AvailabilityList";
 import { useQuery } from "@tanstack/react-query";
