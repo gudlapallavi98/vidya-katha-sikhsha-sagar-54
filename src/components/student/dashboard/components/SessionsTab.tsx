@@ -28,6 +28,14 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
     const sessionStart = new Date(session.start_time);
     const sessionEnd = new Date(session.end_time);
     
+    console.log("Checking join eligibility:", {
+      sessionId: session.id,
+      now: now.toISOString(),
+      sessionStart: sessionStart.toISOString(),
+      sessionEnd: sessionEnd.toISOString(),
+      status: session.status
+    });
+    
     // Can join 5 minutes before start time and during the session
     const canJoinTime = subMinutes(sessionStart, 5);
     
@@ -40,6 +48,14 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
     const now = new Date();
     const sessionStart = new Date(session.start_time);
     const sessionEnd = new Date(session.end_time);
+    
+    console.log("Getting session status:", {
+      sessionId: session.id,
+      status: session.status,
+      sessionStart: sessionStart.toISOString(),
+      sessionEnd: sessionEnd.toISOString(),
+      now: now.toISOString()
+    });
     
     if (session.status === 'completed') return { label: 'Completed', variant: 'secondary' as const };
     if (session.status === 'cancelled') return { label: 'Cancelled', variant: 'destructive' as const };
@@ -69,6 +85,28 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
     return { label: 'Scheduled', variant: 'outline' as const };
   };
 
+  const formatSessionDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      console.log("Formatting session date:", { original: dateString, parsed: date });
+      return format(date, 'MMM dd, yyyy');
+    } catch (error) {
+      console.error("Error formatting session date:", error, { dateString });
+      return dateString;
+    }
+  };
+
+  const formatSessionTime = (startTime: string, endTime: string) => {
+    try {
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      return `${format(start, 'hh:mm a')} - ${format(end, 'hh:mm a')}`;
+    } catch (error) {
+      console.error("Error formatting session time:", error, { startTime, endTime });
+      return `${startTime} - ${endTime}`;
+    }
+  };
+
   return (
     <DashboardShell>
       <DashboardHeader heading="Upcoming Sessions" />
@@ -90,6 +128,14 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
                 const status = getSessionStatus(session);
                 const canJoin = canJoinSession(session);
                 
+                console.log("Rendering session:", {
+                  sessionId: session.id,
+                  title: session.title,
+                  startTime: session.start_time,
+                  canJoin,
+                  status: status.label
+                });
+                
                 return (
                   <TableRow key={session.id}>
                     <TableCell className="font-medium">{session.title}</TableCell>
@@ -97,10 +143,10 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
                     <TableCell>
                       <div className="space-y-1">
                         <div className="text-sm font-medium">
-                          {format(new Date(session.start_time), 'MMM dd, yyyy')}
+                          {formatSessionDate(session.start_time)}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {format(new Date(session.start_time), 'hh:mm a')} - {format(new Date(session.end_time), 'hh:mm a')}
+                          {formatSessionTime(session.start_time, session.end_time)}
                         </div>
                       </div>
                     </TableCell>

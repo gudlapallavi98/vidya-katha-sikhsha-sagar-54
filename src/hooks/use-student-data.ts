@@ -77,15 +77,23 @@ export const useStudentUpcomingSessions = () => {
     queryFn: async () => {
       if (!user) return [];
       
-      // Get sessions where the student is an attendee
+      console.log("Fetching upcoming sessions for student:", user.id);
+      
+      // First, get sessions where the student is an attendee
       const { data: attendeeSessions, error: attendeeError } = await supabase
         .from('session_attendees')
         .select('session_id')
         .eq('student_id', user.id);
         
-      if (attendeeError) throw attendeeError;
+      if (attendeeError) {
+        console.error("Error fetching attendee sessions:", attendeeError);
+        throw attendeeError;
+      }
+      
+      console.log("Found attendee sessions:", attendeeSessions);
       
       if (!attendeeSessions || attendeeSessions.length === 0) {
+        console.log("No attendee sessions found, checking enrollments...");
         // Fallback to fetch from enrollments
         const { data: enrollments, error: enrollmentsError } = await supabase
           .from('enrollments')
@@ -95,10 +103,12 @@ export const useStudentUpcomingSessions = () => {
         if (enrollmentsError) throw enrollmentsError;
         
         if (!enrollments || enrollments.length === 0) {
+          console.log("No enrollments found");
           return [];
         }
         
         const courseIds = enrollments.map(e => e.course_id);
+        console.log("Checking course sessions for courses:", courseIds);
         
         const { data, error } = await supabase
           .from('sessions')
@@ -112,11 +122,13 @@ export const useStudentUpcomingSessions = () => {
           .limit(10);
           
         if (error) throw error;
+        console.log("Found course sessions:", data);
         return data;
       }
       
       // If we have session attendees, fetch those specific sessions
       const sessionIds = attendeeSessions.map(a => a.session_id);
+      console.log("Fetching specific sessions:", sessionIds);
       
       const { data, error } = await supabase
         .from('sessions')
@@ -127,7 +139,12 @@ export const useStudentUpcomingSessions = () => {
         .in('id', sessionIds)
         .order('start_time', { ascending: true });
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching sessions:", error);
+        throw error;
+      }
+      
+      console.log("Final sessions data:", data);
       return data;
     },
     enabled: !!user,

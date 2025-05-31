@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Calendar, GraduationCap, Award, Clock, BookOpenCheck, ArrowRight } from "lucide-react";
+import { BookOpen, Calendar, GraduationCap, Award, Clock, BookOpenCheck, ArrowRight, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import DashboardCard from "@/components/dashboard/DashboardCard";
@@ -10,6 +10,7 @@ import StatsContainer from "@/components/dashboard/StatsContainer";
 import { DashboardHeader, DashboardShell } from "@/components/ui/dashboard-shell";
 import { Progress } from "@/components/ui/progress";
 import { Enrollment, Progress as StudentProgress, Session } from "@/hooks/types";
+import { format, isAfter, isBefore, subMinutes } from "date-fns";
 
 interface OverviewTabProps {
   enrolledCourses: Enrollment[];
@@ -33,6 +34,48 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
   const handleNavigateToCourses = () => {
     navigate('/courses');
+  };
+
+  const canJoinSession = (session: Session) => {
+    const now = new Date();
+    const sessionStart = new Date(session.start_time);
+    const sessionEnd = new Date(session.end_time);
+    const canJoinTime = subMinutes(sessionStart, 5);
+    
+    return (session.status === 'in_progress' || session.status === 'scheduled') && 
+           isAfter(now, canJoinTime) && 
+           isBefore(now, sessionEnd);
+  };
+
+  const getSessionBadge = (session: Session) => {
+    const now = new Date();
+    const sessionStart = new Date(session.start_time);
+    
+    if (session.status === "in_progress") {
+      return <Badge variant="default">Live Now</Badge>;
+    } else if (isBefore(now, sessionStart)) {
+      return <Badge variant="outline">Upcoming</Badge>;
+    } else {
+      return <Badge variant="secondary">Ended</Badge>;
+    }
+  };
+
+  const formatSessionDateTime = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      console.log("Overview - Formatting session date:", { original: dateString, parsed: date });
+      
+      return {
+        date: format(date, 'MMM d, yyyy'),
+        time: format(date, 'h:mm a')
+      };
+    } catch (error) {
+      console.error("Error formatting session date in overview:", error, { dateString });
+      return {
+        date: dateString,
+        time: ''
+      };
+    }
   };
 
   return (
@@ -87,30 +130,40 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         >
           {upcomingSessions.length > 0 ? (
             <div className="space-y-4">
-              {upcomingSessions.slice(0, 3).map((session) => (
-                <div key={session.id} className="flex flex-col space-y-2 rounded-lg border p-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{session.title}</h3>
-                    <Badge variant={session.status === "in_progress" ? "default" : "outline"}>
-                      {session.status === "in_progress" ? "Live Now" : "Upcoming"}
-                    </Badge>
+              {upcomingSessions.slice(0, 3).map((session) => {
+                const canJoin = canJoinSession(session);
+                const { date, time } = formatSessionDateTime(session.start_time);
+                
+                console.log("Overview session rendering:", {
+                  sessionId: session.id,
+                  title: session.title,
+                  startTime: session.start_time,
+                  formattedDate: date,
+                  formattedTime: time,
+                  canJoin,
+                  status: session.status
+                });
+                
+                return (
+                  <div key={session.id} className="flex flex-col space-y-2 rounded-lg border p-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium">{session.title}</h3>
+                      {getSessionBadge(session)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{session.course?.title || 'Individual Session'}</p>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Clock className="mr-1 h-3 w-3" /> 
+                      {date} at {time}
+                    </div>
+                    {canJoin && (
+                      <Button size="sm" onClick={() => handleJoinClass(session.id)} className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Join Now
+                      </Button>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{session.course?.title}</p>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Clock className="mr-1 h-3 w-3" /> 
-                    {new Date(session.start_time).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric',
-                    })} at {new Date(session.start_time).toLocaleTimeString('en-US', {
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </div>
-                  {session.status === "in_progress" && (
-                    <Button size="sm" onClick={() => handleJoinClass(session.id)}>
-                      Join Now
-                    </Button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="flex h-[150px] flex-col items-center justify-center space-y-2 rounded-lg border border-dashed">
