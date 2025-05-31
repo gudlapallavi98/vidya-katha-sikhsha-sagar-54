@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import SessionRequestList from "./SessionRequestList";
@@ -72,7 +71,6 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState })
         <AvailabilitySelector
           teacherId={selectedTeacherId}
           onSelectSlot={handleSelectSlot}
-          onBack={handleBackToTeachers}
         />
       )}
       
