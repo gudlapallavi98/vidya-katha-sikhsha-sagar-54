@@ -18,14 +18,22 @@ const SessionRequestsList: React.FC<SessionRequestsListProps> = ({
 }) => {
   // Filter requests based on status
   const getFilteredRequests = () => {
+    console.log("Filtering requests for status:", status, "Total requests:", requests.length);
+    console.log("All request statuses:", requests.map(r => ({ id: r.id, status: r.status })));
+    
     if (status === "accepted") {
-      return requests.filter(req => 
+      const acceptedRequests = requests.filter(req => 
         req.status === "approved" || 
         req.status === "accepted" || 
         req.status === "confirmed"
       );
+      console.log("Accepted requests found:", acceptedRequests.length);
+      return acceptedRequests;
     }
-    return requests.filter(req => req.status === status);
+    
+    const filteredRequests = requests.filter(req => req.status === status);
+    console.log(`Filtered requests for ${status}:`, filteredRequests.length);
+    return filteredRequests;
   };
 
   const filteredRequests = getFilteredRequests();

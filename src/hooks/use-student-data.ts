@@ -79,6 +79,9 @@ export const useStudentUpcomingSessions = () => {
       
       console.log("Fetching upcoming sessions for student:", user.id);
       
+      const now = new Date().toISOString();
+      console.log("Current time for filtering:", now);
+      
       // First, get sessions where the student is an attendee
       const { data: attendeeSessions, error: attendeeError } = await supabase
         .from('session_attendees')
@@ -117,7 +120,7 @@ export const useStudentUpcomingSessions = () => {
             course:courses(title)
           `)
           .in('course_id', courseIds)
-          .gt('start_time', new Date().toISOString())
+          .gte('start_time', now)
           .order('start_time', { ascending: true })
           .limit(10);
           
@@ -137,6 +140,7 @@ export const useStudentUpcomingSessions = () => {
           course:courses(title)
         `)
         .in('id', sessionIds)
+        .gte('start_time', now)
         .order('start_time', { ascending: true });
         
       if (error) {
@@ -144,7 +148,7 @@ export const useStudentUpcomingSessions = () => {
         throw error;
       }
       
-      console.log("Final sessions data:", data);
+      console.log("Final upcoming sessions data:", data);
       return data;
     },
     enabled: !!user,

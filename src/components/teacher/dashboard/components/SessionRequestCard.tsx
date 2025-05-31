@@ -34,11 +34,21 @@ const SessionRequestCard: React.FC<SessionRequestCardProps> = ({
   // Format the proposed date properly
   const formatProposedDate = (dateString: string) => {
     try {
+      // Parse the date string and ensure we're using the correct date
       const date = new Date(dateString);
-      console.log("SessionRequestCard - Formatting date:", { dateString, parsedDate: date });
+      console.log("SessionRequestCard - Original date string:", dateString);
+      console.log("SessionRequestCard - Parsed date:", date.toISOString());
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        console.error("Invalid date:", dateString);
+        return dateString;
+      }
       
       // Format as "MMM d, yyyy • h:mm a" (e.g., "Jun 4, 2025 • 1:00 PM")
-      return format(date, 'MMM d, yyyy • h:mm a');
+      const formattedDate = format(date, 'MMM d, yyyy • h:mm a');
+      console.log("SessionRequestCard - Formatted date:", formattedDate);
+      return formattedDate;
     } catch (error) {
       console.error("Error formatting proposed date:", error, { dateString });
       return dateString;
@@ -63,7 +73,7 @@ const SessionRequestCard: React.FC<SessionRequestCardProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Date & Time:</span>
-            <span>{formatProposedDate(request.proposed_date)}</span>
+            <span className="font-medium">{formatProposedDate(request.proposed_date)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Duration:</span>
