@@ -62,19 +62,21 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
   
   const pricing = calculatePricing(teacherRate);
 
-  // Format date and time for IST
-  const formatDateTimeIST = (dateStr: string, timeStr?: string) => {
+  // Format date and time for database storage
+  const formatDateTimeForDB = (dateStr: string, timeStr?: string) => {
     try {
       if (type === 'individual' && dateStr && timeStr) {
-        // For individual sessions, combine date and time
+        // For individual sessions, combine the availability date and start time
+        // dateStr is in YYYY-MM-DD format, timeStr is in HH:MM format
         const dateTime = new Date(`${dateStr}T${timeStr}:00`);
+        console.log("Formatting individual session:", { dateStr, timeStr, result: dateTime.toISOString() });
         return dateTime.toISOString();
       } else {
         // For course enrollment, use current time
         return new Date().toISOString();
       }
     } catch (error) {
-      console.error("Error formatting date time:", error);
+      console.error("Error formatting date time:", error, { dateStr, timeStr });
       return new Date().toISOString();
     }
   };
@@ -99,11 +101,17 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         pricing
       });
 
-      // Create proper date object for IST timezone
-      const proposedDate = formatDateTimeIST(
+      // Create proper date object using the teacher's availability
+      const proposedDate = formatDateTimeForDB(
         availability.available_date,
         availability.start_time
       );
+
+      console.log("Proposed date calculation:", {
+        availableDate: availability.available_date,
+        startTime: availability.start_time,
+        proposedDate
+      });
 
       const sessionData = {
         student_id: user.id,
@@ -190,7 +198,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
     }
   };
 
-  // Format display date for IST
+  // Format display date for UI
   const formatDisplayDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr + 'T00:00:00');
