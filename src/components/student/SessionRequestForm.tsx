@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import SessionRequestList from "./SessionRequestList";
-import { AvailabilitySelector } from "./availability/AvailabilitySelector";
+import AvailabilitySelector from "./availability/AvailabilitySelector";
 import { PaymentQRGenerator } from "./payment/PaymentQRGenerator";
 import { SessionRequestFormFields } from "./session/SessionRequestFormFields";
 
