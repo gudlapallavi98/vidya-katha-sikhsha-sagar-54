@@ -39,8 +39,10 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState })
     setStep("select-availability");
   };
 
-  const handleSelectAvailability = (availability: any, type: 'individual' | 'course') => {
-    setSelectedAvailability(availability);
+  const handleSelectSlot = (slot: any) => {
+    setSelectedAvailability(slot);
+    // Determine type based on slot properties
+    const type = slot.session_type === 'individual' ? 'individual' : 'course';
     setAvailabilityType(type);
     setStep("payment");
   };
@@ -69,7 +71,7 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState })
       {step === "select-availability" && (
         <AvailabilitySelector
           teacherId={selectedTeacherId}
-          onSelectAvailability={handleSelectAvailability}
+          onSelectSlot={handleSelectSlot}
           onBack={handleBackToTeachers}
         />
       )}
