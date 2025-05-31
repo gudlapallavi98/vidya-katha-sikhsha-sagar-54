@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { calculatePricing, createPaymentRecord } from '@/utils/pricingUtils';
 
@@ -12,6 +13,9 @@ export const acceptSessionRequest = async (requestId: string) => {
       .single();
       
     if (fetchError) throw fetchError;
+    
+    console.log("Accepting session request:", request);
+    console.log("Original proposed_date:", request.proposed_date);
     
     // Update the request status to 'approved' (not 'accepted' to avoid confusion)
     const { error: updateError } = await supabase
@@ -43,7 +47,18 @@ export const acceptSessionRequest = async (requestId: string) => {
       }
     }
     
-    // Create a session based on the request
+    // Calculate session end time based on proposed_date and duration
+    const startTime = new Date(request.proposed_date);
+    const endTime = new Date(startTime.getTime() + request.proposed_duration * 60000);
+    
+    console.log("Session times:", {
+      originalProposedDate: request.proposed_date,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      duration: request.proposed_duration
+    });
+    
+    // Create a session based on the request using the EXACT proposed_date
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .insert({
@@ -51,8 +66,8 @@ export const acceptSessionRequest = async (requestId: string) => {
         teacher_id: request.teacher_id,
         title: request.proposed_title,
         description: request.request_message,
-        start_time: request.proposed_date,
-        end_time: new Date(new Date(request.proposed_date).getTime() + request.proposed_duration * 60000).toISOString(),
+        start_time: startTime.toISOString(), // Use the exact proposed date/time
+        end_time: endTime.toISOString(),
         status: 'scheduled',
         meeting_link: `https://meet.jit.si/${requestId}-${new Date().getTime()}`,
         payment_amount: request.payment_amount,
@@ -70,6 +85,11 @@ export const acceptSessionRequest = async (requestId: string) => {
     }
     
     const newSession = session[0];
+    console.log("Created session with times:", {
+      sessionId: newSession.id,
+      startTime: newSession.start_time,
+      endTime: newSession.end_time
+    });
     
     // Create session attendance entry for the student
     const { error: attendeeError } = await supabase

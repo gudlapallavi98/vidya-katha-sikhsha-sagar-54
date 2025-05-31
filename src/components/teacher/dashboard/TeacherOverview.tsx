@@ -37,6 +37,18 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({
   // Filter to only show pending requests in overview
   const pendingRequests = sessionRequests.filter(request => request.status === 'pending');
   
+  // Format the proposed date properly for overview
+  const formatRequestDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      console.log("TeacherOverview - Formatting request date:", { dateString, parsedDate: date });
+      return format(date, 'MMM dd, yyyy') + ' at ' + format(date, 'h:mm a');
+    } catch (error) {
+      console.error("Error formatting request date:", error, { dateString });
+      return dateString;
+    }
+  };
+
   return (
     <>
       <h1 className="font-sanskrit text-3xl font-bold mb-6">Teacher Dashboard</h1>
@@ -102,7 +114,7 @@ const TeacherOverview: React.FC<TeacherOverviewProps> = ({
                       <div className="flex items-center gap-2 mt-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {format(new Date(request.proposed_date), 'MMM dd, yyyy')} at {format(new Date(request.proposed_date), 'h:mm a')}
+                          {formatRequestDate(request.proposed_date)}
                         </span>
                         <span className="text-sm">
                           ({request.proposed_duration} min)

@@ -31,6 +31,20 @@ const SessionRequestCard: React.FC<SessionRequestCardProps> = ({
     }
   };
 
+  // Format the proposed date properly
+  const formatProposedDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      console.log("SessionRequestCard - Formatting date:", { dateString, parsedDate: date });
+      
+      // Format as "MMM d, yyyy • h:mm a" (e.g., "Jun 4, 2025 • 1:00 PM")
+      return format(date, 'MMM d, yyyy • h:mm a');
+    } catch (error) {
+      console.error("Error formatting proposed date:", error, { dateString });
+      return dateString;
+    }
+  };
+
   return (
     <Card key={request.id} className="mb-4">
       <CardHeader className="pb-2">
@@ -49,7 +63,7 @@ const SessionRequestCard: React.FC<SessionRequestCardProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Date & Time:</span>
-            <span>{format(new Date(request.proposed_date), 'MMM d, yyyy • h:mm a')}</span>
+            <span>{formatProposedDate(request.proposed_date)}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Duration:</span>
