@@ -35,21 +35,33 @@ export const useSessionRequestForm = ({
   
   const pricing = calculatePricing(teacherRate);
 
-  // Format date and time for database storage
+  // Format date and time for database storage using teacher availability
   const formatDateTimeForDB = (dateStr: string, timeStr?: string) => {
     try {
-      if (type === 'individual' && dateStr && timeStr) {
-        // For individual sessions, combine the availability date and start time
-        // dateStr is in YYYY-MM-DD format, timeStr is in HH:MM format
+      if (type === 'individual' && availability.available_date && availability.start_time) {
+        // For individual sessions, use the teacher's availability date and start time
+        const availabilityDate = availability.available_date;
+        const startTime = availability.start_time;
+        const dateTime = new Date(`${availabilityDate}T${startTime}:00`);
+        
+        console.log("Formatting individual session from teacher availability:", { 
+          availabilityDate, 
+          startTime, 
+          result: dateTime.toISOString() 
+        });
+        
+        return dateTime.toISOString();
+      } else if (dateStr && timeStr) {
+        // Fallback to provided date and time
         const dateTime = new Date(`${dateStr}T${timeStr}:00`);
-        console.log("Formatting individual session:", { dateStr, timeStr, result: dateTime.toISOString() });
+        console.log("Formatting with provided dateStr and timeStr:", { dateStr, timeStr, result: dateTime.toISOString() });
         return dateTime.toISOString();
       } else {
         // For course enrollment, use current time
         return new Date().toISOString();
       }
     } catch (error) {
-      console.error("Error formatting date time:", error, { dateStr, timeStr });
+      console.error("Error formatting date time:", error, { dateStr, timeStr, availability });
       return new Date().toISOString();
     }
   };

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { calculatePricing, createPaymentRecord } from '@/utils/pricingUtils';
 
@@ -8,7 +7,14 @@ export const acceptSessionRequest = async (requestId: string) => {
     // Get the request details first
     const { data: request, error: fetchError } = await supabase
       .from('session_requests')
-      .select('*')
+      .select(`
+        *,
+        availability:teacher_availability(
+          available_date,
+          start_time,
+          end_time
+        )
+      `)
       .eq('id', requestId)
       .single();
       
@@ -16,6 +22,7 @@ export const acceptSessionRequest = async (requestId: string) => {
     
     console.log("Accepting session request:", request);
     console.log("Original proposed_date:", request.proposed_date);
+    console.log("Teacher availability:", request.availability);
     
     // Update the request status to 'approved' (not 'accepted' to avoid confusion)
     const { error: updateError } = await supabase
@@ -47,18 +54,39 @@ export const acceptSessionRequest = async (requestId: string) => {
       }
     }
     
-    // Calculate session end time based on proposed_date and duration
-    const startTime = new Date(request.proposed_date);
-    const endTime = new Date(startTime.getTime() + request.proposed_duration * 60000);
+    // Use the exact proposed_date from the request for session creation
+    let sessionStartTime, sessionEndTime;
     
-    console.log("Session times:", {
-      originalProposedDate: request.proposed_date,
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      duration: request.proposed_duration
-    });
+    if (request.availability && request.availability.available_date && request.availability.start_time && request.availability.end_time) {
+      // Use the teacher's availability date and time if available
+      const availabilityDate = request.availability.available_date;
+      const startTime = request.availability.start_time;
+      const endTime = request.availability.end_time;
+      
+      sessionStartTime = new Date(`${availabilityDate}T${startTime}`);
+      sessionEndTime = new Date(`${availabilityDate}T${endTime}`);
+      
+      console.log("Using teacher availability for session times:", {
+        availabilityDate,
+        startTime,
+        endTime,
+        sessionStartTime: sessionStartTime.toISOString(),
+        sessionEndTime: sessionEndTime.toISOString()
+      });
+    } else {
+      // Fallback to proposed_date if availability is not available
+      sessionStartTime = new Date(request.proposed_date);
+      sessionEndTime = new Date(sessionStartTime.getTime() + request.proposed_duration * 60000);
+      
+      console.log("Using proposed_date for session times:", {
+        proposedDate: request.proposed_date,
+        duration: request.proposed_duration,
+        sessionStartTime: sessionStartTime.toISOString(),
+        sessionEndTime: sessionEndTime.toISOString()
+      });
+    }
     
-    // Create a session based on the request using the EXACT proposed_date
+    // Create a session based on the request
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .insert({
@@ -66,8 +94,8 @@ export const acceptSessionRequest = async (requestId: string) => {
         teacher_id: request.teacher_id,
         title: request.proposed_title,
         description: request.request_message,
-        start_time: startTime.toISOString(), // Use the exact proposed date/time
-        end_time: endTime.toISOString(),
+        start_time: sessionStartTime.toISOString(),
+        end_time: sessionEndTime.toISOString(),
         status: 'scheduled',
         meeting_link: `https://meet.jit.si/${requestId}-${new Date().getTime()}`,
         payment_amount: request.payment_amount,

@@ -49,11 +49,23 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
     const sessionStart = new Date(session.start_time);
     const sessionEnd = new Date(session.end_time);
     
-    // Can start 15 minutes before and up to 5 minutes after start time
-    const canStartTime = subMinutes(sessionStart, 15);
-    const lateStartTime = addMinutes(sessionStart, 5);
+    console.log("Checking if can start session:", {
+      sessionId: session.id,
+      now: now.toISOString(),
+      sessionStart: sessionStart.toISOString(),
+      sessionEnd: sessionEnd.toISOString(),
+      status: session.status
+    });
     
-    return isAfter(now, canStartTime) && isBefore(now, lateStartTime) && session.status === 'scheduled';
+    // Can start 15 minutes before and up to session end time
+    const canStartTime = subMinutes(sessionStart, 15);
+    
+    const canStart = isAfter(now, canStartTime) && 
+                    isBefore(now, sessionEnd) && 
+                    session.status === 'scheduled';
+    
+    console.log("Can start session result:", canStart);
+    return canStart;
   };
 
   const canJoinSession = (session: any) => {
@@ -72,9 +84,27 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
     const sessionStart = new Date(session.start_time);
     const sessionEnd = new Date(session.end_time);
     
+    console.log("Getting session status:", {
+      sessionId: session.id,
+      now: now.toISOString(),
+      sessionStart: sessionStart.toISOString(),
+      sessionEnd: sessionEnd.toISOString(),
+      status: session.status
+    });
+    
     if (session.status === 'completed') return 'Completed';
     if (session.status === 'cancelled') return 'Cancelled';
     if (session.status === 'in_progress') return 'Live Now';
+    
+    // Check if session has ended
+    if (isAfter(now, sessionEnd)) {
+      return 'Ended';
+    }
+    
+    // Check if session is happening now
+    if (isAfter(now, sessionStart) && isBefore(now, sessionEnd) && session.status === 'scheduled') {
+      return 'Should be Live'; // This indicates it should be started
+    }
     
     if (isBefore(now, sessionStart)) {
       const timeDiff = sessionStart.getTime() - now.getTime();
@@ -83,15 +113,34 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
       
       if (hoursDiff > 0) {
         return `Starts in ${hoursDiff}h ${minutesDiff % 60}m`;
-      } else {
+      } else if (minutesDiff > 0) {
         return `Starts in ${minutesDiff}m`;
+      } else {
+        return 'Starting Soon';
       }
     }
     
-    if (isAfter(now, sessionEnd)) return 'Ended';
-    
     return 'Scheduled';
   };
+
+  // Filter to only show truly upcoming sessions (not ended)
+  const filteredUpcomingSessions = upcomingSessions.filter(session => {
+    const now = new Date();
+    const sessionEnd = new Date(session.end_time);
+    const isUpcoming = isAfter(sessionEnd, now);
+    
+    console.log("Filtering session:", {
+      sessionId: session.id,
+      title: session.title,
+      sessionEnd: sessionEnd.toISOString(),
+      now: now.toISOString(),
+      isUpcoming
+    });
+    
+    return isUpcoming;
+  });
+
+  console.log("Filtered upcoming sessions:", filteredUpcomingSessions.length);
 
   return (
     <div className="space-y-6">
@@ -101,8 +150,8 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
       </div>
 
       <div className="grid gap-4">
-        {upcomingSessions.length > 0 ? (
-          upcomingSessions.map((session) => (
+        {filteredUpcomingSessions.length > 0 ? (
+          filteredUpcomingSessions.map((session) => (
             <Card key={session.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">

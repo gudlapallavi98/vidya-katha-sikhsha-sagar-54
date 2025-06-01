@@ -29,13 +29,27 @@ const TeacherDashboard = () => {
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
   const { data: teacherSessions = [], isLoading: sessionsLoading } = useTeacherSessions();
   
-  // Calculate metrics from sessions data
+  // Calculate metrics from sessions data with proper filtering
+  const now = new Date();
   const upcomingSessions = teacherSessions.filter(s => {
     const sessionEndTime = new Date(s.end_time);
-    const now = new Date();
-    // Include sessions that haven't ended yet
-    return s.status === 'scheduled' || s.status === 'in_progress' || sessionEndTime >= now;
+    // Only include sessions that haven't ended yet
+    const isUpcoming = sessionEndTime >= now;
+    
+    console.log("Filtering teacher session:", {
+      sessionId: s.id,
+      title: s.title,
+      endTime: sessionEndTime.toISOString(),
+      now: now.toISOString(),
+      isUpcoming,
+      status: s.status
+    });
+    
+    return isUpcoming && (s.status === 'scheduled' || s.status === 'in_progress');
   });
+  
+  console.log("Total teacher sessions:", teacherSessions.length);
+  console.log("Filtered upcoming sessions:", upcomingSessions.length);
   
   const totalSessions = {
     completed: teacherSessions.filter(s => s.status === 'completed').length,
