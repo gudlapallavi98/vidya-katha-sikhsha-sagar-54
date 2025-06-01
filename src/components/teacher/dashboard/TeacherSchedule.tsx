@@ -57,14 +57,22 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
       status: session.status
     });
     
-    // Can start 15 minutes before and up to session end time
+    // Can start on the scheduled date and time (allow starting from exact time)
+    // Allow starting up to 15 minutes before and during the session
     const canStartTime = subMinutes(sessionStart, 15);
     
     const canStart = isAfter(now, canStartTime) && 
                     isBefore(now, sessionEnd) && 
                     session.status === 'scheduled';
     
-    console.log("Can start session result:", canStart);
+    console.log("Can start session result:", {
+      canStartTime: canStartTime.toISOString(),
+      isAfterCanStartTime: isAfter(now, canStartTime),
+      isBeforeSessionEnd: isBefore(now, sessionEnd),
+      statusIsScheduled: session.status === 'scheduled',
+      canStart
+    });
+    
     return canStart;
   };
 
@@ -101,22 +109,33 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
       return 'Ended';
     }
     
-    // Check if session is happening now
-    if (isAfter(now, sessionStart) && isBefore(now, sessionEnd) && session.status === 'scheduled') {
-      return 'Should be Live'; // This indicates it should be started
-    }
-    
-    if (isBefore(now, sessionStart)) {
-      const timeDiff = sessionStart.getTime() - now.getTime();
-      const minutesDiff = Math.floor(timeDiff / (1000 * 60));
-      const hoursDiff = Math.floor(minutesDiff / 60);
+    // Check timing for scheduled sessions
+    if (session.status === 'scheduled') {
+      const canStartTime = subMinutes(sessionStart, 15);
       
-      if (hoursDiff > 0) {
-        return `Starts in ${hoursDiff}h ${minutesDiff % 60}m`;
-      } else if (minutesDiff > 0) {
-        return `Starts in ${minutesDiff}m`;
-      } else {
-        return 'Starting Soon';
+      // If we're within the start window
+      if (isAfter(now, canStartTime) && isBefore(now, sessionEnd)) {
+        if (isAfter(now, sessionStart)) {
+          return 'Ready to Start';
+        } else {
+          const minutesToStart = Math.floor((sessionStart.getTime() - now.getTime()) / (1000 * 60));
+          return `Starts in ${minutesToStart}m`;
+        }
+      }
+      
+      // If session is in the future
+      if (isBefore(now, canStartTime)) {
+        const timeDiff = sessionStart.getTime() - now.getTime();
+        const minutesDiff = Math.floor(timeDiff / (1000 * 60));
+        const hoursDiff = Math.floor(minutesDiff / 60);
+        
+        if (hoursDiff > 0) {
+          return `Starts in ${hoursDiff}h ${minutesDiff % 60}m`;
+        } else if (minutesDiff > 0) {
+          return `Starts in ${minutesDiff}m`;
+        } else {
+          return 'Starting Soon';
+        }
       }
     }
     
@@ -151,71 +170,77 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
 
       <div className="grid gap-4">
         {filteredUpcomingSessions.length > 0 ? (
-          filteredUpcomingSessions.map((session) => (
-            <Card key={session.id}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{session.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {session.course?.title || 'Individual Session'}
+          filteredUpcomingSessions.map((session) => {
+            const canStart = canStartSession(session);
+            const canJoin = canJoinSession(session);
+            const statusText = getSessionStatus(session);
+            
+            return (
+              <Card key={session.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{session.title}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {session.course?.title || 'Individual Session'}
+                      </p>
+                    </div>
+                    <Badge className={getStatusColor(session.status)}>
+                      {statusText}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {format(new Date(session.start_time), 'MMM dd, yyyy')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">
+                        {format(new Date(session.start_time), 'hh:mm a')} - {format(new Date(session.end_time), 'hh:mm a')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">1 student</span>
+                    </div>
+                  </div>
+                  
+                  {session.description && (
+                    <p className="text-sm text-muted-foreground mt-3">
+                      {session.description}
                     </p>
-                  </div>
-                  <Badge className={getStatusColor(session.status)}>
-                    {getSessionStatus(session)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {format(new Date(session.start_time), 'MMM dd, yyyy')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {format(new Date(session.start_time), 'hh:mm a')} - {format(new Date(session.end_time), 'hh:mm a')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">1 student</span>
-                  </div>
-                </div>
-                
-                {session.description && (
-                  <p className="text-sm text-muted-foreground mt-3">
-                    {session.description}
-                  </p>
-                )}
-                
-                <div className="flex gap-2 mt-4">
-                  {canStartSession(session) && (
-                    <Button 
-                      onClick={() => handleStartClass(session.id)}
-                      className="flex items-center gap-2"
-                    >
-                      <Video className="h-4 w-4" />
-                      Start Class
-                    </Button>
                   )}
-                  {canJoinSession(session) && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => window.open(session.meeting_link, '_blank')}
-                      className="flex items-center gap-2"
-                    >
-                      <Video className="h-4 w-4" />
-                      Join Meeting
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                  
+                  <div className="flex gap-2 mt-4">
+                    {canStart && (
+                      <Button 
+                        onClick={() => handleStartClass(session.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <Video className="h-4 w-4" />
+                        Start Class
+                      </Button>
+                    )}
+                    {canJoin && (
+                      <Button 
+                        variant="outline"
+                        onClick={() => window.open(session.meeting_link, '_blank')}
+                        className="flex items-center gap-2"
+                      >
+                        <Video className="h-4 w-4" />
+                        Join Meeting
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         ) : (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">

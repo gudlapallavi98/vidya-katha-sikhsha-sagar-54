@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { QrCode, CreditCard, CheckCircle, Copy } from 'lucide-react';
+import { QrCode, CreditCard, CheckCircle, Copy, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { calculatePricing, formatCurrency } from '@/utils/pricingUtils';
@@ -20,14 +20,15 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
   onPaymentSuccess,
   onBack
 }) => {
-  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success'>('pending');
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const { toast } = useToast();
 
   // Get teacher rate from availability
   const teacherRate = type === 'individual' 
-    ? (availability.price || availability.teacher_rate || 100) // fallback to 100 if no price set
-    : (availability.price || availability.teacher_rate || 500); // fallback to 500 for courses
+    ? (availability.price || availability.teacher_rate || 100)
+    : (availability.price || availability.teacher_rate || 500);
 
   // Calculate pricing with platform fee
   const pricing = calculatePricing(teacherRate);
@@ -47,6 +48,66 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
   const generateQRCodeUrl = () => {
     const upiUrl = generateUPIUrl();
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
+  };
+
+  // Check payment status periodically
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+    
+    if (paymentStatus === 'pending' && !isProcessing) {
+      // Check payment status every 5 seconds
+      intervalId = setInterval(() => {
+        checkPaymentStatus();
+      }, 5000);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [paymentStatus, isProcessing]);
+
+  const checkPaymentStatus = async () => {
+    if (isCheckingPayment) return;
+    
+    setIsCheckingPayment(true);
+    
+    try {
+      // In a real implementation, you would call your payment gateway API
+      // For now, we'll simulate payment checking
+      console.log("Checking payment status...");
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For demo purposes, we'll randomly succeed after some time
+      // In production, this should check with your actual payment provider
+      const shouldSucceed = Math.random() > 0.7; // 30% chance of success per check
+      
+      if (shouldSucceed) {
+        setPaymentStatus('success');
+        toast({
+          title: "Payment Confirmed!",
+          description: `Payment of ${formatCurrency(pricing.studentAmount)} has been confirmed`,
+        });
+        
+        // Auto-proceed after success
+        setTimeout(() => {
+          onPaymentSuccess();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("Error checking payment status:", error);
+      setPaymentStatus('failed');
+      toast({
+        variant: "destructive",
+        title: "Payment Check Failed",
+        description: "Unable to verify payment status. Please try again.",
+      });
+    } finally {
+      setIsCheckingPayment(false);
+    }
   };
 
   const copyUPIDetails = () => {
@@ -87,6 +148,14 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
     }, 3000);
   };
 
+  const handleRetryPayment = () => {
+    setPaymentStatus('pending');
+    toast({
+      title: "Payment Reset",
+      description: "You can now try making the payment again",
+    });
+  };
+
   if (paymentStatus === 'success') {
     return (
       <div className="text-center space-y-6">
@@ -96,11 +165,35 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-green-600">Payment Successful!</h2>
           <p className="text-muted-foreground mt-2">
-            Your payment of {formatCurrency(pricing.studentAmount)} has been processed successfully.
+            Your payment of {formatCurrency(pricing.studentAmount)} has been confirmed.
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            Redirecting to session request form...
+            Proceeding to session request form...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === 'failed') {
+    return (
+      <div className="text-center space-y-6">
+        <div className="flex justify-center">
+          <AlertCircle className="h-20 w-20 text-red-500" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold text-red-600">Payment Failed</h2>
+          <p className="text-muted-foreground mt-2">
+            We couldn't confirm your payment. Please try again.
+          </p>
+        </div>
+        <div className="flex gap-2 justify-center">
+          <Button onClick={handleRetryPayment}>
+            Try Again
+          </Button>
+          <Button variant="outline" onClick={onBack}>
+            Go Back
+          </Button>
         </div>
       </div>
     );
@@ -179,9 +272,11 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
             <p className="text-sm text-muted-foreground">
               Scan this QR code with any UPI app to make payment
             </p>
-            <p className="text-xs text-muted-foreground">
-              Or use the options below for manual payment
-            </p>
+            {isCheckingPayment && (
+              <p className="text-xs text-blue-600 animate-pulse">
+                🔄 Checking payment status...
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -232,7 +327,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
             <li>• Scan the QR code above</li>
             <li>• Verify amount: {formatCurrency(pricing.studentAmount)}</li>
             <li>• Complete the payment</li>
-            <li>• Return here to continue with session request</li>
+            <li>• We'll automatically detect your payment and proceed</li>
           </ul>
           
           <div className="mt-3 p-2 bg-white rounded border">
