@@ -10,7 +10,7 @@ const AboutUsPage = () => {
       <section className="py-16 md:py-24 bg-gradient-to-br from-indian-saffron/5 via-white to-indian-green/5">
         <div className="container text-center">
           <h1 className="font-sanskrit text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-            About <span className="text-indian-saffron">Vidya</span> <span className="text-indian-blue">Katha</span>
+            About <span className="text-orange-500">E</span><span className="text-indian-blue">tutors</span><span className="text-green-500">s</span>
           </h1>
           <p className="max-w-3xl mx-auto text-lg text-muted-foreground mb-10">
             Our mission is to blend traditional Indian teaching wisdom with modern technology to provide
@@ -45,10 +45,10 @@ const AboutUsPage = () => {
             <div className="md:w-1/2">
               <h2 className="font-sanskrit text-3xl font-bold mb-6">Our Story</h2>
               <p className="text-muted-foreground mb-4">
-                Vidya Katha was founded in 2020 by a group of passionate educators who believed that quality education should be accessible to everyone, regardless of geographical constraints.
+                Etutorss was founded by Aura Foundation, which was established in 2007 by a group of passionate educators who believed that quality education should be accessible to everyone, regardless of geographical constraints.
               </p>
               <p className="text-muted-foreground mb-4">
-                The name "Vidya Katha" comes from Sanskrit, where "Vidya" means knowledge and "Katha" means story. We believe that education is not just about learning facts, but about understanding the story behind the knowledge.
+                The name "Etutorss" represents our commitment to electronic tutoring and personalized learning experiences. We believe that education is not just about learning facts, but about understanding the story behind the knowledge.
               </p>
               <p className="text-muted-foreground">
                 What started as a small initiative with just a handful of teachers and students has now grown into a robust platform connecting thousands of learners with expert educators across India.
@@ -111,7 +111,7 @@ const AboutUsPage = () => {
         <div className="container">
           <h2 className="font-sanskrit text-3xl font-bold text-center mb-6">Our Leadership Team</h2>
           <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-12">
-            Meet the dedicated educators and professionals behind Vidya Katha who are committed to transforming online education in India.
+            Meet the dedicated educators and professionals behind Etutorss who are committed to transforming online education in India.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
