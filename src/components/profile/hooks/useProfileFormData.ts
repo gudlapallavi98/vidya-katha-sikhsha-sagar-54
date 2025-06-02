@@ -94,13 +94,26 @@ export function useProfileFormData(formSchema: any) {
             email: user.email || undefined 
           } as ProfileData;
           
+          // Parse date_of_birth correctly to avoid timezone issues
+          let dateOfBirth = undefined;
+          if (profileData.date_of_birth) {
+            // Parse the date string as a local date to avoid timezone conversion
+            const dateParts = profileData.date_of_birth.split('-');
+            if (dateParts.length === 3) {
+              const year = parseInt(dateParts[0], 10);
+              const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed in Date constructor
+              const day = parseInt(dateParts[2], 10);
+              dateOfBirth = new Date(year, month, day);
+            }
+          }
+          
           // Set the form values
           form.reset({
             first_name: profileData.first_name || "",
             last_name: profileData.last_name || "",
             display_name: profileData.display_name || "",
             gender: profileData.gender || "",
-            date_of_birth: profileData.date_of_birth ? new Date(profileData.date_of_birth) : undefined,
+            date_of_birth: dateOfBirth,
             city: profileData.city || "",
             state: profileData.state || "",
             country: profileData.country || "",

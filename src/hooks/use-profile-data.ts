@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,13 +41,12 @@ export const useUpdateProfile = () => {
       // Handle date_of_birth conversion
       let mappedData = { ...profileData };
       
-      // Convert Date object to ISO string for date_of_birth
+      // Convert Date object to proper date string for database storage
       if (mappedData.date_of_birth && mappedData.date_of_birth instanceof Date) {
-        // Convert to YYYY-MM-DD format for proper database storage
-        const year = mappedData.date_of_birth.getFullYear();
-        const month = (mappedData.date_of_birth.getMonth() + 1).toString().padStart(2, '0');
-        const day = mappedData.date_of_birth.getDate().toString().padStart(2, '0');
-        mappedData.date_of_birth = `${year}-${month}-${day}`;
+        // Use toISOString and split to get YYYY-MM-DD format in UTC
+        // This prevents timezone conversion issues
+        const utcDate = new Date(mappedData.date_of_birth.getTime() + mappedData.date_of_birth.getTimezoneOffset() * 60000);
+        mappedData.date_of_birth = utcDate.toISOString().split('T')[0];
         console.log("Converted date_of_birth to:", mappedData.date_of_birth);
       }
       

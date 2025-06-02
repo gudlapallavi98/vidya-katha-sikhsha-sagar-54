@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,15 +40,17 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [studyPreferences, setStudyPreferences] = useState<string[]>([]);
-  const [examHistory, setExamHistory] = useState<{name: string, date: string, score: string}[]>([]);
   
   const {
     form, 
     selectedSubjects, 
     setSelectedSubjects, 
     avatarUrl, 
-    setAvatarUrl
+    setAvatarUrl,
+    studyPreferences,
+    setStudyPreferences,
+    examHistory,
+    setExamHistory
   } = useProfileFormData(formSchema);
   
   const updateProfile = useUpdateProfile();
@@ -66,15 +67,16 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
     
     setIsLoading(true);
     console.log("Submitting student profile form with values:", values);
+    console.log("Study preferences:", studyPreferences);
+    console.log("Exam history:", examHistory);
     
     try {
-      // Format date_of_birth to ISO string if it exists
       const formattedData = {
         first_name: values.first_name,
         last_name: values.last_name,
         display_name: values.display_name || null,
         gender: values.gender || null,
-        date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString().split('T')[0] : null,
+        date_of_birth: values.date_of_birth || null,
         city: values.city || null,
         state: values.state || null,
         country: values.country || null,
@@ -84,15 +86,15 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         profile_completed: true,
         updated_at: new Date().toISOString(),
         education_level: values.education_level || null,
-        study_preferences: studyPreferences.length > 0 ? studyPreferences : null,
-        exam_history: examHistory.length > 0 ? examHistory : null,
+        study_preferences: studyPreferences.length > 0 ? studyPreferences : [],
+        exam_history: examHistory.length > 0 ? examHistory : [],
         school_name: values.school_name || null,
         grade_level: values.grade_level || null
       };
 
       console.log("Formatted data for student profile:", formattedData);
       
-      // Filter out null values to avoid overwriting with null
+      // Filter out null values to avoid overwriting with null, but keep empty arrays
       const filteredData = Object.entries(formattedData)
         .filter(([_, value]) => value !== null && value !== undefined && value !== '')
         .reduce((obj: any, [key, value]) => {
