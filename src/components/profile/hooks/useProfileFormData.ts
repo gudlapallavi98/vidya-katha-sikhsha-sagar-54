@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 
 interface ProfileData {
   id: string;
@@ -65,6 +64,8 @@ export function useProfileFormData(formSchema: any) {
       education_level: "",
       school_name: "",
       grade_level: "",
+      study_preferences: [],
+      exam_history: [],
     },
   });
 
@@ -110,6 +111,8 @@ export function useProfileFormData(formSchema: any) {
             education_level: profileData.education_level || "",
             school_name: profileData.school_name || "",
             grade_level: profileData.grade_level || "",
+            study_preferences: profileData.study_preferences || [],
+            exam_history: profileData.exam_history || [],
           });
           
           // Set state values
@@ -118,6 +121,8 @@ export function useProfileFormData(formSchema: any) {
           if (profileData.email) setEmail(profileData.email);
           setAvatarUrl(profileData.avatar_url || null);
           setSelectedSubjects(profileData.subjects_interested || []);
+          
+          // Properly set study preferences from database
           setStudyPreferences(profileData.study_preferences || []);
           
           // Handle certificates
@@ -125,9 +130,19 @@ export function useProfileFormData(formSchema: any) {
             setCertificates(profileData.certificates);
           }
           
-          // Handle exam history
-          if (profileData.exam_history && Array.isArray(profileData.exam_history)) {
-            setExamHistory(profileData.exam_history);
+          // Handle exam history - ensure it's properly parsed
+          if (profileData.exam_history) {
+            if (Array.isArray(profileData.exam_history)) {
+              setExamHistory(profileData.exam_history);
+            } else if (typeof profileData.exam_history === 'string') {
+              try {
+                const parsed = JSON.parse(profileData.exam_history);
+                setExamHistory(Array.isArray(parsed) ? parsed : []);
+              } catch (e) {
+                console.error("Error parsing exam_history:", e);
+                setExamHistory([]);
+              }
+            }
           }
           
           // Set teacher-specific fields

@@ -51,7 +51,15 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
     
     if (dateOfBirth) {
       try {
-        const date = new Date(dateOfBirth);
+        // Handle both Date object and string input
+        let date: Date;
+        if (typeof dateOfBirth === 'string') {
+          // Parse as local date to avoid timezone issues
+          date = new Date(dateOfBirth + 'T00:00:00');
+        } else {
+          date = dateOfBirth;
+        }
+        
         if (!isNaN(date.getTime())) {
           setBirthDay(date.getDate().toString().padStart(2, '0'));
           setBirthMonth((date.getMonth() + 1).toString().padStart(2, '0'));
@@ -67,11 +75,16 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
   const updateDateOfBirth = (day: string, month: string, year: string) => {
     if (day && month && year) {
       try {
+        // Create date string in local timezone to avoid day offset issues
         const dateString = `${year}-${month}-${day}`;
-        const date = parse(dateString, 'yyyy-MM-dd', new Date());
+        console.log("Creating date from:", dateString);
+        
+        // Use local date parsing to avoid timezone conversion
+        const date = new Date(year, parseInt(month) - 1, parseInt(day));
         
         // Only update if it's a valid date
         if (!isNaN(date.getTime())) {
+          console.log("Setting date_of_birth to:", date);
           form.setValue("date_of_birth", date);
         }
       } catch (error) {

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +70,7 @@ export default function UPIPaymentGenerator() {
           <div className="space-y-2">
             <Label>Payment Method</Label>
             <div className="flex gap-4">
-              <label className="flex items-center space-x-2">
+              <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="radio"
                   value="manual"
@@ -78,7 +79,7 @@ export default function UPIPaymentGenerator() {
                 />
                 <span>Manual UPI (Static QR)</span>
               </label>
-              <label className="flex items-center space-x-2">
+              <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="radio"
                   value="cashfree"
@@ -97,6 +98,8 @@ export default function UPIPaymentGenerator() {
                 <Input
                   id="price"
                   type="number"
+                  step="0.01"
+                  min="1"
                   placeholder="Enter course price"
                   value={price || ""}
                   onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
@@ -112,24 +115,31 @@ export default function UPIPaymentGenerator() {
       </Card>
 
       {paymentMethod === 'cashfree' && (
-        <CashfreeUPIForm
-          onPaymentSuccess={(referenceId) => {
-            toast({
-              title: "Payment Successful",
-              description: `Payment completed with reference: ${referenceId}`,
-            });
-          }}
-          onPaymentFailure={(error) => {
-            toast({
-              variant: "destructive",
-              title: "Payment Failed",
-              description: error,
-            });
-          }}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Cashfree UPI Collect</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CashfreeUPIForm
+              onPaymentSuccess={(referenceId) => {
+                toast({
+                  title: "Payment Successful",
+                  description: `Payment completed with reference: ${referenceId}`,
+                });
+              }}
+              onPaymentFailure={(error) => {
+                toast({
+                  variant: "destructive",
+                  title: "Payment Failed",
+                  description: error,
+                });
+              }}
+            />
+          </CardContent>
+        </Card>
       )}
 
-      {paymentDetails && (
+      {paymentDetails && paymentMethod === 'manual' && (
         <Card className="border-green-200 bg-green-50">
           <CardHeader>
             <CardTitle className="text-green-800">💰 Payment Details</CardTitle>

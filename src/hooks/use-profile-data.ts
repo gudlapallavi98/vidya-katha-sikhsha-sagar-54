@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,26 +37,43 @@ export const useUpdateProfile = () => {
       
       console.log("Updating profile with data:", profileData);
       
-      // Map experience fields to match the database schema
-      // The database uses 'experience' column, not 'years_of_experience'
+      // Handle date_of_birth conversion
       let mappedData = { ...profileData };
       
-      // If years_of_experience is provided, add it to the experience field
+      // Convert Date object to ISO string for date_of_birth
+      if (mappedData.date_of_birth && mappedData.date_of_birth instanceof Date) {
+        // Convert to YYYY-MM-DD format for proper database storage
+        const year = mappedData.date_of_birth.getFullYear();
+        const month = (mappedData.date_of_birth.getMonth() + 1).toString().padStart(2, '0');
+        const day = mappedData.date_of_birth.getDate().toString().padStart(2, '0');
+        mappedData.date_of_birth = `${year}-${month}-${day}`;
+        console.log("Converted date_of_birth to:", mappedData.date_of_birth);
+      }
+      
+      // Map experience fields to match the database schema
       if (mappedData.years_of_experience) {
         mappedData.experience = mappedData.experience || '';
         
-        // If we're just adding a years prefix to empty experience
         if (!mappedData.experience) {
           mappedData.experience = `${mappedData.years_of_experience} years of experience`;
         }
         
-        // Remove the years_of_experience field since it doesn't exist in the database
         delete mappedData.years_of_experience;
       }
       
-      // Filter out any undefined or null fields to prevent overwriting with null
+      // Handle study_preferences array properly
+      if (mappedData.study_preferences && Array.isArray(mappedData.study_preferences)) {
+        console.log("Saving study_preferences:", mappedData.study_preferences);
+      }
+      
+      // Handle exam_history array properly
+      if (mappedData.exam_history && Array.isArray(mappedData.exam_history)) {
+        console.log("Saving exam_history:", mappedData.exam_history);
+      }
+      
+      // Filter out any undefined or null fields, but keep empty arrays and empty strings
       const filteredData = Object.entries(mappedData)
-        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+        .filter(([_, value]) => value !== undefined && value !== null)
         .reduce((obj: any, [key, value]) => {
           obj[key] = value;
           return obj;
@@ -98,7 +114,6 @@ export const useUpdateProfile = () => {
 
           if (authError) {
             console.error("Failed to update auth metadata:", authError);
-            // Don't throw error here, we want the profile update to succeed even if the auth update fails
           }
         } catch (metadataError) {
           console.error("Error updating metadata:", metadataError);
