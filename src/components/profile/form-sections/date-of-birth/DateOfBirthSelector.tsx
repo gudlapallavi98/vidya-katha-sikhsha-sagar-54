@@ -79,8 +79,13 @@ const DateOfBirthSelector = ({ form }: DateOfBirthSelectorProps) => {
         const dateString = `${year}-${month}-${day}`;
         console.log("Creating date from:", dateString);
         
+        // Parse strings to integers for Date constructor
+        const yearInt = parseInt(year, 10);
+        const monthInt = parseInt(month, 10);
+        const dayInt = parseInt(day, 10);
+        
         // Use local date parsing to avoid timezone conversion
-        const date = new Date(year, parseInt(month) - 1, parseInt(day));
+        const date = new Date(yearInt, monthInt - 1, dayInt);
         
         // Only update if it's a valid date
         if (!isNaN(date.getTime())) {
