@@ -999,6 +999,45 @@ export type Database = {
         }
         Relationships: []
       }
+      upi_payments: {
+        Row: {
+          amount: number
+          cashfree_response: Json | null
+          created_at: string
+          id: string
+          reference_id: string
+          status: string
+          updated_at: string
+          upi_id: string
+          upi_uri: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          cashfree_response?: Json | null
+          created_at?: string
+          id?: string
+          reference_id: string
+          status?: string
+          updated_at?: string
+          upi_id: string
+          upi_uri?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          cashfree_response?: Json | null
+          created_at?: string
+          id?: string
+          reference_id?: string
+          status?: string
+          updated_at?: string
+          upi_id?: string
+          upi_uri?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
