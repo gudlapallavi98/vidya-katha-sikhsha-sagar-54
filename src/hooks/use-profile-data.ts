@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,15 +37,15 @@ export const useUpdateProfile = () => {
       
       console.log("Updating profile with data:", profileData);
       
-      // Handle date_of_birth conversion
+      // Handle date_of_birth conversion - use UTC date to prevent timezone shifts
       let mappedData = { ...profileData };
       
-      // Convert Date object to proper date string for database storage
       if (mappedData.date_of_birth && mappedData.date_of_birth instanceof Date) {
-        // Use toISOString and split to get YYYY-MM-DD format in UTC
-        // This prevents timezone conversion issues
-        const utcDate = new Date(mappedData.date_of_birth.getTime() + mappedData.date_of_birth.getTimezoneOffset() * 60000);
-        mappedData.date_of_birth = utcDate.toISOString().split('T')[0];
+        // Get the local date components and format as YYYY-MM-DD
+        const year = mappedData.date_of_birth.getFullYear();
+        const month = String(mappedData.date_of_birth.getMonth() + 1).padStart(2, '0');
+        const day = String(mappedData.date_of_birth.getDate()).padStart(2, '0');
+        mappedData.date_of_birth = `${year}-${month}-${day}`;
         console.log("Converted date_of_birth to:", mappedData.date_of_birth);
       }
       
@@ -69,6 +68,11 @@ export const useUpdateProfile = () => {
       // Handle exam_history array properly
       if (mappedData.exam_history && Array.isArray(mappedData.exam_history)) {
         console.log("Saving exam_history:", mappedData.exam_history);
+      }
+
+      // Handle session_format preference
+      if (mappedData.session_format) {
+        console.log("Saving session_format:", mappedData.session_format);
       }
       
       // Filter out any undefined or null fields, but keep empty arrays and empty strings

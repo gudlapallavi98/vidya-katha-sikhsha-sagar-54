@@ -8,7 +8,8 @@ import DashboardCard from "@/components/dashboard/DashboardCard";
 import { DashboardHeader, DashboardShell } from "@/components/ui/dashboard-shell";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Session } from "@/hooks/types";
-import { format, isAfter, isBefore, addMinutes, subMinutes } from "date-fns";
+import { format, isAfter, isBefore, subMinutes } from "date-fns";
+import { SessionJoinButton } from "@/components/student/session/SessionJoinButton";
 
 interface SessionsTabProps {
   upcomingSessions: Session[];
@@ -22,27 +23,6 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
   handleJoinClass,
 }) => {
   const navigate = useNavigate();
-
-  const canJoinSession = (session: Session) => {
-    const now = new Date();
-    const sessionStart = new Date(session.start_time);
-    const sessionEnd = new Date(session.end_time);
-    
-    console.log("Checking join eligibility:", {
-      sessionId: session.id,
-      now: now.toISOString(),
-      sessionStart: sessionStart.toISOString(),
-      sessionEnd: sessionEnd.toISOString(),
-      status: session.status
-    });
-    
-    // Can join 5 minutes before start time and during the session
-    const canJoinTime = subMinutes(sessionStart, 5);
-    
-    return (session.status === 'in_progress' || session.status === 'scheduled') && 
-           isAfter(now, canJoinTime) && 
-           isBefore(now, sessionEnd);
-  };
 
   const getSessionStatus = (session: Session) => {
     const now = new Date();
@@ -126,13 +106,11 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
             <TableBody>
               {upcomingSessions.map((session) => {
                 const status = getSessionStatus(session);
-                const canJoin = canJoinSession(session);
                 
                 console.log("Rendering session:", {
                   sessionId: session.id,
                   title: session.title,
                   startTime: session.start_time,
-                  canJoin,
                   status: status.label
                 });
                 
@@ -156,12 +134,11 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {canJoin && (
-                        <Button size="sm" onClick={() => handleJoinClass(session.id)} className="flex items-center gap-2">
-                          <Video className="h-4 w-4" />
-                          Join Now
-                        </Button>
-                      )}
+                      <SessionJoinButton
+                        sessionStartTime={session.start_time}
+                        meetingLink={session.meeting_link}
+                        onJoin={() => handleJoinClass(session.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 );

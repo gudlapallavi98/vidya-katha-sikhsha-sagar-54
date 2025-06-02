@@ -29,6 +29,7 @@ const formSchema = z.object({
   education_level: z.string().optional(),
   school_name: z.string().optional(),
   grade_level: z.string().optional(),
+  session_format: z.string().optional(),
 });
 
 interface StudentProfileFormProps {
@@ -50,7 +51,9 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
     studyPreferences,
     setStudyPreferences,
     examHistory,
-    setExamHistory
+    setExamHistory,
+    sessionFormat,
+    setSessionFormat
   } = useProfileFormData(formSchema);
   
   const updateProfile = useUpdateProfile();
@@ -69,6 +72,7 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
     console.log("Submitting student profile form with values:", values);
     console.log("Study preferences:", studyPreferences);
     console.log("Exam history:", examHistory);
+    console.log("Session format:", sessionFormat);
     
     try {
       const formattedData = {
@@ -89,14 +93,18 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         study_preferences: studyPreferences.length > 0 ? studyPreferences : [],
         exam_history: examHistory.length > 0 ? examHistory : [],
         school_name: values.school_name || null,
-        grade_level: values.grade_level || null
+        grade_level: values.grade_level || null,
+        session_format: sessionFormat || null
       };
 
       console.log("Formatted data for student profile:", formattedData);
       
       // Filter out null values to avoid overwriting with null, but keep empty arrays
       const filteredData = Object.entries(formattedData)
-        .filter(([_, value]) => value !== null && value !== undefined && value !== '')
+        .filter(([_, value]) => {
+          // Keep non-null values, empty arrays, and empty strings
+          return value !== null && value !== undefined;
+        })
         .reduce((obj: any, [key, value]) => {
           obj[key] = value;
           return obj;
@@ -145,6 +153,8 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
               setSelectedSubjects={setSelectedSubjects} 
               studyPreferences={studyPreferences}
               setStudyPreferences={setStudyPreferences}
+              sessionFormat={sessionFormat}
+              setSessionFormat={setSessionFormat}
             />
           </div>
         );

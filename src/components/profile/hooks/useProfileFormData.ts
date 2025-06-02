@@ -30,6 +30,7 @@ interface ProfileData {
   exam_history?: any;
   school_name?: string;
   grade_level?: string;
+  session_format?: string;
 }
 
 export function useProfileFormData(formSchema: any) {
@@ -45,6 +46,7 @@ export function useProfileFormData(formSchema: any) {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [studyPreferences, setStudyPreferences] = useState<string[]>([]);
   const [examHistory, setExamHistory] = useState<{name: string, date: string, score: string}[]>([]);
+  const [sessionFormat, setSessionFormat] = useState("both");
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -66,6 +68,7 @@ export function useProfileFormData(formSchema: any) {
       grade_level: "",
       study_preferences: [],
       exam_history: [],
+      session_format: "both",
     },
   });
 
@@ -94,16 +97,16 @@ export function useProfileFormData(formSchema: any) {
             email: user.email || undefined 
           } as ProfileData;
           
-          // Parse date_of_birth correctly to avoid timezone issues
+          // Parse date_of_birth correctly - create date from YYYY-MM-DD string
           let dateOfBirth = undefined;
           if (profileData.date_of_birth) {
-            // Parse the date string as a local date to avoid timezone conversion
             const dateParts = profileData.date_of_birth.split('-');
             if (dateParts.length === 3) {
               const year = parseInt(dateParts[0], 10);
-              const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed in Date constructor
+              const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
               const day = parseInt(dateParts[2], 10);
               dateOfBirth = new Date(year, month, day);
+              console.log("Parsed date_of_birth:", dateOfBirth, "from:", profileData.date_of_birth);
             }
           }
           
@@ -126,6 +129,7 @@ export function useProfileFormData(formSchema: any) {
             grade_level: profileData.grade_level || "",
             study_preferences: profileData.study_preferences || [],
             exam_history: profileData.exam_history || [],
+            session_format: profileData.session_format || "both",
           });
           
           // Set state values
@@ -137,6 +141,9 @@ export function useProfileFormData(formSchema: any) {
           
           // Properly set study preferences from database
           setStudyPreferences(profileData.study_preferences || []);
+          
+          // Set session format
+          setSessionFormat(profileData.session_format || "both");
           
           // Handle certificates
           if (profileData.certificates && Array.isArray(profileData.certificates)) {
@@ -199,5 +206,7 @@ export function useProfileFormData(formSchema: any) {
     setStudyPreferences,
     examHistory,
     setExamHistory,
+    sessionFormat,
+    setSessionFormat,
   };
 }

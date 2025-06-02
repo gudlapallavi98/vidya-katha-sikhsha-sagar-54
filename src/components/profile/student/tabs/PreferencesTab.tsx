@@ -12,6 +12,8 @@ interface PreferencesTabProps {
   setSelectedSubjects: (subjects: string[]) => void;
   studyPreferences: string[];
   setStudyPreferences: (preferences: string[]) => void;
+  sessionFormat: string;
+  setSessionFormat: (format: string) => void;
 }
 
 const SUBJECT_SUGGESTIONS = [
@@ -32,9 +34,10 @@ export function PreferencesTab({
   selectedSubjects, 
   setSelectedSubjects,
   studyPreferences,
-  setStudyPreferences
+  setStudyPreferences,
+  sessionFormat,
+  setSessionFormat
 }: PreferencesTabProps) {
-  const [sessionFormat, setSessionFormat] = useState("both");
   
   const toggleSubject = (subject: string) => {
     if (selectedSubjects.includes(subject)) {
@@ -130,4 +133,3 @@ export function PreferencesTab({
     </div>
   );
 }
-
