@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { SessionDetailsCard } from "./session/SessionDetailsCard";
+import { calculatePricing } from "@/utils/pricingUtils";
 
 interface SessionRequestFormFieldsProps {
   form: UseFormReturn<any>;
@@ -90,6 +90,13 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
 
   const calculatePrice = (teacherRate: number) => {
     return teacherRate * 1.1; // Student pays 10% more
+  };
+
+  // Calculate pricing for selected availability
+  const getPricing = () => {
+    if (!selectedAvailability) return null;
+    const teacherRate = selectedAvailability.teacher_rate || selectedAvailability.price || 100;
+    return calculatePricing(teacherRate);
   };
 
   return (
@@ -229,15 +236,60 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
       />
 
       {/* Session Details */}
-      {selectedAvailability && (
-        <SessionDetailsCard
-          availability={selectedAvailability}
-          teacher={selectedTeacher}
-          duration={form.watch("proposed_duration")}
-        />
+      {selectedAvailability && getPricing() && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Session Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="font-medium">Type:</span>
+                <p className="text-sm text-muted-foreground">
+                  {selectedAvailability.session_type === 'individual' ? 'Individual Session' : 'Group Session'}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium">Subject:</span>
+                <p className="text-sm text-muted-foreground">
+                  {selectedAvailability.subjects?.name || 'General'}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium">Date:</span>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(selectedAvailability.available_date), 'EEEE, MMM dd, yyyy')}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium">Time:</span>
+                <p className="text-sm text-muted-foreground">
+                  {selectedAvailability.start_time} - {selectedAvailability.end_time} IST
+                </p>
+              </div>
+              <div className="col-span-2">
+                <span className="font-medium">Payment Details:</span>
+                <div className="mt-2 bg-green-50 p-3 rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span>Teacher Rate:</span>
+                    <span>₹{getPricing()?.teacherRate}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Platform Fee (10%):</span>
+                    <span>+₹{getPricing()?.platformFee}</span>
+                  </div>
+                  <div className="flex justify-between font-semibold text-green-600 border-t pt-2 mt-2">
+                    <span>Amount Paid:</span>
+                    <span>₹{getPricing()?.studentAmount} ✓ Paid</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Book Session Button */}
+      {/* No Availability Alert */}
       {!hasAvailability && (
         <Alert className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -247,6 +299,7 @@ export const SessionRequestFormFields: React.FC<SessionRequestFormFieldsProps> =
         </Alert>
       )}
       
+      {/* Book Session Button */}
       <Button
         type="button"
         onClick={onBookSession}
