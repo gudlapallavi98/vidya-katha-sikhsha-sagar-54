@@ -5,6 +5,7 @@ import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import DashboardTopNav from "@/components/dashboard/DashboardTopNav";
 import StudentDashboardSidebar from "@/components/student/dashboard/StudentDashboardSidebar";
 import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
 
@@ -30,7 +31,14 @@ const StudentDashboard = () => {
   };
 
   if (isChecking) {
-    return <div className="flex items-center justify-center h-screen bg-[#fdf6ee]">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#fdf6ee]">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#FF9933] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -40,6 +48,7 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-[#fdf6ee]">
       <DashboardLayout
+        topNav={<DashboardTopNav />}
         sidebar={
           <StudentDashboardSidebar 
             activeTab={activeTab} 

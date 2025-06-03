@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -11,6 +12,7 @@ import {
   Settings,
   HelpCircle
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StudentDashboardSidebarProps {
   activeTab: string;
@@ -21,6 +23,8 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
   activeTab,
   setActiveTab,
 }) => {
+  const { user } = useAuth();
+
   const menuItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "courses", label: "My Courses", icon: BookOpen },
@@ -35,14 +39,41 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
     setActiveTab(tabId);
   };
 
+  // Get user initials for avatar fallback
+  const getInitials = () => {
+    if (user?.user_metadata?.first_name && user?.user_metadata?.last_name) {
+      return `${user.user_metadata.first_name.charAt(0)}${user.user_metadata.last_name.charAt(0)}`;
+    }
+    return "S";
+  };
+
+  const getFirstName = () => {
+    return user?.user_metadata?.first_name || "Student";
+  };
+
   return (
     <aside className="h-full flex flex-col bg-white border-r border-gray-200 shadow-sm">
-      {/* Logo Section */}
+      {/* Personalized Header Section */}
       <div className="p-6 border-b border-gray-100">
-        <h2 className="font-sanskrit text-xl font-bold text-gray-900">
-          EduPlatform
-        </h2>
-        <p className="text-sm text-gray-600 mt-1">Student Portal</p>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="relative group">
+            <Avatar className="h-12 w-12 transition-all duration-200 group-hover:ring-2 group-hover:ring-[#FF9933] group-hover:ring-offset-2">
+              <AvatarImage 
+                src={user?.user_metadata?.avatar_url} 
+                alt={getFirstName()}
+              />
+              <AvatarFallback className="bg-gradient-to-br from-orange-100 to-orange-200 text-[#FF9933] font-semibold text-lg">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <div className="flex-1">
+            <h2 className="font-bold text-lg text-gray-900 leading-tight">
+              Hi, {getFirstName()}! 👋
+            </h2>
+            <p className="text-sm text-gray-600">Welcome back</p>
+          </div>
+        </div>
       </div>
 
       {/* Navigation Menu */}
@@ -51,16 +82,21 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const isProfileSettings = item.id === 'profile';
             
             return (
               <Button
                 key={item.id}
                 variant="ghost"
-                className={`w-full justify-start h-12 px-4 transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-[#FF9933] text-white hover:bg-[#FF9933]/90 shadow-md' 
-                    : 'text-gray-700 hover:bg-[#138808]/10 hover:text-[#138808]'
-                }`}
+                className={`
+                  w-full justify-start h-12 px-4 transition-all duration-200 rounded-xl
+                  ${isActive 
+                    ? 'bg-[#FF9933] text-white hover:bg-[#FF9933]/90 shadow-lg transform scale-[1.02]' 
+                    : isProfileSettings
+                      ? 'text-gray-700 hover:bg-[#E6F4EA] hover:text-[#138808] hover:shadow-[0_0_8px_rgba(19,136,8,0.2)] hover:scale-[1.02]'
+                      : 'text-gray-700 hover:bg-[#138808]/10 hover:text-[#138808] hover:scale-[1.02]'
+                  }
+                `}
                 onClick={() => handleTabClick(item.id)}
               >
                 <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : ''}`} />
@@ -75,7 +111,7 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
       <div className="p-4 border-t border-gray-100">
         <Button
           variant="outline"
-          className="w-full justify-start h-10 text-[#000080] border-[#000080]/20 hover:bg-[#000080]/5"
+          className="w-full justify-start h-10 text-[#000080] border-[#000080]/20 hover:bg-[#000080]/5 rounded-xl transition-all duration-200 hover:scale-[1.02]"
         >
           <HelpCircle className="mr-2 h-4 w-4" />
           Help & Support
