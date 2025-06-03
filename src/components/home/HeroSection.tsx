@@ -34,7 +34,12 @@ const HeroSection = () => {
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-green-50 py-20 lg:py-32">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23f97316" fill-opacity="0.05"%3E%3Ccircle cx="30" cy="30" r="4"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-40"></div>
+      <div 
+        className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}
+      ></div>
       
       <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2">
@@ -112,11 +117,11 @@ const HeroSection = () => {
               </div>
 
               {/* Floating Elements */}
-              <div className="absolute -right-4 -top-4 z-20 rounded-lg bg-orange-500 p-3 text-white shadow-lg animate-float">
+              <div className="absolute -right-4 -top-4 z-20 rounded-lg bg-orange-500 p-3 text-white shadow-lg animate-pulse">
                 <div className="text-xs font-semibold">98% Success Rate</div>
               </div>
               
-              <div className="absolute -bottom-4 -left-4 z-20 rounded-lg bg-green-600 p-3 text-white shadow-lg animate-float" style={{ animationDelay: '1s' }}>
+              <div className="absolute -bottom-4 -left-4 z-20 rounded-lg bg-green-600 p-3 text-white shadow-lg animate-pulse" style={{ animationDelay: '1s' }}>
                 <div className="text-xs font-semibold">24/7 Support</div>
               </div>
             </div>
