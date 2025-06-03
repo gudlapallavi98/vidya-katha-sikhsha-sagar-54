@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -76,14 +75,16 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
     console.log("Session format:", sessionFormat);
     
     try {
+      // Prepare the data with explicit field mapping
       const formattedData = {
         first_name: values.first_name,
         last_name: values.last_name,
         display_name: values.display_name || null,
         gender: values.gender || null,
         date_of_birth: values.date_of_birth || null,
-        city: values.city || null,
-        state: values.state || null,
+        // Explicitly include location fields
+        city: values.city || "",
+        state: values.state || "",
         country: values.country || "India",
         bio: values.bio || null,
         subjects_interested: selectedSubjects.length > 0 ? selectedSubjects : null,
@@ -98,24 +99,9 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         session_format: sessionFormat || null
       };
 
-      console.log("Formatted data for student profile:", formattedData);
-      
-      // Include all fields for the update, including empty ones
-      const updateData = Object.entries(formattedData)
-        .filter(([key, value]) => {
-          // Always include location and session format fields
-          if (['city', 'state', 'country', 'session_format'].includes(key)) return true;
-          // For other fields, exclude only undefined values
-          return value !== undefined;
-        })
-        .reduce((obj: any, [key, value]) => {
-          obj[key] = value;
-          return obj;
-        }, {});
+      console.log("Formatted data for student profile update:", formattedData);
 
-      console.log("Final update data:", updateData);
-
-      await updateProfile.mutateAsync(updateData);
+      await updateProfile.mutateAsync(formattedData);
       
       if (onCompleted) {
         onCompleted();

@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,34 +77,46 @@ export const useUpdateProfile = () => {
         console.log("Saving session_format:", mappedData.session_format);
       }
       
-      // Handle city field - ensure it's included in the update and can be empty
-      if (mappedData.city !== undefined) {
-        console.log("Saving city:", mappedData.city);
-      }
+      // Explicitly handle location fields - ensure they're always included
+      const locationFields = ['city', 'state', 'country'];
+      locationFields.forEach(field => {
+        if (mappedData[field] !== undefined) {
+          console.log(`Saving ${field}:`, mappedData[field]);
+        }
+      });
       
-      // Filter out undefined values, but keep empty strings, empty arrays, and null values
-      const filteredData = Object.entries(mappedData)
-        .filter(([key, value]) => {
-          // Always include these important fields even if they're empty
-          if (['city', 'session_format', 'state', 'country'].includes(key)) return true;
-          // For other fields, exclude undefined values
-          return value !== undefined;
-        })
-        .reduce((obj: any, [key, value]) => {
-          obj[key] = value;
-          return obj;
-        }, {});
+      // Create the update data object with explicit field mapping
+      const updateData: any = {};
       
-      console.log("Filtered profile data for update:", filteredData);
+      // Always include these core fields
+      const coreFields = [
+        'first_name', 'last_name', 'display_name', 'gender', 'date_of_birth', 
+        'bio', 'avatar_url', 'profile_completed', 'updated_at',
+        'education_level', 'school_name', 'grade_level',
+        'subjects_interested', 'study_preferences', 'exam_history',
+        'experience', 'intro_video_url', 'session_format'
+      ];
+      
+      // Always include location fields regardless of value
+      const alwaysIncludeFields = ['city', 'state', 'country'];
+      
+      // Map all fields appropriately
+      Object.keys(mappedData).forEach(key => {
+        if (coreFields.includes(key) || alwaysIncludeFields.includes(key)) {
+          updateData[key] = mappedData[key];
+        }
+      });
+      
+      console.log("Final mapped data for database update:", updateData);
       
       // Check if there's data to update
-      if (Object.keys(filteredData).length === 0) {
+      if (Object.keys(updateData).length === 0) {
         throw new Error("No valid fields to update");
       }
       
       const { data, error } = await supabase
         .from('profiles')
-        .update(filteredData)
+        .update(updateData)
         .eq('id', user.id)
         .select();
       
@@ -115,13 +128,13 @@ export const useUpdateProfile = () => {
       console.log("Profile updated successfully:", data);
 
       // Also update auth.users metadata to ensure name consistency across the app
-      if (filteredData.first_name || filteredData.last_name) {
+      if (updateData.first_name || updateData.last_name) {
         try {
           const userMetadata = user.user_metadata || {};
           const metadata = { ...userMetadata };
           
-          if (filteredData.first_name) metadata.first_name = filteredData.first_name;
-          if (filteredData.last_name) metadata.last_name = filteredData.last_name;
+          if (updateData.first_name) metadata.first_name = updateData.first_name;
+          if (updateData.last_name) metadata.last_name = updateData.last_name;
 
           const { error: authError } = await supabase.auth.updateUser({
             data: metadata

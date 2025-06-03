@@ -65,14 +65,12 @@ const indianCities: Record<string, string[]> = {
   "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"],
   "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Prayagraj"],
   "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri"],
-  // Add more as needed
 };
 
 // Default list of cities for the dropdown initial state
 const defaultCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad"];
 
 const LocationSection = ({ form }: LocationSectionProps) => {
-  // Get the current state value
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const selectedState = form.watch("state");
   
