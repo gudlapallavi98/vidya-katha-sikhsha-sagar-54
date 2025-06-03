@@ -392,6 +392,7 @@ export type Database = {
           profile_completed: boolean | null
           role: string
           school_name: string | null
+          session_format: string | null
           state: string | null
           study_preferences: string[] | null
           subjects_interested: string[] | null
@@ -418,6 +419,7 @@ export type Database = {
           profile_completed?: boolean | null
           role: string
           school_name?: string | null
+          session_format?: string | null
           state?: string | null
           study_preferences?: string[] | null
           subjects_interested?: string[] | null
@@ -444,6 +446,7 @@ export type Database = {
           profile_completed?: boolean | null
           role?: string
           school_name?: string | null
+          session_format?: string | null
           state?: string | null
           study_preferences?: string[] | null
           subjects_interested?: string[] | null

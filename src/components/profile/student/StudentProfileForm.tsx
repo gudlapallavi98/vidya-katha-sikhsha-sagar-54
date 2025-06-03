@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -83,7 +84,7 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
         date_of_birth: values.date_of_birth || null,
         city: values.city || null,
         state: values.state || null,
-        country: values.country || null,
+        country: values.country || "India",
         bio: values.bio || null,
         subjects_interested: selectedSubjects.length > 0 ? selectedSubjects : null,
         avatar_url: avatarUrl || null,
@@ -99,20 +100,22 @@ export function StudentProfileForm({ activeTab, onCompleted }: StudentProfileFor
 
       console.log("Formatted data for student profile:", formattedData);
       
-      // Filter out null values to avoid overwriting with null, but keep empty arrays
-      const filteredData = Object.entries(formattedData)
-        .filter(([_, value]) => {
-          // Keep non-null values, empty arrays, and empty strings
-          return value !== null && value !== undefined;
+      // Include all fields for the update, including empty ones
+      const updateData = Object.entries(formattedData)
+        .filter(([key, value]) => {
+          // Always include location and session format fields
+          if (['city', 'state', 'country', 'session_format'].includes(key)) return true;
+          // For other fields, exclude only undefined values
+          return value !== undefined;
         })
         .reduce((obj: any, [key, value]) => {
           obj[key] = value;
           return obj;
         }, {});
 
-      console.log("Filtered data for update:", filteredData);
+      console.log("Final update data:", updateData);
 
-      await updateProfile.mutateAsync(filteredData);
+      await updateProfile.mutateAsync(updateData);
       
       if (onCompleted) {
         onCompleted();

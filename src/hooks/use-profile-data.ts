@@ -72,31 +72,29 @@ export const useUpdateProfile = () => {
       }
 
       // Handle session_format preference - ensure it's included in the update
-      if (mappedData.session_format) {
+      if (mappedData.session_format !== undefined) {
         console.log("Saving session_format:", mappedData.session_format);
       }
       
-      // Handle city field - ensure it's included in the update
+      // Handle city field - ensure it's included in the update and can be empty
       if (mappedData.city !== undefined) {
         console.log("Saving city:", mappedData.city);
       }
       
-      // Filter out any undefined or null fields, but keep empty arrays, empty strings, and explicit null values for city
+      // Filter out undefined values, but keep empty strings, empty arrays, and null values
       const filteredData = Object.entries(mappedData)
         .filter(([key, value]) => {
-          // Include city even if it's empty string or null
-          if (key === 'city') return true;
-          // Include session_format even if it's empty
-          if (key === 'session_format') return true;
-          // For other fields, exclude undefined and null
-          return value !== undefined && value !== null;
+          // Always include these important fields even if they're empty
+          if (['city', 'session_format', 'state', 'country'].includes(key)) return true;
+          // For other fields, exclude undefined values
+          return value !== undefined;
         })
         .reduce((obj: any, [key, value]) => {
           obj[key] = value;
           return obj;
         }, {});
       
-      console.log("Filtered profile data:", filteredData);
+      console.log("Filtered profile data for update:", filteredData);
       
       // Check if there's data to update
       if (Object.keys(filteredData).length === 0) {

@@ -100,7 +100,6 @@ const LocationSection = ({ form }: LocationSectionProps) => {
                 form.setValue("city", "");
               }}
               value={field.value || ""}
-              defaultValue={field.value}
             >
               <FormControl>
                 <SelectTrigger>
@@ -129,7 +128,6 @@ const LocationSection = ({ form }: LocationSectionProps) => {
             <Select
               onValueChange={field.onChange}
               value={field.value || ""}
-              defaultValue={field.value}
             >
               <FormControl>
                 <SelectTrigger>
@@ -156,7 +154,14 @@ const LocationSection = ({ form }: LocationSectionProps) => {
           <FormItem>
             <FormLabel>Country</FormLabel>
             <FormControl>
-              <Input placeholder="India" value={field.value || "India"} readOnly {...field} onChange={(e) => field.onChange("India")} />
+              <Input 
+                placeholder="India" 
+                value="India" 
+                readOnly 
+                className="bg-gray-50" 
+                {...field} 
+                onChange={() => field.onChange("India")} 
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
