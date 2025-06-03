@@ -8,16 +8,10 @@ import CTASection from "@/components/home/CTASection";
 
 const HomePage = () => {
   const { user } = useAuth();
-  
-  const heroImages = [
-    "/hero1.jpg",
-    "/hero2.jpg",
-    "/hero3.jpg",
-  ];
 
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
-      <HeroSection heroImages={heroImages} />
+      <HeroSection />
       <FeaturesSection />
       <CourseSection />
       <TestimonialsSection />

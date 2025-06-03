@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const HeroSection = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   const handleStartLearning = () => {
     if (!user) {
@@ -16,9 +16,9 @@ const HeroSection = () => {
     }
 
     // Route to appropriate dashboard based on user role
-    if (profile?.role === 'teacher') {
+    if (user.role === 'teacher') {
       navigate('/teacher-dashboard');
-    } else if (profile?.role === 'student') {
+    } else if (user.role === 'student') {
       navigate('/student-dashboard');
     } else {
       // Default to student dashboard if role is not clear
