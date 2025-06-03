@@ -11,7 +11,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { useNavigate } from "react-router-dom";
 import { useAuthStatus } from "@/hooks/use-auth-status";
-import { AnimatedBackground } from "@/components/ui/animated-background";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TeacherDashboardSidebar from "@/components/teacher/dashboard/TeacherDashboardSidebar";
@@ -120,7 +119,7 @@ const TeacherDashboard = () => {
   };
 
   if (isChecking) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen bg-[#fdf6ee]">Loading...</div>;
   }
 
   if (!isAuthenticated) {
@@ -128,7 +127,7 @@ const TeacherDashboard = () => {
   }
 
   return (
-    <AnimatedBackground variant="teacher">
+    <div className="min-h-screen bg-[#fdf6ee]">
       <DashboardLayout
         sidebar={
           <TeacherDashboardSidebar 
@@ -155,7 +154,7 @@ const TeacherDashboard = () => {
           />
         }
       />
-    </AnimatedBackground>
+    </div>
   );
 };
 

@@ -37,11 +37,12 @@ export const useUpdateProfile = () => {
       
       console.log("Updating profile with data:", profileData);
       
-      // Handle date_of_birth conversion - use UTC date to prevent timezone shifts
+      // Handle date_of_birth conversion - ensure it stays as the selected date
       let mappedData = { ...profileData };
       
       if (mappedData.date_of_birth && mappedData.date_of_birth instanceof Date) {
-        // Get the local date components and format as YYYY-MM-DD
+        // Create date string in YYYY-MM-DD format using the exact date components
+        // This prevents timezone shifts by working with local date components
         const year = mappedData.date_of_birth.getFullYear();
         const month = String(mappedData.date_of_birth.getMonth() + 1).padStart(2, '0');
         const day = String(mappedData.date_of_birth.getDate()).padStart(2, '0');
@@ -70,14 +71,26 @@ export const useUpdateProfile = () => {
         console.log("Saving exam_history:", mappedData.exam_history);
       }
 
-      // Handle session_format preference
+      // Handle session_format preference - ensure it's included in the update
       if (mappedData.session_format) {
         console.log("Saving session_format:", mappedData.session_format);
       }
       
-      // Filter out any undefined or null fields, but keep empty arrays and empty strings
+      // Handle city field - ensure it's included in the update
+      if (mappedData.city !== undefined) {
+        console.log("Saving city:", mappedData.city);
+      }
+      
+      // Filter out any undefined or null fields, but keep empty arrays, empty strings, and explicit null values for city
       const filteredData = Object.entries(mappedData)
-        .filter(([_, value]) => value !== undefined && value !== null)
+        .filter(([key, value]) => {
+          // Include city even if it's empty string or null
+          if (key === 'city') return true;
+          // Include session_format even if it's empty
+          if (key === 'session_format') return true;
+          // For other fields, exclude undefined and null
+          return value !== undefined && value !== null;
+        })
         .reduce((obj: any, [key, value]) => {
           obj[key] = value;
           return obj;

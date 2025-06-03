@@ -40,9 +40,11 @@ const SessionManagement: React.FC<SessionManagementProps> = ({
     const isBeforeSessionEnd = isBefore(now, sessionEnd);
     const statusIsScheduled = session.status === 'scheduled';
     
-    const canStart = (statusIsScheduled || session.status === 'in_progress') && 
-                    isAfterCanStartTime && 
-                    isBeforeSessionEnd;
+    // Only allow starting if:
+    // 1. Session is scheduled (not completed/cancelled)
+    // 2. Current time is at least 15 minutes before start time
+    // 3. Current time is before session end time
+    const canStart = statusIsScheduled && isAfterCanStartTime && isBeforeSessionEnd;
     
     console.log("Can start session result:", {
       canStartTime: canStartTime.toISOString(),
@@ -82,10 +84,12 @@ const SessionManagement: React.FC<SessionManagementProps> = ({
       
       if (hoursDiff > 0) {
         return { label: `Starts in ${hoursDiff}h ${minutesDiff % 60}m`, variant: 'outline' as const };
-      } else if (minutesDiff > 0) {
+      } else if (minutesDiff > 15) {
         return { label: `Starts in ${minutesDiff}m`, variant: 'outline' as const };
-      } else {
+      } else if (minutesDiff > 0) {
         return { label: 'Starting Soon', variant: 'default' as const };
+      } else {
+        return { label: 'Starting Now', variant: 'default' as const };
       }
     }
     
@@ -127,7 +131,7 @@ const SessionManagement: React.FC<SessionManagementProps> = ({
                 const status = getSessionStatus(session);
                 const canStart = canStartSession(session);
                 
-                console.log("Checking if can start session:", {
+                console.log("Rendering session with timing check:", {
                   sessionId: session.id,
                   title: session.title,
                   startTime: session.start_time,

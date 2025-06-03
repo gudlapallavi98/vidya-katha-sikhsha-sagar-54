@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useStudentCourses, useStudentSessions } from "@/hooks/use-dashboard-data";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { useAuthStatus } from "@/hooks/use-auth-status";
-import { AnimatedBackground } from "@/components/ui/animated-background";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import StudentDashboardSidebar from "@/components/student/dashboard/StudentDashboardSidebar";
@@ -31,7 +30,7 @@ const StudentDashboard = () => {
   };
 
   if (isChecking) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen bg-[#fdf6ee]">Loading...</div>;
   }
 
   if (!isAuthenticated) {
@@ -39,7 +38,7 @@ const StudentDashboard = () => {
   }
 
   return (
-    <AnimatedBackground variant="student">
+    <div className="min-h-screen bg-[#fdf6ee]">
       <DashboardLayout
         sidebar={
           <StudentDashboardSidebar 
@@ -59,7 +58,7 @@ const StudentDashboard = () => {
           />
         }
       />
-    </AnimatedBackground>
+    </div>
   );
 };
 

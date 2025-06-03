@@ -14,17 +14,17 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("flex min-h-screen bg-background", className)}>
+    <div className={cn("flex min-h-screen bg-[#fdf6ee]", className)}>
       {/* Sidebar */}
-      <div className="hidden border-r bg-muted/10 md:block md:w-64 lg:w-72">
-        <div className="sticky top-0 h-screen overflow-y-auto p-4">
+      <div className="hidden border-r border-gray-200 bg-white md:block md:w-64 lg:w-72">
+        <div className="sticky top-0 h-screen overflow-y-auto">
           {sidebar}
         </div>
       </div>
       
       {/* Main content */}
       <div className="flex-1 overflow-x-hidden">
-        <div className="container py-6 md:py-8 lg:py-10">
+        <div className="min-h-screen">
           {children}
         </div>
       </div>
