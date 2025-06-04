@@ -5,7 +5,6 @@ import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { useAuthStatus } from "@/hooks/use-auth-status";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import DashboardTopNav from "@/components/dashboard/DashboardTopNav";
 import StudentDashboardSidebar from "@/components/student/dashboard/StudentDashboardSidebar";
 import StudentDashboardContent from "@/components/student/dashboard/StudentDashboardContent";
 
@@ -48,7 +47,6 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-[#fdf6ee]">
       <DashboardLayout
-        topNav={<DashboardTopNav />}
         sidebar={
           <StudentDashboardSidebar 
             activeTab={activeTab} 

@@ -9,8 +9,7 @@ import {
   Calendar, 
   MessageSquare, 
   CreditCard,
-  Settings,
-  HelpCircle
+  Settings
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -106,17 +105,6 @@ const StudentDashboardSidebar: React.FC<StudentDashboardSidebarProps> = ({
           })}
         </div>
       </nav>
-
-      {/* Help Section */}
-      <div className="p-4 border-t border-gray-100">
-        <Button
-          variant="outline"
-          className="w-full justify-start h-10 text-[#000080] border-[#000080]/20 hover:bg-[#000080]/5 rounded-xl transition-all duration-200 hover:scale-[1.02]"
-        >
-          <HelpCircle className="mr-2 h-4 w-4" />
-          Help & Support
-        </Button>
-      </div>
     </aside>
   );
 };

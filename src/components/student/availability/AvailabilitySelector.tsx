@@ -4,214 +4,241 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, User, Book } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Clock, Users, BookOpen, IndianRupee } from "lucide-react";
 import { format } from "date-fns";
 
-interface AvailabilitySlot {
-  id: string;
-  teacher_id: string;
-  subject_id: string;
-  available_date: string;
-  start_time: string;
-  end_time: string;
-  session_type: string;
-  price: number;
-  teacher_rate: number;
-  student_price: number;
-  status: string;
-  booked_students: number;
-  max_students: number;
-  notes?: string;
-  teacher?: {
-    first_name: string;
-    last_name: string;
-    display_name?: string;
-  };
-  subject?: {
-    name: string;
-  };
-}
-
 interface AvailabilitySelectorProps {
-  subjectId?: string;
-  teacherId?: string;
-  onSelectSlot: (slot: AvailabilitySlot) => void;
+  teacherId: string;
+  onSelectSlot: (slot: any) => void;
 }
 
 const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
-  subjectId,
   teacherId,
   onSelectSlot,
 }) => {
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("individual");
 
-  const { data: availabilitySlots = [], isLoading } = useQuery({
-    queryKey: ['teacher_availability', teacherId, subjectId],
+  // Fetch individual sessions
+  const { data: individualSlots = [], isLoading: individualLoading } = useQuery({
+    queryKey: ["teacher-availability", teacherId],
     queryFn: async () => {
-      let query = supabase
-        .from('teacher_availability')
+      const { data, error } = await supabase
+        .from("teacher_availability")
         .select(`
           *,
-          teacher:profiles!teacher_availability_teacher_id_fkey(first_name, last_name, display_name),
           subject:subjects(name)
         `)
-        .eq('status', 'available') // Only show available slots
-        .gte('available_date', new Date().toISOString().split('T')[0]) // Future dates only
-        .order('available_date', { ascending: true })
-        .order('start_time', { ascending: true });
+        .eq("teacher_id", teacherId)
+        .eq("session_type", "individual")
+        .eq("status", "available")
+        .gte("available_date", new Date().toISOString().split('T')[0])
+        .order("available_date", { ascending: true });
 
-      if (teacherId) {
-        query = query.eq('teacher_id', teacherId);
-      }
-
-      if (subjectId) {
-        query = query.eq('subject_id', subjectId);
-      }
-
-      const { data, error } = await query;
-      
       if (error) throw error;
-      return data as AvailabilitySlot[];
+      return data || [];
     },
-    enabled: true,
   });
 
-  // Filter out fully booked slots
-  const availableSlots = availabilitySlots.filter(slot => 
-    slot.status === 'available' && 
-    slot.booked_students < slot.max_students
-  );
+  // Fetch course sessions
+  const { data: courseSlots = [], isLoading: courseLoading } = useQuery({
+    queryKey: ["teacher-courses", teacherId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("teacher_id", teacherId)
+        .eq("is_published", true)
+        .eq("enrollment_status", "open");
 
-  // Group slots by date
-  const slotsByDate = availableSlots.reduce((acc, slot) => {
-    const date = slot.available_date;
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(slot);
-    return acc;
-  }, {} as Record<string, AvailabilitySlot[]>);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
-  const filteredSlots = selectedDate 
-    ? slotsByDate[selectedDate] || []
-    : availableSlots;
+  const formatTime = (time: string) => {
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Available Time Slots</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">Loading available slots...</div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(price);
+  };
 
-  const uniqueDates = Object.keys(slotsByDate).sort();
+  const handleSlotClick = (slot: any) => {
+    console.log("Slot selected:", slot);
+    onSelectSlot(slot);
+  };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Date</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <Button
-              variant={selectedDate === "" ? "default" : "outline"}
-              onClick={() => setSelectedDate("")}
-              className="text-sm"
-            >
-              All Dates
-            </Button>
-            {uniqueDates.map((date) => (
-              <Button
-                key={date}
-                variant={selectedDate === date ? "default" : "outline"}
-                onClick={() => setSelectedDate(date)}
-                className="text-sm"
-              >
-                {format(new Date(date), 'MMM dd')}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold mb-2">Select Available Session</h2>
+        <p className="text-gray-600">Choose from individual sessions or courses</p>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Available Time Slots</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredSlots.length > 0 ? (
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="individual">Individual Sessions</TabsTrigger>
+          <TabsTrigger value="courses">Courses</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="individual">
+          {individualLoading ? (
+            <div className="text-center py-8">Loading available slots...</div>
+          ) : individualSlots.length > 0 ? (
             <div className="grid gap-4">
-              {filteredSlots.map((slot) => (
-                <div
-                  key={slot.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => onSelectSlot(slot)}
+              {individualSlots.map((slot) => (
+                <Card 
+                  key={slot.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleSlotClick(slot)}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <BookOpen className="h-5 w-5 text-blue-600" />
+                          {slot.subject?.name || "Subject"}
+                        </CardTitle>
+                        <Badge variant="outline" className="mt-1">
+                          Individual Session
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600 flex items-center">
+                          <IndianRupee className="h-5 w-5" />
+                          {slot.price || slot.teacher_rate || 100}
+                        </div>
+                        <p className="text-sm text-gray-500">per session</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">
-                          {format(new Date(slot.available_date), 'EEEE, MMM dd, yyyy')}
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span>{format(new Date(slot.available_date), "MMM dd, yyyy")}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        <span>
+                          {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                         </span>
                       </div>
-                      
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{slot.start_time} - {slot.end_time}</span>
+                        <Users className="h-4 w-4 text-gray-500" />
+                        <span>
+                          {slot.booked_students || 0}/{slot.max_students || 1} students
+                        </span>
                       </div>
-
-                      {!teacherId && slot.teacher && (
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>
-                            {slot.teacher.display_name || 
-                             `${slot.teacher.first_name} ${slot.teacher.last_name}`}
-                          </span>
-                        </div>
-                      )}
-
-                      {!subjectId && slot.subject && (
-                        <div className="flex items-center gap-2">
-                          <Book className="h-4 w-4 text-muted-foreground" />
-                          <span>{slot.subject.name}</span>
-                        </div>
-                      )}
-
-                      <div className="text-sm text-muted-foreground">
-                        {slot.session_type === 'individual' ? 'One-on-One' : 'Group'} Session
-                      </div>
-
-                      {slot.notes && (
-                        <div className="text-sm text-muted-foreground">
-                          Note: {slot.notes}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="text-right">
-                      <div className="font-bold text-lg">₹{slot.student_price}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {slot.max_students - slot.booked_students} spot{slot.max_students - slot.booked_students !== 1 ? 's' : ''} left
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={slot.status === "available" ? "default" : "secondary"}
+                          className="text-xs"
+                        >
+                          {slot.status}
+                        </Badge>
                       </div>
                     </div>
-                  </div>
-                </div>
+                    {slot.notes && (
+                      <p className="text-sm text-gray-600 mt-3 p-2 bg-gray-50 rounded">
+                        {slot.notes}
+                      </p>
+                    )}
+                    <Button 
+                      className="w-full mt-4" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSlotClick(slot);
+                      }}
+                    >
+                      Book This Session
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No available time slots found.
-            </div>
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">No individual sessions available</p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="courses">
+          {courseLoading ? (
+            <div className="text-center py-8">Loading available courses...</div>
+          ) : courseSlots.length > 0 ? (
+            <div className="grid gap-4">
+              {courseSlots.map((course) => (
+                <Card 
+                  key={course.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleSlotClick(course)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{course.title}</CardTitle>
+                        <Badge variant="outline" className="mt-1">
+                          Course
+                        </Badge>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600 flex items-center">
+                          <IndianRupee className="h-5 w-5" />
+                          {course.price || course.teacher_rate || 500}
+                        </div>
+                        <p className="text-sm text-gray-500">full course</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 mb-4">{course.description}</p>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-gray-500" />
+                        <span>{course.total_lessons} lessons</span>
+                      </div>
+                      <Badge 
+                        variant={course.enrollment_status === "open" ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {course.enrollment_status}
+                      </Badge>
+                    </div>
+                    <Button 
+                      className="w-full mt-4" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSlotClick(course);
+                      }}
+                    >
+                      Enroll in Course
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-8">
+                <p className="text-gray-500">No courses available</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
