@@ -44,6 +44,21 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState })
     setStep("select-availability");
   };
 
+  const calculateDurationFromTimeSlot = (startTime: string, endTime: string): number => {
+    try {
+      // Convert time strings to Date objects for calculation
+      const start = new Date(`2000-01-01T${startTime}:00`);
+      const end = new Date(`2000-01-01T${endTime}:00`);
+      
+      // Calculate difference in milliseconds and convert to minutes
+      const durationMs = end.getTime() - start.getTime();
+      return Math.floor(durationMs / (1000 * 60));
+    } catch (error) {
+      console.error("Error calculating duration:", error);
+      return 60; // Default to 60 minutes if calculation fails
+    }
+  };
+
   const handleSelectSlot = async (slot: any) => {
     if (!user) return;
 
@@ -64,6 +79,11 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState })
         ? new Date(`${slot.available_date}T${slot.start_time}:00`).toISOString()
         : new Date().toISOString();
 
+      // Calculate duration properly for individual sessions
+      const proposedDuration = type === 'individual' && slot.start_time && slot.end_time
+        ? calculateDurationFromTimeSlot(slot.start_time, slot.end_time)
+        : 60;
+
       const sessionData = {
         student_id: user.id,
         teacher_id: selectedTeacherId,
@@ -72,9 +92,7 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState })
           : slot.title || 'Course Session',
         request_message: '',
         proposed_date: proposedDate,
-        proposed_duration: type === 'individual' 
-          ? Math.floor((new Date(`2000-01-01T${slot.end_time}`) - new Date(`2000-01-01T${slot.start_time}`)) / (1000 * 60))
-          : 60,
+        proposed_duration: proposedDuration,
         status: "payment_pending",
         course_id: type === 'course' ? slot.id : null,
         availability_id: type === 'individual' ? slot.id : null,
