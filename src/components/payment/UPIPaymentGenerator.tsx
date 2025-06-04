@@ -6,11 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { CashfreeUPIForm } from "./CashfreeUPIForm";
 
 export default function UPIPaymentGenerator() {
   const [price, setPrice] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<'manual' | 'cashfree'>('manual');
   const [paymentDetails, setPaymentDetails] = useState<{
     studentAmount: number;
     teacherPayout: number;
@@ -68,78 +66,25 @@ export default function UPIPaymentGenerator() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Payment Method</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="manual"
-                  checked={paymentMethod === 'manual'}
-                  onChange={(e) => setPaymentMethod(e.target.value as 'manual' | 'cashfree')}
-                />
-                <span>Manual UPI (Static QR)</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="cashfree"
-                  checked={paymentMethod === 'cashfree'}
-                  onChange={(e) => setPaymentMethod(e.target.value as 'manual' | 'cashfree')}
-                />
-                <span>Cashfree UPI Collect</span>
-              </label>
-            </div>
+            <Label htmlFor="price">Course Price (₹)</Label>
+            <Input
+              id="price"
+              type="number"
+              step="0.01"
+              min="1"
+              placeholder="Enter course price"
+              value={price || ""}
+              onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+            />
           </div>
 
-          {paymentMethod === 'manual' && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="price">Course Price (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  placeholder="Enter course price"
-                  value={price || ""}
-                  onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
-                />
-              </div>
-
-              <Button onClick={generatePayment} className="w-full">
-                Generate Payment Details
-              </Button>
-            </>
-          )}
+          <Button onClick={generatePayment} className="w-full">
+            Generate Payment Details
+          </Button>
         </CardContent>
       </Card>
 
-      {paymentMethod === 'cashfree' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Cashfree UPI Collect</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CashfreeUPIForm
-              onPaymentSuccess={(referenceId) => {
-                toast({
-                  title: "Payment Successful",
-                  description: `Payment completed with reference: ${referenceId}`,
-                });
-              }}
-              onPaymentFailure={(error) => {
-                toast({
-                  variant: "destructive",
-                  title: "Payment Failed",
-                  description: error,
-                });
-              }}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {paymentDetails && paymentMethod === 'manual' && (
+      {paymentDetails && (
         <Card className="border-green-200 bg-green-50">
           <CardHeader>
             <CardTitle className="text-green-800">💰 Payment Details</CardTitle>

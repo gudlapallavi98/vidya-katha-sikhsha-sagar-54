@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { QrCode, CreditCard, CheckCircle, Copy, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { calculatePricing, formatCurrency } from '@/utils/pricingUtils';
-import { CashfreeUPIForm } from '@/components/payment/CashfreeUPIForm';
 
 interface PaymentQRGeneratorProps {
   availability: any;
@@ -23,7 +22,6 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
 }) => {
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'static' | 'cashfree'>('static');
   const { toast } = useToast();
 
   // Get teacher rate from availability
@@ -69,9 +67,7 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
     });
   };
 
-  // Remove automatic payment success simulation - require manual confirmation
   const handleManualPaymentConfirmation = () => {
-    // This should only be used for testing - in production, integrate with actual payment verification
     setPaymentStatus('success');
     toast({
       title: "Payment Marked as Completed",
@@ -178,143 +174,91 @@ export const PaymentQRGenerator: React.FC<PaymentQRGeneratorProps> = ({
         </CardContent>
       </Card>
 
-      {/* Payment Method Selection */}
       <Card>
         <CardHeader>
-          <CardTitle>Choose Payment Method</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="h-5 w-5" />
+            Scan QR Code to Pay
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-4">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                value="static"
-                checked={paymentMethod === 'static'}
-                onChange={(e) => setPaymentMethod(e.target.value as 'static' | 'cashfree')}
-              />
-              <span>Static UPI QR</span>
-            </label>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                value="cashfree"
-                checked={paymentMethod === 'cashfree'}
-                onChange={(e) => setPaymentMethod(e.target.value as 'static' | 'cashfree')}
-              />
-              <span>Cashfree UPI Collect</span>
-            </label>
+        <CardContent className="text-center space-y-4">
+          <div className="bg-white p-4 rounded-lg inline-block border">
+            <img 
+              src={generateQRCodeUrl()} 
+              alt="UPI Payment QR Code" 
+              className="w-48 h-48"
+              onError={(e) => {
+                console.error("QR code failed to load");
+                e.currentTarget.src = "/lovable-uploads/31156744-7366-422f-9d37-73ca828727c0.png";
+              }}
+            />
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Scan this QR code with any UPI app to make payment
+            </p>
+          </div>
 
-      {paymentMethod === 'cashfree' ? (
-        <CashfreeUPIForm
-          onPaymentSuccess={(referenceId) => {
-            setPaymentStatus('success');
-            toast({
-              title: "Payment Successful",
-              description: `Payment completed with reference: ${referenceId}`,
-            });
-            setTimeout(() => {
-              onPaymentSuccess();
-            }, 2000);
-          }}
-          onPaymentFailure={(error) => {
-            setPaymentStatus('failed');
-            toast({
-              variant: "destructive",
-              title: "Payment Failed",
-              description: error,
-            });
-          }}
-        />
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              Scan QR Code to Pay
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <div className="bg-white p-4 rounded-lg inline-block border">
-              <img 
-                src={generateQRCodeUrl()} 
-                alt="Dynamic UPI Payment QR Code" 
-                className="w-48 h-48"
-                onError={(e) => {
-                  console.error("QR code failed to load");
-                  e.currentTarget.src = "/lovable-uploads/31156744-7366-422f-9d37-73ca828727c0.png";
-                }}
-              />
-            </div>
+          <div className="space-y-3">
+            <Button 
+              className="w-full" 
+              onClick={() => window.open(generateUPIUrl(), '_blank')}
+            >
+              Pay with UPI App
+            </Button>
             
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Scan this QR code with any UPI app to make payment
-              </p>
-            </div>
-
-            <div className="space-y-3">
+            <div className="flex gap-2">
               <Button 
-                className="w-full" 
-                onClick={() => window.open(generateUPIUrl(), '_blank')}
+                variant="outline" 
+                className="flex-1"
+                onClick={copyUPILink}
               >
-                Pay with UPI App
+                <Copy className="h-4 w-4 mr-2" />
+                Copy UPI Link
               </Button>
-              
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={copyUPILink}
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy UPI Link
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={copyUPIDetails}
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Details
-                </Button>
-              </div>
               
               <Button 
                 variant="outline" 
-                className="w-full"
-                onClick={handleManualPaymentConfirmation}
-                disabled={isProcessing}
+                className="flex-1"
+                onClick={copyUPIDetails}
               >
-                I have completed the payment
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Details
               </Button>
             </div>
+            
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={handleManualPaymentConfirmation}
+              disabled={isProcessing}
+            >
+              I have completed the payment
+            </Button>
+          </div>
 
-            <Card className="bg-blue-50">
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-blue-800 mb-2">Payment Instructions:</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Open any UPI app (GPay, PhonePe, Paytm, etc.)</li>
-                  <li>• Scan the QR code above</li>
-                  <li>• Verify amount: {formatCurrency(pricing.studentAmount)}</li>
-                  <li>• Complete the payment</li>
-                  <li>• Click "I have completed the payment" button below</li>
-                </ul>
-                
-                <div className="mt-3 p-2 bg-white rounded border">
-                  <p className="text-xs font-medium">UPI Details:</p>
-                  <p className="text-xs">ID: {upiId}</p>
-                  <p className="text-xs">Name: {payeeName}</p>
-                  <p className="text-xs">Amount: {formatCurrency(pricing.studentAmount)}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
-      )}
+          <Card className="bg-blue-50">
+            <CardContent className="p-4">
+              <h4 className="font-semibold text-blue-800 mb-2">Payment Instructions:</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Open any UPI app (GPay, PhonePe, Paytm, etc.)</li>
+                <li>• Scan the QR code above</li>
+                <li>• Verify amount: {formatCurrency(pricing.studentAmount)}</li>
+                <li>• Complete the payment</li>
+                <li>• Click "I have completed the payment" button below</li>
+              </ul>
+              
+              <div className="mt-3 p-2 bg-white rounded border">
+                <p className="text-xs font-medium">UPI Details:</p>
+                <p className="text-xs">ID: {upiId}</p>
+                <p className="text-xs">Name: {payeeName}</p>
+                <p className="text-xs">Amount: {formatCurrency(pricing.studentAmount)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
     </div>
   );
 };

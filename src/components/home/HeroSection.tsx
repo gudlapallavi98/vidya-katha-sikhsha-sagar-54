@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,9 +26,8 @@ const HeroSection = () => {
     }
   };
 
-  const handleWatchDemo = () => {
-    // Placeholder for demo video functionality
-    console.log("Watch demo clicked");
+  const handleExploreCourses = () => {
+    navigate('/courses');
   };
 
   return (
@@ -71,13 +70,13 @@ const HeroSection = () => {
               </Button>
               
               <Button 
-                onClick={handleWatchDemo}
+                onClick={handleExploreCourses}
                 variant="outline" 
                 size="lg" 
                 className="group border-2 border-green-600 px-8 py-4 text-lg font-semibold text-green-600 transition-all hover:bg-green-50 hover:scale-105"
               >
-                <Play className="mr-2 h-5 w-5" />
-                Watch Demo
+                <BookOpen className="mr-2 h-5 w-5" />
+                Explore Courses
               </Button>
             </div>
 
