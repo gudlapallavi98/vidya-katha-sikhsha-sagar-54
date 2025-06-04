@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import SessionRequestList from "./SessionRequestList";
 import AvailabilitySelector from "./availability/AvailabilitySelector";
-import { PaymentQRGenerator } from "./payment/PaymentQRGenerator";
+import { SimplePaymentForm } from "./payment/SimplePaymentForm";
 import { SessionRequestFormFields } from "./session/SessionRequestFormFields";
 
 interface SessionRequestFormProps {
@@ -75,7 +75,7 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState })
       )}
       
       {step === "payment" && selectedAvailability && (
-        <PaymentQRGenerator
+        <SimplePaymentForm
           availability={selectedAvailability}
           type={availabilityType}
           onPaymentSuccess={handlePaymentSuccess}
