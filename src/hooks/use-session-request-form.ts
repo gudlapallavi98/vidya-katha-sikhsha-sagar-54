@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { calculatePricing, createPaymentRecord } from "@/utils/pricingUtils";
+import { calculatePricing } from "@/utils/pricingUtils";
 
 interface UseSessionRequestFormProps {
   teacherId: string;
@@ -22,49 +22,12 @@ export const useSessionRequestForm = ({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const calculateDuration = (startTime: string, endTime: string): number => {
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    return Math.floor((end.getTime() - start.getTime()) / (1000 * 60));
-  };
-
   // Get teacher rate and calculate pricing
   const teacherRate = type === 'individual' 
     ? (availability.price || availability.teacher_rate || 100)
     : (availability.price || availability.teacher_rate || 500);
   
   const pricing = calculatePricing(teacherRate);
-
-  // Format date and time for database storage using teacher availability
-  const formatDateTimeForDB = (dateStr: string, timeStr?: string) => {
-    try {
-      if (type === 'individual' && availability.available_date && availability.start_time) {
-        // For individual sessions, use the teacher's availability date and start time
-        const availabilityDate = availability.available_date;
-        const startTime = availability.start_time;
-        const dateTime = new Date(`${availabilityDate}T${startTime}:00`);
-        
-        console.log("Formatting individual session from teacher availability:", { 
-          availabilityDate, 
-          startTime, 
-          result: dateTime.toISOString() 
-        });
-        
-        return dateTime.toISOString();
-      } else if (dateStr && timeStr) {
-        // Fallback to provided date and time
-        const dateTime = new Date(`${dateStr}T${timeStr}:00`);
-        console.log("Formatting with provided dateStr and timeStr:", { dateStr, timeStr, result: dateTime.toISOString() });
-        return dateTime.toISOString();
-      } else {
-        // For course enrollment, use current time
-        return new Date().toISOString();
-      }
-    } catch (error) {
-      console.error("Error formatting date time:", error, { dateStr, timeStr, availability });
-      return new Date().toISOString();
-    }
-  };
 
   const submitRequest = async (message: string) => {
     if (!user) {
@@ -78,77 +41,45 @@ export const useSessionRequestForm = ({
 
     setIsLoading(true);
     try {
-      console.log("Submitting session request with data:", {
-        user: user.id,
-        teacherId,
-        availability,
-        type,
-        pricing
-      });
+      console.log("Updating session request with message:", message);
 
-      // Create proper date object using the teacher's availability
-      const proposedDate = formatDateTimeForDB(
-        availability.available_date,
-        availability.start_time
-      );
-
-      console.log("Proposed date calculation:", {
-        availableDate: availability.available_date,
-        startTime: availability.start_time,
-        proposedDate
-      });
-
-      const sessionData = {
-        student_id: user.id,
-        teacher_id: teacherId,
-        proposed_title: type === 'individual' 
-          ? `${availability.subject?.name || 'Session'} - Individual Session` 
-          : availability.title || 'Course Session',
-        request_message: message || '',
-        proposed_date: proposedDate,
-        proposed_duration: type === 'individual' 
-          ? calculateDuration(availability.start_time, availability.end_time)
-          : 60,
-        status: "pending",
-        course_id: type === 'course' ? availability.id : null,
-        availability_id: type === 'individual' ? availability.id : null,
-        payment_amount: pricing.studentAmount,
-        payment_status: "completed",
-        session_type: type,
-        priority_level: "normal"
-      };
-
-      console.log("Session data to insert:", sessionData);
-
-      // Insert session request
-      const { data: sessionRequest, error } = await supabase
+      // Find the session request that was created during payment
+      const { data: sessionRequests, error: fetchError } = await supabase
         .from("session_requests")
-        .insert(sessionData)
-        .select()
-        .single();
+        .select("*")
+        .eq("student_id", user.id)
+        .eq("teacher_id", teacherId)
+        .eq("payment_status", "completed")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
+      if (fetchError) {
+        console.error("Error fetching session request:", fetchError);
+        throw fetchError;
       }
 
-      console.log("Session request created successfully:", sessionRequest);
-
-      // Create payment record
-      try {
-        await createPaymentRecord(
-          user.id,
-          sessionRequest.id,
-          null,
-          pricing,
-          'student_payment',
-          'completed'
-        );
-        console.log("Payment record created successfully");
-      } catch (paymentError) {
-        console.error("Error creating payment record:", paymentError);
-        // Don't fail the entire flow if payment record creation fails
+      if (!sessionRequests || sessionRequests.length === 0) {
+        throw new Error("No completed payment found for this session");
       }
+
+      const sessionRequest = sessionRequests[0];
+
+      // Update the session request with the message and set it ready for teacher review
+      const { error: updateError } = await supabase
+        .from("session_requests")
+        .update({
+          request_message: message || '',
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", sessionRequest.id);
+
+      if (updateError) {
+        console.error("Error updating session request:", updateError);
+        throw updateError;
+      }
+
+      console.log("Session request updated successfully");
 
       // Update availability status if it's an individual session
       if (type === 'individual' && availability.id) {
@@ -167,7 +98,7 @@ export const useSessionRequestForm = ({
 
       toast({
         title: "Request Submitted Successfully",
-        description: "Your session request has been sent to the teacher. You'll receive confirmation via email.",
+        description: "Your session request has been sent to the teacher for approval. You'll receive confirmation via email.",
       });
 
       onSuccess();
