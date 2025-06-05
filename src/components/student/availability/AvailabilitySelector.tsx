@@ -96,11 +96,7 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
           ) : individualSlots.length > 0 ? (
             <div className="grid gap-4">
               {individualSlots.map((slot) => (
-                <Card 
-                  key={slot.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handleSlotClick(slot)}
-                >
+                <Card key={slot.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div>
@@ -155,10 +151,7 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
                     )}
                     <Button 
                       className="w-full mt-4" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSlotClick(slot);
-                      }}
+                      onClick={() => handleSlotClick(slot)}
                     >
                       Book This Session
                     </Button>
@@ -181,11 +174,7 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
           ) : courseSlots.length > 0 ? (
             <div className="grid gap-4">
               {courseSlots.map((course) => (
-                <Card 
-                  key={course.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handleSlotClick(course)}
-                >
+                <Card key={course.id} className="hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div>
@@ -219,10 +208,7 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
                     </div>
                     <Button 
                       className="w-full mt-4" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSlotClick(course);
-                      }}
+                      onClick={() => handleSlotClick(course)}
                     >
                       Enroll in Course
                     </Button>
