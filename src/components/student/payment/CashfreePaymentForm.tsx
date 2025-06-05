@@ -46,9 +46,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         .eq('id', user.id)
         .single();
 
-      if (profileError) {
-        throw new Error("Failed to fetch user profile");
-      }
+      if (profileError) throw new Error("Failed to fetch user profile");
 
       const customerInfo = {
         name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Student',
@@ -59,7 +57,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
       const { data: orderData, error } = await supabase.functions.invoke('cashfree-payment', {
         body: {
           action: 'create_order',
-          amount: amount,
+          amount,
           sessionRequestId,
           userId: user.id,
           customerInfo
@@ -71,7 +69,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
       }
 
       const orderId = orderData.order_id;
-
       window.open(orderData.payment_url, '_blank');
 
       const pollInterval = setInterval(async () => {
@@ -112,54 +109,30 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
     }
   };
 
-  // ✅ DEMO: Mark as Paid manually
   const handleTestPayment = async () => {
     if (!user || !sessionRequestId) return;
 
-    const fakeTransactionId = `TEST_${sessionRequestId}_${Date.now()}`;
-
-    const { error: insertError } = await supabase.from("payment_history").insert({
-      user_id: user.id,
-      session_request_id: sessionRequestId,
-      amount,
-      payment_type: "student_payment",
-      payment_status: "completed",
-      payment_method: "cashfree",
-      transaction_id: fakeTransactionId,
-      gateway_response: { test: true, source: "manual-test" },
-      created_at: new Date().toISOString()
-    });
-
-    if (insertError) {
-      toast({
-        variant: "destructive",
-        title: "Test Payment Failed",
-        description: "Could not insert mock payment.",
-      });
-      console.error("Insert error:", insertError);
-      return;
-    }
-
     const { error: updateError } = await supabase
       .from("session_requests")
-      .update({ payment_status: "completed" })
+      .update({
+        payment_status: "completed",
+        status: "pending"
+      })
       .eq("id", sessionRequestId);
 
     if (updateError) {
       toast({
         variant: "destructive",
-        title: "Session Update Failed",
-        description: "Could not update session_requests table.",
+        title: "Mark as Paid Failed",
+        description: updateError.message
       });
-      console.error("Update error:", updateError);
       return;
     }
 
     toast({
-      title: "Marked as Paid (Test)",
-      description: "Payment and session updated successfully.",
+      title: "Marked as Paid",
+      description: "Payment marked as completed. Session moved to pending."
     });
-
     onPaymentSuccess();
   };
 
@@ -221,7 +194,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
             )}
           </Button>
 
-          {/* ✅ DEMO Button */}
           <Button
             variant="outline"
             onClick={handleTestPayment}
