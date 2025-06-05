@@ -1,244 +1,189 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, CreditCard, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { formatCurrency } from "@/utils/pricingUtils";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-interface CashfreePaymentFormProps {
-  availability: any;
-  type: 'individual' | 'course';
-  sessionRequestId: string;
-  amount: number;
-  onPaymentSuccess: () => void;
-  onBack: () => void;
-}
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+};
 
-export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
-  availability,
-  type,
-  sessionRequestId,
-  amount,
-  onPaymentSuccess,
-  onBack
-}) => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { user } = useAuth();
-  const { toast } = useToast();
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: corsHeaders
+    });
+  }
 
-  const handlePayment = async () => {
-    if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Authentication Required",
-        description: "Please log in to proceed with payment.",
-      });
-      return;
+  try {
+    const { action, ...data } = await req.json();
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const clientId = Deno.env.get('CASHFREE_CLIENT_ID');
+    const clientSecret = Deno.env.get('CASHFREE_SECRET_KEY');
+
+    if (!clientId || !clientSecret) {
+      throw new Error('Cashfree credentials not configured');
     }
 
-    setIsProcessing(true);
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', user.id)
-        .single();
+    const cashfreeBaseUrl = 'https://api.cashfree.com/pg';
+    const domain = 'https://etutorss.com';
 
-      if (profileError) {
-        throw new Error("Failed to fetch user profile");
-      }
+    if (action === 'create_order') {
+      const { amount, sessionRequestId, userId, customerInfo } = data;
 
-      const customerInfo = {
-        name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Student',
-        email: user.email || '',
-        phone: '9999999999'
+      const orderId = `ORDER_${sessionRequestId}_${Date.now()}`.substring(0, 50);
+
+      const orderRequest = {
+        order_id: orderId,
+        order_amount: amount,
+        order_currency: 'INR',
+        customer_details: {
+          customer_id: userId,
+          customer_name: customerInfo.name,
+          customer_email: customerInfo.email,
+          customer_phone: customerInfo.phone || '9999999999'
+        },
+        order_meta: {
+          return_url: `${domain}/functions/v1/cashfree-payment?action=verify_payment&order_id=${orderId}`,
+          notify_url: `${domain}/functions/v1/cashfree-payment?action=webhook`
+        }
       };
 
-      const { data: orderData, error } = await supabase.functions.invoke('cashfree-payment', {
-        body: {
-          action: 'create_order',
-          amount: amount,
-          sessionRequestId,
-          userId: user.id,
-          customerInfo
-        }
+      const response = await fetch(`${cashfreeBaseUrl}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-client-id': clientId,
+          'x-client-secret': clientSecret,
+          'x-api-version': '2023-08-01'
+        },
+        body: JSON.stringify(orderRequest)
       });
 
-      if (error || !orderData?.success) {
-        throw new Error(orderData?.error || error?.message || 'Failed to create order');
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Cashfree API error:', errorData);
+        throw new Error(`Cashfree API error: ${response.status}`);
       }
 
-      const orderId = orderData.order_id;
+      const orderData = await response.json();
 
-      window.open(orderData.payment_url, '_blank');
+      const { error: paymentError } = await supabase.from('payment_history').insert({
+        user_id: userId,
+        session_request_id: sessionRequestId,
+        amount: amount,
+        payment_type: 'student_payment',
+        payment_status: 'pending',
+        payment_method: 'cashfree',
+        transaction_id: orderId,
+        gateway_response: orderData
+      });
 
-      const pollInterval = setInterval(async () => {
-        try {
-          const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
-            body: { action: 'verify_payment', order_id: orderId }
-          });
+      if (paymentError) {
+        console.error('Error storing payment record:', paymentError);
+        throw paymentError;
+      }
 
-          if (verifyData.success && verifyData.payment_status === 'PAID') {
-            clearInterval(pollInterval);
-            setIsProcessing(false);
-            toast({ title: "Payment Successful" });
-            onPaymentSuccess();
-          } else if (verifyData.payment_status === 'FAILED') {
-            clearInterval(pollInterval);
-            setIsProcessing(false);
-            toast({
-              variant: "destructive",
-              title: "Payment Failed",
-              description: "Your payment was not successful. Please try again.",
-            });
-          }
-        } catch (err) {
-          console.error("Polling error:", err);
+      return new Response(JSON.stringify({
+        success: true,
+        order_id: orderId,
+        payment_session_id: orderData.payment_session_id,
+        payment_url: orderData.payment_link
+      }), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
         }
-      }, 3000);
-
-      setTimeout(() => clearInterval(pollInterval), 300000);
-
-    } catch (error: any) {
-      console.error("Payment error:", error);
-      setIsProcessing(false);
-      toast({
-        variant: "destructive",
-        title: "Payment Error",
-        description: error?.message || "Failed to initiate payment. Please try again.",
       });
     }
-  };
 
-  // ✅ DEMO: Mark as Paid manually
-  const handleTestPayment = async () => {
-    if (!user || !sessionRequestId) return;
+    if (action === 'verify_payment') {
+      const { order_id } = data;
 
-    const fakeTransactionId = `TEST_${sessionRequestId}_${Date.now()}`;
+      const response = await fetch(`${cashfreeBaseUrl}/orders/${order_id}`, {
+        method: 'GET',
+        headers: {
+          'x-client-id': clientId,
+          'x-client-secret': clientSecret,
+          'x-api-version': '2023-08-01'
+        }
+      });
 
-    const { error: insertError } = await supabase.from("payment_history").insert({
-      user_id: user.id,
-      session_request_id: sessionRequestId,
-      amount,
-      payment_type: "student_payment",
-      payment_status: "completed",
-      payment_method: "cashfree",
-      transaction_id: fakeTransactionId,
-      gateway_response: { test: true, source: "manual-test" },
-      created_at: new Date().toISOString()
+      if (!response.ok) {
+        throw new Error(`Payment verification failed: ${response.status}`);
+      }
+
+      const orderData = await response.json();
+
+      await supabase.from('payment_history').update({
+        payment_status: orderData.order_status === 'PAID' ? 'completed' : 'failed',
+        gateway_response: orderData,
+        updated_at: new Date().toISOString()
+      }).eq('transaction_id', order_id);
+
+      if (orderData.order_status === 'PAID') {
+        const { data: paymentRecord } = await supabase
+          .from('payment_history')
+          .select('session_request_id')
+          .eq('transaction_id', order_id)
+          .single();
+
+        if (paymentRecord) {
+          await supabase.from('session_requests').update({
+            payment_status: 'completed',
+            status: 'pending',
+            updated_at: new Date().toISOString()
+          }).eq('id', paymentRecord.session_request_id);
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        payment_status: orderData.order_status,
+        order_data: orderData
+      }), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    if (action === 'webhook') {
+      const webhookData = data;
+
+      await supabase.from('payment_history').update({
+        payment_status: webhookData.order_status === 'PAID' ? 'completed' : 'failed',
+        gateway_response: webhookData,
+        updated_at: new Date().toISOString()
+      }).eq('transaction_id', webhookData.order_id);
+
+      return new Response(JSON.stringify({
+        success: true
+      }), {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      });
+    }
+
+    throw new Error('Invalid action');
+
+  } catch (error) {
+    console.error('Cashfree payment error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 400,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json'
+      }
     });
-
-    if (insertError) {
-      toast({
-        variant: "destructive",
-        title: "Test Payment Failed",
-        description: "Could not insert mock payment.",
-      });
-      console.error("Insert error:", insertError);
-      return;
-    }
-
-    const { error: updateError } = await supabase
-      .from("session_requests")
-      .update({ payment_status: "completed" })
-      .eq("id", sessionRequestId);
-
-    if (updateError) {
-      toast({
-        variant: "destructive",
-        title: "Session Update Failed",
-        description: "Could not update session_requests table.",
-      });
-      console.error("Update error:", updateError);
-      return;
-    }
-
-    toast({
-      title: "Marked as Paid (Test)",
-      description: "Payment and session updated successfully.",
-    });
-
-    onPaymentSuccess();
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={onBack} disabled={isProcessing}>
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-        <h2 className="text-xl font-semibold">Complete Payment</h2>
-      </div>
-
-      <Card className="p-6">
-        <div className="space-y-6">
-          <div className="text-center">
-            <CreditCard className="h-12 w-12 mx-auto text-blue-500 mb-4" />
-            <h3 className="text-lg font-medium">Secure Payment</h3>
-            <p className="text-sm text-gray-600">
-              Complete your payment to confirm the session booking
-            </p>
-          </div>
-
-          <div className="space-y-3 border-t pt-4">
-            <div className="flex justify-between">
-              <span className="font-medium">Session Type:</span>
-              <span className="capitalize">{type}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Subject:</span>
-              <span>{availability?.subject?.name || availability?.title || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Duration:</span>
-              <span>{availability?.duration || 60} minutes</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold border-t pt-3">
-              <span>Total Amount:</span>
-              <span className="text-green-600">{formatCurrency(amount)}</span>
-            </div>
-          </div>
-
-          <Button 
-            onClick={handlePayment} 
-            disabled={isProcessing}
-            className="w-full"
-            size="lg"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing Payment...
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-4 w-4 mr-2" />
-                Pay {formatCurrency(amount)}
-              </>
-            )}
-          </Button>
-
-          {/* ✅ DEMO Button */}
-          <Button
-            variant="outline"
-            onClick={handleTestPayment}
-            disabled={isProcessing}
-            className="w-full"
-          >
-            ✅ Mark as Paid (Test)
-          </Button>
-
-          {isProcessing && (
-            <div className="text-center text-sm text-gray-600">
-              <p>A new window will open for payment.</p>
-              <p>Please complete the payment and return to this page.</p>
-            </div>
-          )}
-        </div>
-      </Card>
-    </div>
-  );
-};
+  }
+});
