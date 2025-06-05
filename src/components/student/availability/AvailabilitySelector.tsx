@@ -2,12 +2,10 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, Users, BookOpen, IndianRupee } from "lucide-react";
-import { format } from "date-fns";
+import { IndividualSessionCard } from "./IndividualSessionCard";
+import { CourseCard } from "./CourseCard";
 
 interface AvailabilitySelectorProps {
   teacherId: string;
@@ -57,23 +55,8 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
     },
   });
 
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(price);
-  };
-
-  const handleSlotClick = (slot: any) => {
-    console.log("Slot selected:", slot);
+  const handleSlotSelection = (slot: any) => {
+    console.log("Slot being passed to parent:", slot);
     onSelectSlot(slot);
   };
 
@@ -96,67 +79,11 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
           ) : individualSlots.length > 0 ? (
             <div className="grid gap-4">
               {individualSlots.map((slot) => (
-                <Card key={slot.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <BookOpen className="h-5 w-5 text-blue-600" />
-                          {slot.subject?.name || "Subject"}
-                        </CardTitle>
-                        <Badge variant="outline" className="mt-1">
-                          Individual Session
-                        </Badge>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600 flex items-center">
-                          <IndianRupee className="h-5 w-5" />
-                          {slot.price || slot.teacher_rate || 100}
-                        </div>
-                        <p className="text-sm text-gray-500">per session</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span>{format(new Date(slot.available_date), "MMM dd, yyyy")}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <span>
-                          {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-500" />
-                        <span>
-                          {slot.booked_students || 0}/{slot.max_students || 1} students
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant={slot.status === "available" ? "default" : "secondary"}
-                          className="text-xs"
-                        >
-                          {slot.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    {slot.notes && (
-                      <p className="text-sm text-gray-600 mt-3 p-2 bg-gray-50 rounded">
-                        {slot.notes}
-                      </p>
-                    )}
-                    <Button 
-                      className="w-full mt-4" 
-                      onClick={() => handleSlotClick(slot)}
-                    >
-                      Book This Session
-                    </Button>
-                  </CardContent>
-                </Card>
+                <IndividualSessionCard
+                  key={slot.id}
+                  slot={slot}
+                  onSelectSlot={handleSlotSelection}
+                />
               ))}
             </div>
           ) : (
@@ -174,46 +101,11 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
           ) : courseSlots.length > 0 ? (
             <div className="grid gap-4">
               {courseSlots.map((course) => (
-                <Card key={course.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{course.title}</CardTitle>
-                        <Badge variant="outline" className="mt-1">
-                          Course
-                        </Badge>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600 flex items-center">
-                          <IndianRupee className="h-5 w-5" />
-                          {course.price || course.teacher_rate || 500}
-                        </div>
-                        <p className="text-sm text-gray-500">full course</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4">{course.description}</p>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-gray-500" />
-                        <span>{course.total_lessons} lessons</span>
-                      </div>
-                      <Badge 
-                        variant={course.enrollment_status === "open" ? "default" : "secondary"}
-                        className="text-xs"
-                      >
-                        {course.enrollment_status}
-                      </Badge>
-                    </div>
-                    <Button 
-                      className="w-full mt-4" 
-                      onClick={() => handleSlotClick(course)}
-                    >
-                      Enroll in Course
-                    </Button>
-                  </CardContent>
-                </Card>
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  onSelectSlot={handleSlotSelection}
+                />
               ))}
             </div>
           ) : (
