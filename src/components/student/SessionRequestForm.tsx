@@ -1,6 +1,4 @@
-// Updated SessionRequestForm.tsx
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { Card } from "@/components/ui/card";
 import SessionRequestList from "./SessionRequestList";
 import AvailabilitySelector from "./availability/AvailabilitySelector";
@@ -9,29 +7,6 @@ import { SessionRequestFormFields } from "./session/SessionRequestFormFields";
 import { SessionRequestSteps } from "./session/SessionRequestSteps";
 import { SessionRequestState, initialState } from "./session/SessionRequestState";
 import { useSessionRequestHandlers } from "./session/SessionRequestHandlers";
-import { supabase } from "@/integrations/supabase/client";
-
-const fetchTeacherById = async (id: string) => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(`
-      id,
-      name,
-      email,
-      rate,
-      role
-    `)
-    .eq("id", id)
-    .eq("role", "teacher")
-    .single();
-
-  if (error) {
-    console.error("Error fetching teacher:", error);
-    return null;
-  }
-
-  return data;
-};
 
 interface SessionRequestFormProps {
   initialState?: {
@@ -43,11 +18,7 @@ interface SessionRequestFormProps {
 
 const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: propInitialState }) => {
   const [state, setState] = useState<SessionRequestState>(initialState);
-  const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm();
-
+  
   const {
     handleSelectTeacher,
     handleSelectSlot,
@@ -57,24 +28,17 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
     calculateAmount
   } = useSessionRequestHandlers(state, setState);
 
-  useEffect(() => {
-    const fetchTeacher = async () => {
-      if (state.selectedTeacherId) {
-        const teacher = await fetchTeacherById(state.selectedTeacherId);
-        setSelectedTeacher(teacher);
-      }
-    };
-    fetchTeacher();
-  }, [state.selectedTeacherId]);
-
+  // Handle initial state from navigation
   useEffect(() => {
     if (propInitialState?.selectedTeacherId) {
+      console.log("Setting initial teacher:", propInitialState.selectedTeacherId);
       setState(prev => ({
         ...prev,
         selectedTeacherId: propInitialState.selectedTeacherId!
       }));
-
+      
       if (propInitialState.enrollmentMode && propInitialState.selectedCourse) {
+        console.log("Direct enrollment mode for course:", propInitialState.selectedCourse);
         setState(prev => ({
           ...prev,
           selectedAvailability: propInitialState.selectedCourse,
@@ -87,18 +51,7 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
     }
   }, [propInitialState]);
 
-  const handleBookSession = async () => {
-    if (!state.selectedAvailability) return;
-    setIsLoading(true);
-    try {
-      console.log("Booking session:", state.selectedAvailability);
-      // TODO: Add booking API call
-    } catch (error) {
-      console.error("Booking failed:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  console.log("Current state:", state);
 
   return (
     <Card className="p-6">
@@ -111,14 +64,14 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
       {state.step === "select-teacher" && !propInitialState?.selectedTeacherId && (
         <SessionRequestList onSelectTeacher={handleSelectTeacher} />
       )}
-
+      
       {state.step === "select-availability" && (
         <AvailabilitySelector
           teacherId={state.selectedTeacherId}
           onSelectSlot={handleSelectSlot}
         />
       )}
-
+      
       {state.step === "payment" && state.selectedAvailability && state.sessionRequestId && (
         <div>
           <h3 className="text-lg font-semibold mb-4">Payment Required</h3>
@@ -138,15 +91,14 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
           />
         </div>
       )}
-
+      
       {state.step === "request-form" && state.selectedAvailability && (
         <SessionRequestFormFields
-          form={form}
-          selectedTeacher={selectedTeacher}
-          selectedAvailability={state.selectedAvailability}
-          onAvailabilitySelect={handleSelectSlot}
-          onBookSession={handleBookSession}
-          isLoading={isLoading}
+          teacherId={state.selectedTeacherId}
+          availability={state.selectedAvailability}
+          type={state.availabilityType}
+          onBack={handleBackToAvailability}
+          onSuccess={handleBackToTeachers}
         />
       )}
     </Card>
