@@ -32,12 +32,14 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
   // Handle initial state from navigation
   useEffect(() => {
     if (propInitialState?.selectedTeacherId) {
+      console.log("Setting initial teacher:", propInitialState.selectedTeacherId);
       setState(prev => ({
         ...prev,
         selectedTeacherId: propInitialState.selectedTeacherId!
       }));
       
       if (propInitialState.enrollmentMode && propInitialState.selectedCourse) {
+        console.log("Direct enrollment mode for course:", propInitialState.selectedCourse);
         setState(prev => ({
           ...prev,
           selectedAvailability: propInitialState.selectedCourse,
@@ -49,6 +51,8 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
       }
     }
   }, [propInitialState]);
+
+  console.log("Current state:", state);
 
   return (
     <Card className="p-6">
@@ -70,14 +74,23 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
       )}
       
       {state.step === "payment" && state.selectedAvailability && state.sessionRequestId && (
-        <CashfreePaymentForm
-          availability={state.selectedAvailability}
-          type={state.availabilityType}
-          sessionRequestId={state.sessionRequestId}
-          amount={calculateAmount()}
-          onPaymentSuccess={handlePaymentSuccess}
-          onBack={handleBackToAvailability}
-        />
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Payment Required</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Session: {state.selectedAvailability.title || state.selectedAvailability.subject?.name || 'Session'}
+          </p>
+          <p className="text-sm text-gray-600 mb-4">
+            Amount: ₹{calculateAmount()}
+          </p>
+          <CashfreePaymentForm
+            availability={state.selectedAvailability}
+            type={state.availabilityType}
+            sessionRequestId={state.sessionRequestId}
+            amount={calculateAmount()}
+            onPaymentSuccess={handlePaymentSuccess}
+            onBack={handleBackToAvailability}
+          />
+        </div>
       )}
       
       {state.step === "request-form" && state.selectedAvailability && (

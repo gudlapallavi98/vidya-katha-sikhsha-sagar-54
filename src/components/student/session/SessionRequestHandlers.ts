@@ -23,6 +23,7 @@ export const useSessionRequestHandlers = (
   };
 
   const handleSelectTeacher = (teacherId: string) => {
+    console.log("Teacher selected:", teacherId);
     setState(prev => ({
       ...prev,
       selectedTeacherId: teacherId,
@@ -31,8 +32,13 @@ export const useSessionRequestHandlers = (
   };
 
   const handleSelectSlot = async (slot: any) => {
-    if (!user) return;
+    if (!user) {
+      console.error("No user found");
+      return;
+    }
 
+    console.log("Processing slot selection:", slot);
+    
     const type = slot.session_type === 'individual' ? 'individual' : 'course';
     
     setState(prev => ({
@@ -55,6 +61,18 @@ export const useSessionRequestHandlers = (
       const proposedDuration = type === 'individual' && slot.start_time && slot.end_time
         ? calculateDurationFromTimeSlot(slot.start_time, slot.end_time)
         : 60;
+
+      console.log("Creating session request with data:", {
+        student_id: user.id,
+        teacher_id: state.selectedTeacherId,
+        proposed_title: type === 'individual' 
+          ? `${slot.subject?.name || 'Session'} - Individual Session` 
+          : slot.title || 'Course Session',
+        proposedDate,
+        proposedDuration,
+        payment_amount: pricing.studentAmount,
+        session_type: type
+      });
 
       const sessionData = {
         student_id: user.id,
@@ -80,19 +98,27 @@ export const useSessionRequestHandlers = (
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating session request:", error);
+        throw error;
+      }
+
+      console.log("Session request created successfully:", sessionRequest);
 
       setState(prev => ({
         ...prev,
         sessionRequestId: sessionRequest.id,
         step: "payment"
       }));
+
+      console.log("Navigating to payment step");
     } catch (error) {
       console.error("Error creating session request:", error);
     }
   };
 
   const handlePaymentSuccess = () => {
+    console.log("Payment successful, navigating to request form");
     setState(prev => ({ ...prev, step: "request-form" }));
   };
 
