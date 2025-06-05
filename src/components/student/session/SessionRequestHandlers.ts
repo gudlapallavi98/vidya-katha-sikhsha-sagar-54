@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing } from "@/utils/pricingUtils";
@@ -38,9 +37,9 @@ export const useSessionRequestHandlers = (
     }
 
     console.log("Processing slot selection:", slot);
-    
+
     const type = slot.session_type === 'individual' ? 'individual' : 'course';
-    
+
     setState(prev => ({
       ...prev,
       selectedAvailability: slot,
@@ -51,16 +50,27 @@ export const useSessionRequestHandlers = (
       const teacherRate = type === 'individual' 
         ? (slot.price || slot.teacher_rate || 100)
         : (slot.price || slot.teacher_rate || 500);
-      
+
       const pricing = calculatePricing(teacherRate);
 
-      const proposedDate = type === 'individual' && slot.available_date && slot.start_time
-        ? new Date(`${slot.available_date}T${slot.start_time}:00`).toISOString()
-        : new Date().toISOString();
+      // ✅ Fixing date parsing logic
+      const slotStartDateTimeString = `${slot.available_date}T${slot.start_time}`;
+      const slotEndDateTimeString = `${slot.available_date}T${slot.end_time}`;
 
-      const proposedDuration = type === 'individual' && slot.start_time && slot.end_time
-        ? calculateDurationFromTimeSlot(slot.start_time, slot.end_time)
-        : 60;
+      const startDate = new Date(slotStartDateTimeString);
+      const endDate = new Date(slotEndDateTimeString);
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error("Invalid date/time format for slot:", {
+          slot,
+          slotStartDateTimeString,
+          slotEndDateTimeString
+        });
+        return;
+      }
+
+      const proposedDate = startDate.toISOString();
+      const proposedDuration = calculateDurationFromTimeSlot(slot.start_time, slot.end_time);
 
       console.log("Creating session request with data:", {
         student_id: user.id,
@@ -143,11 +153,11 @@ export const useSessionRequestHandlers = (
 
   const calculateAmount = () => {
     if (!state.selectedAvailability) return 0;
-    
+
     const teacherRate = state.availabilityType === 'individual' 
       ? (state.selectedAvailability.price || state.selectedAvailability.teacher_rate || 100)
       : (state.selectedAvailability.price || state.selectedAvailability.teacher_rate || 500);
-    
+
     const pricing = calculatePricing(teacherRate);
     return pricing.studentAmount;
   };
