@@ -56,68 +56,50 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         phone: '9999999999'
       };
 
-      const paymentPayload = {
-        action: 'create_order',
-        amount: amount,
-        sessionRequestId: sessionRequestId,
-        userId: user.id,
-        customerInfo: customerInfo
-      };
-
       const { data: orderData, error } = await supabase.functions.invoke('cashfree-payment', {
-        body: paymentPayload
+        body: {
+          action: 'create_order',
+          amount: amount,
+          sessionRequestId,
+          userId: user.id,
+          customerInfo
+        }
       });
 
-      if (error) {
-        throw new Error(error.message || 'Supabase function error');
+      if (error || !orderData?.success) {
+        throw new Error(orderData?.error || error?.message || 'Failed to create order');
       }
 
-      if (!orderData?.success) {
-        throw new Error(orderData?.error || 'Failed to create payment order');
-      }
+      const orderId = orderData.order_id;
 
-      if (orderData.payment_url) {
-        window.open(orderData.payment_url, '_blank');
+      window.open(orderData.payment_url, '_blank');
 
-        const orderId = orderData.order_id;
-        const pollInterval = setInterval(async () => {
-          try {
-            const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
-              body: {
-                action: 'verify_payment',
-                order_id: orderId
-              }
+      const pollInterval = setInterval(async () => {
+        try {
+          const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
+            body: { action: 'verify_payment', order_id: orderId }
+          });
+
+          if (verifyData.success && verifyData.payment_status === 'PAID') {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            toast({ title: "Payment Successful" });
+            onPaymentSuccess();
+          } else if (verifyData.payment_status === 'FAILED') {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            toast({
+              variant: "destructive",
+              title: "Payment Failed",
+              description: "Your payment was not successful. Please try again.",
             });
-
-            if (verifyData.success && verifyData.payment_status === 'PAID') {
-              clearInterval(pollInterval);
-              setIsProcessing(false);
-              toast({
-                title: "Payment Successful",
-                description: "Your payment has been completed.",
-              });
-              onPaymentSuccess();
-            } else if (verifyData.payment_status === 'FAILED') {
-              clearInterval(pollInterval);
-              setIsProcessing(false);
-              toast({
-                variant: "destructive",
-                title: "Payment Failed",
-                description: "Your payment was not successful. Please try again.",
-              });
-            }
-          } catch (pollError) {
-            console.error('Payment verification error:', pollError);
           }
-        }, 3000);
+        } catch (err) {
+          console.error("Polling error:", err);
+        }
+      }, 3000);
 
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          setIsProcessing(false);
-        }, 300000);
-      } else {
-        throw new Error('No payment URL received');
-      }
+      setTimeout(() => clearInterval(pollInterval), 300000);
 
     } catch (error: any) {
       console.error("Payment error:", error);
@@ -130,16 +112,16 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
     }
   };
 
-  // ✅ Test function to bypass payment and mark session as paid
+  // ✅ DEMO: Mark as Paid manually
   const handleTestPayment = async () => {
     if (!user || !sessionRequestId) return;
 
     const fakeTransactionId = `TEST_${sessionRequestId}_${Date.now()}`;
 
-    const { error } = await supabase.from("payment_history").insert({
+    const { error: insertError } = await supabase.from("payment_history").insert({
       user_id: user.id,
       session_request_id: sessionRequestId,
-      amount: amount,
+      amount,
       payment_type: "student_payment",
       payment_status: "completed",
       payment_method: "cashfree",
@@ -148,19 +130,34 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
       created_at: new Date().toISOString()
     });
 
-    if (error) {
+    if (insertError) {
       toast({
         variant: "destructive",
         title: "Test Payment Failed",
-        description: "Could not insert test payment into DB.",
+        description: "Could not insert mock payment.",
       });
-      console.error("Insert error:", error);
+      console.error("Insert error:", insertError);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("session_requests")
+      .update({ payment_status: "completed" })
+      .eq("id", sessionRequestId);
+
+    if (updateError) {
+      toast({
+        variant: "destructive",
+        title: "Session Update Failed",
+        description: "Could not update session_requests table.",
+      });
+      console.error("Update error:", updateError);
       return;
     }
 
     toast({
-      title: "Test Payment Marked Completed",
-      description: "Inserted mock payment into payment_history",
+      title: "Marked as Paid (Test)",
+      description: "Payment and session updated successfully.",
     });
 
     onPaymentSuccess();
@@ -224,7 +221,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
             )}
           </Button>
 
-          {/* ✅ Mark as Paid - Test Button */}
+          {/* ✅ DEMO Button */}
           <Button
             variant="outline"
             onClick={handleTestPayment}
