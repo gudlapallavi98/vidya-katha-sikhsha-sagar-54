@@ -92,7 +92,7 @@ export const useSessionRequestHandlers = (
         request_message: '',
         proposed_date: proposedDate,
         proposed_duration: proposedDuration,
-        status: "payment_pending",
+        status: "pending",
         course_id: type === 'course' ? slot.id : null,
         availability_id: type === 'individual' ? slot.id : null,
         payment_amount: pricing.studentAmount,
