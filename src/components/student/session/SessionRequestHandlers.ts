@@ -9,18 +9,17 @@ export const useSessionRequestHandlers = (
 ) => {
   const { user } = useAuth();
 
-  const calculateDurationFromTimeSlot = (startTime: string, endTime: string): number => {
-    try {
-      const start = new Date(`2000-01-01T${startTime}:00`);
-      const end = new Date(`2000-01-01T${endTime}:00`);
-      const durationMs = end.getTime() - start.getTime();
-      return Math.floor(durationMs / (1000 * 60));
-    } catch (error) {
-      console.error("Error calculating duration:", error);
-      return 60;
-    }
-  };
-
+ const calculateDurationFromTimeSlot = (startTime: string, endTime: string): number => {
+  try {
+    const start = new Date(`2000-01-01T${startTime}`); // ✅ FIXED: removed extra :00
+    const end = new Date(`2000-01-01T${endTime}`);
+    const durationMs = end.getTime() - start.getTime();
+    return Math.floor(durationMs / (1000 * 60));
+  } catch (error) {
+    console.error("Error calculating duration:", error);
+    return 60;
+  }
+};
   const handleSelectTeacher = (teacherId: string) => {
     console.log("Teacher selected:", teacherId);
     setState(prev => ({
