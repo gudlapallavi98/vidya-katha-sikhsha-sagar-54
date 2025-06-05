@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Users, BookOpen, IndianRupee } from "lucide-react";
 import { format } from "date-fns";
@@ -23,15 +22,16 @@ export const IndividualSessionCard: React.FC<IndividualSessionCardProps> = ({
     });
   };
 
-  const handleBookSession = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("Book session clicked for slot:", slot);
+  const handleSlotClick = () => {
+    console.log("Slot clicked for selection:", slot);
     onSelectSlot(slot);
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card 
+      className="hover:shadow-md transition-shadow cursor-pointer hover:border-primary"
+      onClick={handleSlotClick}
+    >
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div>
@@ -84,13 +84,9 @@ export const IndividualSessionCard: React.FC<IndividualSessionCardProps> = ({
             {slot.notes}
           </p>
         )}
-        <Button 
-          className="w-full mt-4" 
-          onClick={handleBookSession}
-          disabled={slot.status !== "available"}
-        >
-          Book This Session
-        </Button>
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          Click to select this session
+        </div>
       </CardContent>
     </Card>
   );

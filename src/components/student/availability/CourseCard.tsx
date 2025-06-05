@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, IndianRupee } from "lucide-react";
 
@@ -14,13 +13,16 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   course,
   onSelectSlot,
 }) => {
-  const handleEnrollCourse = () => {
+  const handleCourseClick = () => {
     console.log("Course selected:", course);
     onSelectSlot(course);
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card 
+      className="hover:shadow-md transition-shadow cursor-pointer hover:border-primary"
+      onClick={handleCourseClick}
+    >
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div>
@@ -52,13 +54,9 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             {course.enrollment_status}
           </Badge>
         </div>
-        <Button 
-          className="w-full mt-4" 
-          onClick={handleEnrollCourse}
-          type="button"
-        >
-          Enroll in Course
-        </Button>
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          Click to enroll in this course
+        </div>
       </CardContent>
     </Card>
   );

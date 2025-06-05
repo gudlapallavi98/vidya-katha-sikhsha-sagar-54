@@ -56,7 +56,7 @@ const indianStates = [
 
 // Major cities by state
 const indianCities: Record<string, string[]> = {
-  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool"],
+  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Tirupati", "Rajahmundry", "Kadapa", "Anantapur", "Eluru"],
   "Delhi": ["New Delhi", "Delhi", "Noida", "Gurgaon", "Faridabad"],
   "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar"],
   "Karnataka": ["Bengaluru", "Mysuru", "Hubli", "Mangaluru", "Belgaum"],
@@ -76,9 +76,12 @@ const LocationSection = ({ form }: LocationSectionProps) => {
   
   // Update available cities when state changes
   useEffect(() => {
+    console.log("Selected state:", selectedState);
     if (selectedState && indianCities[selectedState]) {
+      console.log("Cities for", selectedState, ":", indianCities[selectedState]);
       setAvailableCities(indianCities[selectedState]);
     } else {
+      console.log("Using default cities");
       setAvailableCities(defaultCities);
     }
   }, [selectedState]);
@@ -93,9 +96,11 @@ const LocationSection = ({ form }: LocationSectionProps) => {
             <FormLabel>State</FormLabel>
             <Select
               onValueChange={(value) => {
+                console.log("State changed to:", value);
                 field.onChange(value);
                 // Reset city when state changes
                 form.setValue("city", "");
+                console.log("City reset to empty");
               }}
               value={field.value || ""}
             >
@@ -124,7 +129,10 @@ const LocationSection = ({ form }: LocationSectionProps) => {
           <FormItem>
             <FormLabel>City</FormLabel>
             <Select
-              onValueChange={field.onChange}
+              onValueChange={(value) => {
+                console.log("City changed to:", value);
+                field.onChange(value);
+              }}
               value={field.value || ""}
             >
               <FormControl>
