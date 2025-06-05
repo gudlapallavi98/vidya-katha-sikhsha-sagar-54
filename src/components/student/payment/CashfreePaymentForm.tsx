@@ -130,6 +130,40 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
     }
   };
 
+  const handleTestPayment = async () => {
+    if (!user) return;
+
+    const fakeOrderId = `TEST_${sessionRequestId}_${Date.now()}`;
+
+    const { error } = await supabase.from("payment_history").insert({
+      user_id: user.id,
+      session_request_id: sessionRequestId,
+      amount: amount,
+      payment_type: "student_payment",
+      payment_status: "completed",
+      payment_method: "cashfree",
+      transaction_id: fakeOrderId,
+      gateway_response: { test: true, via: "MarkAsPaid" }
+    });
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Test Payment Failed",
+        description: "Could not insert mock payment into DB.",
+      });
+      console.error("Insert error:", error);
+      return;
+    }
+
+    toast({
+      title: "Test Payment Successful",
+      description: "Mock payment inserted and marked completed.",
+    });
+
+    onPaymentSuccess();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -188,16 +222,10 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
             )}
           </Button>
 
-          {/* ✅ Mark as Paid Test Button */}
+          {/* ✅ TEST PAYMENT BUTTON */}
           <Button 
             variant="outline" 
-            onClick={() => {
-              toast({
-                title: "Test Payment",
-                description: "Simulating payment success...",
-              });
-              onPaymentSuccess();
-            }}
+            onClick={handleTestPayment} 
             disabled={isProcessing}
             className="w-full"
           >
