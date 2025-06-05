@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -47,46 +46,50 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         userId: user.id
       });
 
-      // Get user profile for customer details
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, last_name')
         .eq('id', user.id)
         .single();
 
+      if (profileError) {
+        throw new Error("Failed to fetch user profile");
+      }
+
       const customerInfo = {
         name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Student',
         email: user.email || '',
-        phone: '9999999999' // Default phone, can be updated later
+        phone: '9999999999'
       };
 
-      // Create Cashfree order
+      const paymentPayload = {
+        action: 'create_order',
+        amount: amount,
+        sessionRequestId: sessionRequestId,
+        userId: user.id,
+        customerInfo: customerInfo
+      };
+
+      console.log("Sending payment payload:", paymentPayload);
+
       const { data: orderData, error } = await supabase.functions.invoke('cashfree-payment', {
-        body: {
-          action: 'create_order',
-          amount: amount,
-          sessionRequestId: sessionRequestId,
-          userId: user.id,
-          customerInfo: customerInfo
-        }
+        body: paymentPayload
       });
 
       if (error) {
         console.error('Payment creation error:', error);
-        throw error;
+        throw new Error(error.message || 'Supabase function error');
       }
 
-      if (!orderData.success) {
-        throw new Error(orderData.error || 'Failed to create payment order');
+      if (!orderData?.success) {
+        throw new Error(orderData?.error || 'Failed to create payment order');
       }
 
       console.log("Payment order created successfully:", orderData);
 
-      // Redirect to Cashfree payment page
       if (orderData.payment_url) {
         window.open(orderData.payment_url, '_blank');
-        
-        // Start payment verification polling
+
         const orderId = orderData.order_id;
         const pollInterval = setInterval(async () => {
           try {
@@ -97,20 +100,21 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
               }
             });
 
+            console.log("Polling result:", verifyData);
+
             if (verifyData.success && verifyData.payment_status === 'PAID') {
               clearInterval(pollInterval);
               setIsProcessing(false);
-              
+
               toast({
                 title: "Payment Successful",
                 description: "Your payment has been completed. The session request has been sent to the teacher.",
               });
-              
               onPaymentSuccess();
             } else if (verifyData.payment_status === 'FAILED') {
               clearInterval(pollInterval);
               setIsProcessing(false);
-              
+
               toast({
                 variant: "destructive",
                 title: "Payment Failed",
@@ -120,9 +124,8 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
           } catch (pollError) {
             console.error('Payment verification error:', pollError);
           }
-        }, 3000); // Poll every 3 seconds
+        }, 3000);
 
-        // Stop polling after 5 minutes
         setTimeout(() => {
           clearInterval(pollInterval);
           setIsProcessing(false);
@@ -132,13 +135,13 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         throw new Error('No payment URL received');
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment error:", error);
       setIsProcessing(false);
       toast({
         variant: "destructive",
         title: "Payment Error",
-        description: error instanceof Error ? error.message : "Failed to initiate payment. Please try again.",
+        description: error?.message || "Failed to initiate payment. Please try again.",
       });
     }
   };
@@ -152,7 +155,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         </Button>
         <h2 className="text-xl font-semibold">Complete Payment</h2>
       </div>
-      
+
       <Card className="p-6">
         <div className="space-y-6">
           <div className="text-center">
@@ -162,7 +165,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
               Complete your payment to confirm the session booking
             </p>
           </div>
-          
+
           <div className="space-y-3 border-t pt-4">
             <div className="flex justify-between">
               <span className="font-medium">Session Type:</span>
@@ -181,7 +184,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
               <span className="text-green-600">{formatCurrency(amount)}</span>
             </div>
           </div>
-          
+
           <Button 
             onClick={handlePayment} 
             disabled={isProcessing}
@@ -200,7 +203,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
               </>
             )}
           </Button>
-          
+
           {isProcessing && (
             <div className="text-center text-sm text-gray-600">
               <p>A new window will open for payment.</p>
