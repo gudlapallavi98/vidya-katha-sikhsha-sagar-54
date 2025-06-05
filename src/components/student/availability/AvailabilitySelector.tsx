@@ -22,6 +22,7 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
   const { data: individualSlots = [], isLoading: individualLoading } = useQuery({
     queryKey: ["teacher-availability", teacherId],
     queryFn: async () => {
+      console.log("Fetching individual sessions for teacher:", teacherId);
       const { data, error } = await supabase
         .from("teacher_availability")
         .select(`
@@ -34,7 +35,11 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
         .gte("available_date", new Date().toISOString().split('T')[0])
         .order("available_date", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching individual sessions:", error);
+        throw error;
+      }
+      console.log("Individual sessions fetched:", data);
       return data || [];
     },
   });
@@ -43,6 +48,7 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
   const { data: courseSlots = [], isLoading: courseLoading } = useQuery({
     queryKey: ["teacher-courses", teacherId],
     queryFn: async () => {
+      console.log("Fetching courses for teacher:", teacherId);
       const { data, error } = await supabase
         .from("courses")
         .select("*")
@@ -50,13 +56,17 @@ const AvailabilitySelector: React.FC<AvailabilitySelectorProps> = ({
         .eq("is_published", true)
         .eq("enrollment_status", "open");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching courses:", error);
+        throw error;
+      }
+      console.log("Courses fetched:", data);
       return data || [];
     },
   });
 
   const handleSlotSelection = (slot: any) => {
-    console.log("Slot being passed to parent:", slot);
+    console.log("Slot selected in AvailabilitySelector:", slot);
     onSelectSlot(slot);
   };
 

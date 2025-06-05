@@ -29,7 +29,7 @@ const formSchema = z.object({
   }),
   start_time: z.string().min(1, "Start time is required"),
   end_time: z.string().min(1, "End time is required"),
-  max_students: z.number().min(2, "Live courses must allow at least 2 students"),
+  max_students: z.number().min(2, "Live courses must allow at least 2 students").max(20, "Maximum 20 students allowed"),
   price: z.number().min(0, "Price must be a positive number"),
 }).refine((data) => data.end_date >= data.start_date, {
   message: "End date must be after start date",
@@ -54,7 +54,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      max_students: 5,
+      max_students: 10,
       price: 0,
     },
   });
@@ -204,7 +204,7 @@ export default function LiveCourseAvailabilityForm({ onAvailabilityCreated }: Li
             type="number"
             min="2"
             max="20"
-            placeholder="5"
+            placeholder="10"
             {...form.register("max_students", { valueAsNumber: true })}
           />
           {form.formState.errors.max_students && (

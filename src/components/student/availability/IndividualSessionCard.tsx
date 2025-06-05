@@ -23,8 +23,10 @@ export const IndividualSessionCard: React.FC<IndividualSessionCardProps> = ({
     });
   };
 
-  const handleBookSession = () => {
-    console.log("Individual session selected:", slot);
+  const handleBookSession = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("Book session clicked for slot:", slot);
     onSelectSlot(slot);
   };
 
@@ -85,7 +87,7 @@ export const IndividualSessionCard: React.FC<IndividualSessionCardProps> = ({
         <Button 
           className="w-full mt-4" 
           onClick={handleBookSession}
-          type="button"
+          disabled={slot.status !== "available"}
         >
           Book This Session
         </Button>
