@@ -94,7 +94,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
               setIsProcessing(false);
               toast({
                 title: "Payment Successful",
-                description: "Your payment has been completed. The session request has been sent to the teacher.",
+                description: "Your payment has been completed.",
               });
               onPaymentSuccess();
             } else if (verifyData.payment_status === 'FAILED') {
@@ -130,10 +130,11 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
     }
   };
 
+  // ✅ Test function to bypass payment and mark session as paid
   const handleTestPayment = async () => {
-    if (!user) return;
+    if (!user || !sessionRequestId) return;
 
-    const fakeOrderId = `TEST_${sessionRequestId}_${Date.now()}`;
+    const fakeTransactionId = `TEST_${sessionRequestId}_${Date.now()}`;
 
     const { error } = await supabase.from("payment_history").insert({
       user_id: user.id,
@@ -142,23 +143,24 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
       payment_type: "student_payment",
       payment_status: "completed",
       payment_method: "cashfree",
-      transaction_id: fakeOrderId,
-      gateway_response: { test: true, via: "MarkAsPaid" }
+      transaction_id: fakeTransactionId,
+      gateway_response: { test: true, source: "manual-test" },
+      created_at: new Date().toISOString()
     });
 
     if (error) {
       toast({
         variant: "destructive",
         title: "Test Payment Failed",
-        description: "Could not insert mock payment into DB.",
+        description: "Could not insert test payment into DB.",
       });
       console.error("Insert error:", error);
       return;
     }
 
     toast({
-      title: "Test Payment Successful",
-      description: "Mock payment inserted and marked completed.",
+      title: "Test Payment Marked Completed",
+      description: "Inserted mock payment into payment_history",
     });
 
     onPaymentSuccess();
@@ -222,10 +224,10 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
             )}
           </Button>
 
-          {/* ✅ TEST PAYMENT BUTTON */}
-          <Button 
-            variant="outline" 
-            onClick={handleTestPayment} 
+          {/* ✅ Mark as Paid - Test Button */}
+          <Button
+            variant="outline"
+            onClick={handleTestPayment}
             disabled={isProcessing}
             className="w-full"
           >
