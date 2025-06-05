@@ -40,12 +40,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
     setIsProcessing(true);
     try {
-      console.log("Initiating Cashfree payment:", {
-        amount,
-        sessionRequestId,
-        userId: user.id
-      });
-
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, last_name')
@@ -70,22 +64,17 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         customerInfo: customerInfo
       };
 
-      console.log("Sending payment payload:", paymentPayload);
-
       const { data: orderData, error } = await supabase.functions.invoke('cashfree-payment', {
         body: paymentPayload
       });
 
       if (error) {
-        console.error('Payment creation error:', error);
         throw new Error(error.message || 'Supabase function error');
       }
 
       if (!orderData?.success) {
         throw new Error(orderData?.error || 'Failed to create payment order');
       }
-
-      console.log("Payment order created successfully:", orderData);
 
       if (orderData.payment_url) {
         window.open(orderData.payment_url, '_blank');
@@ -100,12 +89,9 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
               }
             });
 
-            console.log("Polling result:", verifyData);
-
             if (verifyData.success && verifyData.payment_status === 'PAID') {
               clearInterval(pollInterval);
               setIsProcessing(false);
-
               toast({
                 title: "Payment Successful",
                 description: "Your payment has been completed. The session request has been sent to the teacher.",
@@ -114,7 +100,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
             } else if (verifyData.payment_status === 'FAILED') {
               clearInterval(pollInterval);
               setIsProcessing(false);
-
               toast({
                 variant: "destructive",
                 title: "Payment Failed",
@@ -130,7 +115,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
           clearInterval(pollInterval);
           setIsProcessing(false);
         }, 300000);
-
       } else {
         throw new Error('No payment URL received');
       }
@@ -202,6 +186,22 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
                 Pay {formatCurrency(amount)}
               </>
             )}
+          </Button>
+
+          {/* ✅ Mark as Paid Test Button */}
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              toast({
+                title: "Test Payment",
+                description: "Simulating payment success...",
+              });
+              onPaymentSuccess();
+            }}
+            disabled={isProcessing}
+            className="w-full"
+          >
+            ✅ Mark as Paid (Test)
           </Button>
 
           {isProcessing && (
