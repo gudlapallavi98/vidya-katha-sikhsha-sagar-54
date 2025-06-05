@@ -104,5 +104,4 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
     </Card>
   );
 };
-console.log("Current step:", state.step);
 export default SessionRequestForm;
