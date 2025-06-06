@@ -25,34 +25,42 @@ serve(async (req) => {
     const clientSecret = Deno.env.get('CASHFREE_SECRET_KEY');
     
     if (!clientId || !clientSecret) {
+      console.error('Cashfree credentials not configured');
       throw new Error('Cashfree credentials not configured');
     }
 
-    const cashfreeBaseUrl = 'https://api.cashfree.com/pg';
+    const cashfreeBaseUrl = 'https://sandbox.cashfree.com/pg'; // Using sandbox for testing
 
     if (action === 'create_order') {
       const { amount, sessionRequestId, userId, customerInfo } = data;
       
-      console.log('Creating Cashfree order:', { amount, sessionRequestId, userId });
+      console.log('Creating Cashfree order:', { amount, sessionRequestId, userId, customerInfo });
+
+      // Validate required fields
+      if (!amount || !sessionRequestId || !userId) {
+        throw new Error('Missing required fields: amount, sessionRequestId, or userId');
+      }
 
       // Generate unique order ID
       const orderId = `ORDER_${sessionRequestId}_${Date.now()}`;
       
       const orderRequest = {
         order_id: orderId,
-        order_amount: amount,
+        order_amount: parseFloat(amount.toString()),
         order_currency: 'INR',
         customer_details: {
           customer_id: userId,
-          customer_name: customerInfo.name,
-          customer_email: customerInfo.email,
-          customer_phone: customerInfo.phone || '9999999999'
+          customer_name: customerInfo?.name || 'Student',
+          customer_email: customerInfo?.email || 'student@example.com',
+          customer_phone: customerInfo?.phone || '9999999999'
         },
         order_meta: {
-          return_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/cashfree-payment?action=verify_payment&order_id=${orderId}`,
-          notify_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/cashfree-payment?action=webhook`
+          return_url: `https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/cashfree-payment?action=payment_return&order_id=${orderId}`,
+          notify_url: `https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/cashfree-payment?action=webhook`
         }
       };
+
+      console.log('Sending order request to Cashfree:', orderRequest);
 
       const response = await fetch(`${cashfreeBaseUrl}/orders`, {
         method: 'POST',
@@ -65,14 +73,29 @@ serve(async (req) => {
         body: JSON.stringify(orderRequest)
       });
 
+      const responseText = await response.text();
+      console.log('Cashfree API response:', responseText);
+
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Cashfree API error:', errorData);
-        throw new Error(`Cashfree API error: ${response.status}`);
+        console.error('Cashfree API error:', responseText);
+        throw new Error(`Cashfree API error: ${response.status} - ${responseText}`);
       }
 
-      const orderData = await response.json();
-      console.log('Cashfree order created:', orderData);
+      let orderData;
+      try {
+        orderData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse Cashfree response:', parseError);
+        throw new Error('Invalid response from payment gateway');
+      }
+
+      console.log('Cashfree order created successfully:', orderData);
+
+      // Check if we have the payment_link in the response
+      if (!orderData.payment_link) {
+        console.error('No payment_link in Cashfree response:', orderData);
+        throw new Error('Payment URL not received from gateway');
+      }
 
       // Store payment record
       const { error: paymentError } = await supabase
@@ -80,7 +103,7 @@ serve(async (req) => {
         .insert({
           user_id: userId,
           session_request_id: sessionRequestId,
-          amount: amount,
+          amount: parseFloat(amount.toString()),
           payment_type: 'student_payment',
           payment_status: 'pending',
           payment_method: 'cashfree',
@@ -103,82 +126,64 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'payment_return') {
+      const { order_id } = data;
+      console.log('Payment return for order:', order_id);
+      
+      // Redirect to a success/failure page based on payment status
+      const verifyResult = await verifyPayment(order_id, supabase, clientId, clientSecret, cashfreeBaseUrl);
+      
+      if (verifyResult.success && verifyResult.payment_status === 'PAID') {
+        return new Response(`
+          <html>
+            <head><title>Payment Successful</title></head>
+            <body>
+              <h1>Payment Successful!</h1>
+              <p>Your payment has been processed successfully.</p>
+              <script>
+                setTimeout(() => {
+                  window.close();
+                  window.opener && window.opener.location.reload();
+                }, 3000);
+              </script>
+            </body>
+          </html>
+        `, {
+          headers: { 'Content-Type': 'text/html' }
+        });
+      } else {
+        return new Response(`
+          <html>
+            <head><title>Payment Failed</title></head>
+            <body>
+              <h1>Payment Failed</h1>
+              <p>Your payment could not be processed. Please try again.</p>
+              <script>
+                setTimeout(() => {
+                  window.close();
+                }, 3000);
+              </script>
+            </body>
+          </html>
+        `, {
+          headers: { 'Content-Type': 'text/html' }
+        });
+      }
+    }
+
     if (action === 'verify_payment') {
       const { order_id } = data;
+      const result = await verifyPayment(order_id, supabase, clientId, clientSecret, cashfreeBaseUrl);
       
-      console.log('Verifying payment for order:', order_id);
-
-      const response = await fetch(`${cashfreeBaseUrl}/orders/${order_id}`, {
-        method: 'GET',
-        headers: {
-          'x-client-id': clientId,
-          'x-client-secret': clientSecret,
-          'x-api-version': '2023-08-01'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Payment verification failed: ${response.status}`);
-      }
-
-      const orderData = await response.json();
-      console.log('Payment verification result:', orderData);
-
-      // Update payment status
-      const { error: updateError } = await supabase
-        .from('payment_history')
-        .update({
-          payment_status: orderData.order_status === 'PAID' ? 'completed' : 'failed',
-          gateway_response: orderData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('transaction_id', order_id);
-
-      if (updateError) {
-        console.error('Error updating payment status:', updateError);
-        throw updateError;
-      }
-
-      // If payment is successful, update session request
-      if (orderData.order_status === 'PAID') {
-        // Get session request ID from payment record
-        const { data: paymentRecord, error: paymentFetchError } = await supabase
-          .from('payment_history')
-          .select('session_request_id')
-          .eq('transaction_id', order_id)
-          .single();
-
-        if (!paymentFetchError && paymentRecord) {
-          const { error: sessionUpdateError } = await supabase
-            .from('session_requests')
-            .update({
-              payment_status: 'completed',
-              status: 'pending', // Now ready for teacher acceptance
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', paymentRecord.session_request_id);
-
-          if (sessionUpdateError) {
-            console.error('Error updating session request:', sessionUpdateError);
-          }
-        }
-      }
-
-      return new Response(JSON.stringify({
-        success: true,
-        payment_status: orderData.order_status,
-        order_data: orderData
-      }), {
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (action === 'webhook') {
-      // Handle Cashfree webhook for payment status updates
       const webhookData = data;
       console.log('Received Cashfree webhook:', webhookData);
 
-      // Process webhook and update payment status
       const { error: webhookUpdateError } = await supabase
         .from('payment_history')
         .update({
@@ -211,3 +216,68 @@ serve(async (req) => {
     });
   }
 });
+
+async function verifyPayment(orderId: string, supabase: any, clientId: string, clientSecret: string, cashfreeBaseUrl: string) {
+  console.log('Verifying payment for order:', orderId);
+
+  const response = await fetch(`${cashfreeBaseUrl}/orders/${orderId}`, {
+    method: 'GET',
+    headers: {
+      'x-client-id': clientId,
+      'x-client-secret': clientSecret,
+      'x-api-version': '2023-08-01'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Payment verification failed: ${response.status}`);
+  }
+
+  const orderData = await response.json();
+  console.log('Payment verification result:', orderData);
+
+  // Update payment status
+  const { error: updateError } = await supabase
+    .from('payment_history')
+    .update({
+      payment_status: orderData.order_status === 'PAID' ? 'completed' : 'failed',
+      gateway_response: orderData,
+      updated_at: new Date().toISOString()
+    })
+    .eq('transaction_id', orderId);
+
+  if (updateError) {
+    console.error('Error updating payment status:', updateError);
+    throw updateError;
+  }
+
+  // If payment is successful, update session request
+  if (orderData.order_status === 'PAID') {
+    const { data: paymentRecord, error: paymentFetchError } = await supabase
+      .from('payment_history')
+      .select('session_request_id')
+      .eq('transaction_id', orderId)
+      .single();
+
+    if (!paymentFetchError && paymentRecord) {
+      const { error: sessionUpdateError } = await supabase
+        .from('session_requests')
+        .update({
+          payment_status: 'completed',
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentRecord.session_request_id);
+
+      if (sessionUpdateError) {
+        console.error('Error updating session request:', sessionUpdateError);
+      }
+    }
+  }
+
+  return {
+    success: true,
+    payment_status: orderData.order_status,
+    order_data: orderData
+  };
+}

@@ -39,6 +39,15 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
       return;
     }
 
+    if (!sessionRequestId) {
+      toast({
+        variant: "destructive",
+        title: "Session Request Missing",
+        description: "Please try again.",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const { data: profile, error: profileError } = await supabase
@@ -47,7 +56,10 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         .eq('id', user.id)
         .single();
 
-      if (profileError) throw new Error("Failed to fetch user profile");
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        throw new Error("Failed to fetch user profile");
+      }
 
       const customerInfo = {
         name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Student',
@@ -55,7 +67,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         phone: '9999999999'
       };
 
-      console.log('Creating payment order with amount:', amount);
+      console.log('Creating payment order with:', { amount, sessionRequestId, customerInfo });
 
       const { data: orderData, error } = await supabase.functions.invoke('cashfree-payment', {
         body: {
@@ -67,39 +79,76 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         }
       });
 
-      if (error || !orderData?.success) {
-        console.error('Payment order creation failed:', error, orderData);
-        throw new Error(orderData?.error || error?.message || 'Failed to create order');
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to invoke payment function');
+      }
+
+      if (!orderData?.success) {
+        console.error('Payment order creation failed:', orderData);
+        throw new Error(orderData?.error || 'Failed to create payment order');
       }
 
       console.log('Payment order created successfully:', orderData);
 
-      const orderId = orderData.order_id;
       const paymentUrl = orderData.payment_url;
-
       if (!paymentUrl) {
         throw new Error('Payment URL not received from gateway');
       }
 
-      // Open payment in the same window instead of new tab
-      window.location.href = paymentUrl;
+      // Open payment in popup window
+      const paymentWindow = window.open(
+        paymentUrl,
+        'payment',
+        'width=800,height=600,scrollbars=yes,resizable=yes'
+      );
 
-      // Start polling for payment status immediately
+      if (!paymentWindow) {
+        // Fallback: redirect in same window if popup is blocked
+        window.location.href = paymentUrl;
+        return;
+      }
+
+      // Poll for payment completion
       const pollInterval = setInterval(async () => {
         try {
+          // Check if payment window is closed
+          if (paymentWindow.closed) {
+            clearInterval(pollInterval);
+            setIsProcessing(false);
+            
+            // Verify payment status
+            const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
+              body: { action: 'verify_payment', order_id: orderData.order_id }
+            });
+
+            if (verifyData?.success && verifyData.payment_status === 'PAID') {
+              toast({ title: "Payment Successful" });
+              onPaymentSuccess();
+            } else {
+              toast({
+                variant: "destructive",
+                title: "Payment Status Unclear",
+                description: "Please check your payment history or contact support.",
+              });
+            }
+            return;
+          }
+
+          // Also check payment status while window is open
           const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
-            body: { action: 'verify_payment', order_id: orderId }
+            body: { action: 'verify_payment', order_id: orderData.order_id }
           });
 
-          console.log('Payment verification result:', verifyData);
-
-          if (verifyData.success && verifyData.payment_status === 'PAID') {
+          if (verifyData?.success && verifyData.payment_status === 'PAID') {
             clearInterval(pollInterval);
+            paymentWindow.close();
             setIsProcessing(false);
             toast({ title: "Payment Successful" });
             onPaymentSuccess();
-          } else if (verifyData.payment_status === 'FAILED') {
+          } else if (verifyData?.payment_status === 'FAILED') {
             clearInterval(pollInterval);
+            paymentWindow.close();
             setIsProcessing(false);
             toast({
               variant: "destructive",
@@ -112,11 +161,14 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         }
       }, 3000);
 
-      // Stop polling after 5 minutes
+      // Stop polling after 10 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
+        if (!paymentWindow.closed) {
+          paymentWindow.close();
+        }
         setIsProcessing(false);
-      }, 300000);
+      }, 600000);
 
     } catch (error: any) {
       console.error("Payment error:", error);
@@ -132,28 +184,35 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
   const handleTestPayment = async () => {
     if (!user || !sessionRequestId) return;
 
-    const { error: updateError } = await supabase
-      .from("session_requests")
-      .update({
-        payment_status: "completed",
-        status: "pending"
-      })
-      .eq("id", sessionRequestId);
+    setIsProcessing(true);
+    try {
+      const { error: updateError } = await supabase
+        .from("session_requests")
+        .update({
+          payment_status: "completed",
+          status: "pending"
+        })
+        .eq("id", sessionRequestId);
 
-    if (updateError) {
+      if (updateError) {
+        throw updateError;
+      }
+
+      toast({
+        title: "Payment Marked as Completed",
+        description: "Session request moved to pending status."
+      });
+      onPaymentSuccess();
+    } catch (error: any) {
+      console.error("Test payment error:", error);
       toast({
         variant: "destructive",
-        title: "Mark as Paid Failed",
-        description: updateError.message
+        title: "Test Payment Failed",
+        description: error.message || "Failed to mark payment as completed."
       });
-      return;
+    } finally {
+      setIsProcessing(false);
     }
-
-    toast({
-      title: "Marked as Paid",
-      description: "Payment marked as completed. Session moved to pending."
-    });
-    onPaymentSuccess();
   };
 
   return (
@@ -225,8 +284,8 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
           {isProcessing && (
             <div className="text-center text-sm text-gray-600">
-              <p>You will be redirected to the payment gateway.</p>
-              <p>Please complete the payment to confirm your session.</p>
+              <p>A payment window will open. Please complete the payment there.</p>
+              <p>This page will automatically update once payment is completed.</p>
             </div>
           )}
         </div>

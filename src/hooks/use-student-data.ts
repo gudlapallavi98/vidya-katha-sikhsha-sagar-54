@@ -79,13 +79,13 @@ export const useStudentUpcomingSessions = () => {
       
       console.log("Fetching upcoming sessions for student:", user.id);
       
-      // Get current time and add a small buffer to ensure we get truly upcoming sessions
+      // Get current time in UTC
       const now = new Date();
       const currentTime = now.toISOString();
       
       console.log("Current time for filtering:", currentTime);
       
-      // First, get sessions where the student is an attendee
+      // Get sessions where the student is an attendee
       const { data: attendeeSessions, error: attendeeError } = await supabase
         .from('session_attendees')
         .select('session_id')
@@ -93,20 +93,26 @@ export const useStudentUpcomingSessions = () => {
         
       if (attendeeError) {
         console.error("Error fetching attendee sessions:", attendeeError);
-        throw attendeeError;
       }
       
       console.log("Found attendee sessions:", attendeeSessions);
       
-      if (!attendeeSessions || attendeeSessions.length === 0) {
+      let sessionIds: string[] = [];
+      
+      if (attendeeSessions && attendeeSessions.length > 0) {
+        sessionIds = attendeeSessions.map(a => a.session_id);
+      } else {
+        // Fallback: get sessions from enrollments
         console.log("No attendee sessions found, checking enrollments...");
-        // Fallback to fetch from enrollments
         const { data: enrollments, error: enrollmentsError } = await supabase
           .from('enrollments')
           .select('course_id')
           .eq('student_id', user.id);
           
-        if (enrollmentsError) throw enrollmentsError;
+        if (enrollmentsError) {
+          console.error("Error fetching enrollments:", enrollmentsError);
+          return [];
+        }
         
         if (!enrollments || enrollments.length === 0) {
           console.log("No enrollments found");
@@ -116,27 +122,30 @@ export const useStudentUpcomingSessions = () => {
         const courseIds = enrollments.map(e => e.course_id);
         console.log("Checking course sessions for courses:", courseIds);
         
-        const { data, error } = await supabase
+        // Get sessions for enrolled courses
+        const { data: courseSessions, error: courseSessionsError } = await supabase
           .from('sessions')
-          .select(`
-            *,
-            course:courses(title)
-          `)
+          .select('id')
           .in('course_id', courseIds)
-          .gt('start_time', currentTime)
-          .in('status', ['scheduled', 'in_progress'])
-          .order('start_time', { ascending: true })
-          .limit(10);
+          .gt('end_time', currentTime) // Only future sessions
+          .in('status', ['scheduled', 'in_progress']);
           
-        if (error) throw error;
-        console.log("Found course sessions:", data);
-        return data;
+        if (courseSessionsError) {
+          console.error("Error fetching course sessions:", courseSessionsError);
+          return [];
+        }
+        
+        sessionIds = courseSessions?.map(s => s.id) || [];
       }
       
-      // If we have session attendees, fetch those specific sessions
-      const sessionIds = attendeeSessions.map(a => a.session_id);
-      console.log("Fetching specific sessions:", sessionIds);
+      if (sessionIds.length === 0) {
+        console.log("No session IDs found");
+        return [];
+      }
       
+      console.log("Fetching sessions with IDs:", sessionIds);
+      
+      // Fetch the actual session details
       const { data, error } = await supabase
         .from('sessions')
         .select(`
@@ -144,9 +153,10 @@ export const useStudentUpcomingSessions = () => {
           course:courses(title)
         `)
         .in('id', sessionIds)
-        .gt('start_time', currentTime)
+        .gt('end_time', currentTime) // Only sessions that haven't ended
         .in('status', ['scheduled', 'in_progress'])
-        .order('start_time', { ascending: true });
+        .order('start_time', { ascending: true })
+        .limit(20);
         
       if (error) {
         console.error("Error fetching sessions:", error);
@@ -154,8 +164,26 @@ export const useStudentUpcomingSessions = () => {
       }
       
       console.log("Final upcoming sessions data:", data);
-      return data;
+      
+      // Additional client-side filtering to ensure truly upcoming sessions
+      const filteredData = (data || []).filter(session => {
+        const sessionEnd = new Date(session.end_time);
+        const isUpcoming = sessionEnd > now;
+        
+        console.log("Client-side filtering session:", {
+          sessionId: session.id,
+          title: session.title,
+          endTime: session.end_time,
+          isUpcoming
+        });
+        
+        return isUpcoming;
+      });
+      
+      console.log("Final filtered sessions count:", filteredData.length);
+      return filteredData;
     },
     enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds to keep data fresh
   });
 };
