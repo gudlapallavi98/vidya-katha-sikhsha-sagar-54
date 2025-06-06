@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -54,6 +55,8 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         phone: '9999999999'
       };
 
+      console.log('Creating payment order with amount:', amount);
+
       const { data: orderData, error } = await supabase.functions.invoke('cashfree-payment', {
         body: {
           action: 'create_order',
@@ -65,17 +68,30 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
       });
 
       if (error || !orderData?.success) {
+        console.error('Payment order creation failed:', error, orderData);
         throw new Error(orderData?.error || error?.message || 'Failed to create order');
       }
 
-      const orderId = orderData.order_id;
-      window.open(orderData.payment_url, '_blank');
+      console.log('Payment order created successfully:', orderData);
 
+      const orderId = orderData.order_id;
+      const paymentUrl = orderData.payment_url;
+
+      if (!paymentUrl) {
+        throw new Error('Payment URL not received from gateway');
+      }
+
+      // Open payment in the same window instead of new tab
+      window.location.href = paymentUrl;
+
+      // Start polling for payment status immediately
       const pollInterval = setInterval(async () => {
         try {
           const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
             body: { action: 'verify_payment', order_id: orderId }
           });
+
+          console.log('Payment verification result:', verifyData);
 
           if (verifyData.success && verifyData.payment_status === 'PAID') {
             clearInterval(pollInterval);
@@ -96,7 +112,11 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         }
       }, 3000);
 
-      setTimeout(() => clearInterval(pollInterval), 300000);
+      // Stop polling after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        setIsProcessing(false);
+      }, 300000);
 
     } catch (error: any) {
       console.error("Payment error:", error);
@@ -205,8 +225,8 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
           {isProcessing && (
             <div className="text-center text-sm text-gray-600">
-              <p>A new window will open for payment.</p>
-              <p>Please complete the payment and return to this page.</p>
+              <p>You will be redirected to the payment gateway.</p>
+              <p>Please complete the payment to confirm your session.</p>
             </div>
           )}
         </div>

@@ -24,6 +24,28 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
 }) => {
   const navigate = useNavigate();
 
+  // Filter sessions to ensure they are truly upcoming
+  const filteredSessions = upcomingSessions.filter(session => {
+    const now = new Date();
+    const sessionStart = new Date(session.start_time);
+    const sessionEnd = new Date(session.end_time);
+    
+    // Only show sessions that haven't ended yet and are scheduled or in progress
+    const isUpcoming = isAfter(sessionEnd, now) && 
+                      (session.status === 'scheduled' || session.status === 'in_progress');
+    
+    console.log("Filtering session:", {
+      sessionId: session.id,
+      title: session.title,
+      startTime: session.start_time,
+      endTime: session.end_time,
+      status: session.status,
+      isUpcoming
+    });
+    
+    return isUpcoming;
+  });
+
   const getSessionStatus = (session: Session) => {
     const now = new Date();
     const sessionStart = new Date(session.start_time);
@@ -92,7 +114,7 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
       <DashboardHeader heading="Upcoming Sessions" />
       
       <DashboardCard isLoading={sessionsLoading}>
-        {upcomingSessions.length > 0 ? (
+        {filteredSessions.length > 0 ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -104,7 +126,7 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {upcomingSessions.map((session) => {
+              {filteredSessions.map((session) => {
                 const status = getSessionStatus(session);
                 
                 console.log("Rendering session:", {

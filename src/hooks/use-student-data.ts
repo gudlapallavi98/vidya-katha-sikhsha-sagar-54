@@ -79,8 +79,11 @@ export const useStudentUpcomingSessions = () => {
       
       console.log("Fetching upcoming sessions for student:", user.id);
       
-      const now = new Date().toISOString();
-      console.log("Current time for filtering:", now);
+      // Get current time and add a small buffer to ensure we get truly upcoming sessions
+      const now = new Date();
+      const currentTime = now.toISOString();
+      
+      console.log("Current time for filtering:", currentTime);
       
       // First, get sessions where the student is an attendee
       const { data: attendeeSessions, error: attendeeError } = await supabase
@@ -120,7 +123,8 @@ export const useStudentUpcomingSessions = () => {
             course:courses(title)
           `)
           .in('course_id', courseIds)
-          .gte('start_time', now)
+          .gt('start_time', currentTime)
+          .in('status', ['scheduled', 'in_progress'])
           .order('start_time', { ascending: true })
           .limit(10);
           
@@ -140,7 +144,8 @@ export const useStudentUpcomingSessions = () => {
           course:courses(title)
         `)
         .in('id', sessionIds)
-        .gte('start_time', now)
+        .gt('start_time', currentTime)
+        .in('status', ['scheduled', 'in_progress'])
         .order('start_time', { ascending: true });
         
       if (error) {
