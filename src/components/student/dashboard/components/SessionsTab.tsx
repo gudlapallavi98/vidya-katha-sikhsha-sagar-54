@@ -24,23 +24,23 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  // Filter sessions to ensure they are truly upcoming
+  // Filter sessions to ensure they are truly upcoming and current date forward
   const filteredSessions = upcomingSessions.filter(session => {
     const now = new Date();
     const sessionStart = new Date(session.start_time);
-    const sessionEnd = new Date(session.end_time);
     
-    // Only show sessions that haven't ended yet and are scheduled or in progress
-    const isUpcoming = isAfter(sessionEnd, now) && 
+    // Only show sessions that start today or in the future
+    const isUpcoming = sessionStart >= now && 
                       (session.status === 'scheduled' || session.status === 'in_progress');
     
     console.log("Filtering session:", {
       sessionId: session.id,
       title: session.title,
       startTime: session.start_time,
-      endTime: session.end_time,
       status: session.status,
-      isUpcoming
+      isUpcoming,
+      now: now.toISOString(),
+      sessionStart: sessionStart.toISOString()
     });
     
     return isUpcoming;
@@ -70,8 +70,11 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
       const timeDiff = sessionStart.getTime() - now.getTime();
       const minutesDiff = Math.floor(timeDiff / (1000 * 60));
       const hoursDiff = Math.floor(minutesDiff / 60);
+      const daysDiff = Math.floor(hoursDiff / 24);
       
-      if (hoursDiff > 0) {
+      if (daysDiff > 0) {
+        return { label: `Starts in ${daysDiff} day${daysDiff > 1 ? 's' : ''}`, variant: 'outline' as const };
+      } else if (hoursDiff > 0) {
         return { label: `Starts in ${hoursDiff}h ${minutesDiff % 60}m`, variant: 'outline' as const };
       } else if (minutesDiff > 0) {
         return { label: `Starts in ${minutesDiff}m`, variant: 'outline' as const };

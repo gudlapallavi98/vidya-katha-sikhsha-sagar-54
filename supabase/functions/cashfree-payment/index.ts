@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -26,7 +25,13 @@ serve(async (req) => {
     
     if (!clientId || !clientSecret) {
       console.error('Cashfree credentials not configured');
-      throw new Error('Cashfree credentials not configured');
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Cashfree credentials not configured. Please contact support.'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const cashfreeBaseUrl = 'https://sandbox.cashfree.com/pg'; // Using sandbox for testing
@@ -38,7 +43,13 @@ serve(async (req) => {
 
       // Validate required fields
       if (!amount || !sessionRequestId || !userId) {
-        throw new Error('Missing required fields: amount, sessionRequestId, or userId');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Missing required fields: amount, sessionRequestId, or userId'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       // Generate unique order ID
@@ -74,11 +85,29 @@ serve(async (req) => {
       });
 
       const responseText = await response.text();
-      console.log('Cashfree API response:', responseText);
+      console.log('Cashfree API response:', response.status, responseText);
 
       if (!response.ok) {
         console.error('Cashfree API error:', responseText);
-        throw new Error(`Cashfree API error: ${response.status} - ${responseText}`);
+        
+        // Check if it's an authentication error
+        if (response.status === 401) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Payment gateway authentication failed. Please contact support.'
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Payment gateway error: ${response.status}. Please try again or contact support.`
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       let orderData;
@@ -86,7 +115,13 @@ serve(async (req) => {
         orderData = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Failed to parse Cashfree response:', parseError);
-        throw new Error('Invalid response from payment gateway');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Invalid response from payment gateway. Please try again.'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       console.log('Cashfree order created successfully:', orderData);
@@ -94,7 +129,13 @@ serve(async (req) => {
       // Check if we have the payment_link in the response
       if (!orderData.payment_link) {
         console.error('No payment_link in Cashfree response:', orderData);
-        throw new Error('Payment URL not received from gateway');
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Payment URL not received from gateway. Please try again.'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       // Store payment record
@@ -113,7 +154,13 @@ serve(async (req) => {
 
       if (paymentError) {
         console.error('Error storing payment record:', paymentError);
-        throw paymentError;
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Failed to store payment record. Please try again.'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       return new Response(JSON.stringify({
@@ -203,15 +250,21 @@ serve(async (req) => {
       });
     }
 
-    throw new Error('Invalid action');
+    return new Response(JSON.stringify({
+      success: false,
+      error: 'Invalid action'
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
     console.error('Cashfree payment error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: error.message || 'An unexpected error occurred. Please try again.'
     }), {
-      status: 400,
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

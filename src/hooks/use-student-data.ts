@@ -122,12 +122,12 @@ export const useStudentUpcomingSessions = () => {
         const courseIds = enrollments.map(e => e.course_id);
         console.log("Checking course sessions for courses:", courseIds);
         
-        // Get sessions for enrolled courses
+        // Get sessions for enrolled courses that are truly in the future
         const { data: courseSessions, error: courseSessionsError } = await supabase
           .from('sessions')
           .select('id')
           .in('course_id', courseIds)
-          .gt('end_time', currentTime) // Only future sessions
+          .gte('start_time', currentTime) // Only sessions that start in the future
           .in('status', ['scheduled', 'in_progress']);
           
         if (courseSessionsError) {
@@ -145,7 +145,7 @@ export const useStudentUpcomingSessions = () => {
       
       console.log("Fetching sessions with IDs:", sessionIds);
       
-      // Fetch the actual session details
+      // Fetch the actual session details - only future sessions
       const { data, error } = await supabase
         .from('sessions')
         .select(`
@@ -153,7 +153,7 @@ export const useStudentUpcomingSessions = () => {
           course:courses(title)
         `)
         .in('id', sessionIds)
-        .gt('end_time', currentTime) // Only sessions that haven't ended
+        .gte('start_time', currentTime) // Only sessions that start in the future
         .in('status', ['scheduled', 'in_progress'])
         .order('start_time', { ascending: true })
         .limit(20);
@@ -167,13 +167,13 @@ export const useStudentUpcomingSessions = () => {
       
       // Additional client-side filtering to ensure truly upcoming sessions
       const filteredData = (data || []).filter(session => {
-        const sessionEnd = new Date(session.end_time);
-        const isUpcoming = sessionEnd > now;
+        const sessionStart = new Date(session.start_time);
+        const isUpcoming = sessionStart > now;
         
         console.log("Client-side filtering session:", {
           sessionId: session.id,
           title: session.title,
-          endTime: session.end_time,
+          startTime: session.start_time,
           isUpcoming
         });
         
