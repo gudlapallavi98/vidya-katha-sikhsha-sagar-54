@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -55,8 +54,12 @@ serve(async (req) => {
         });
       }
 
-      // Generate unique order ID
-      const orderId = `ORDER_${sessionRequestId}_${Date.now()}`;
+      // Generate shorter unique order ID (max 50 chars for Cashfree)
+      const timestamp = Date.now().toString();
+      const shortSessionId = sessionRequestId.slice(0, 8); // Take first 8 chars of session ID
+      const orderId = `ORD_${shortSessionId}_${timestamp}`;
+      
+      console.log('Generated order ID:', orderId, 'Length:', orderId.length);
       
       const orderRequest = {
         order_id: orderId,
