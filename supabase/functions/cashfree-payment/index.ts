@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -20,8 +21,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const clientId = Deno.env.get('CASHFREE_CLIENT_ID');
-    const clientSecret = Deno.env.get('CASHFREE_SECRET_KEY');
+    // Use the updated test credentials
+    const clientId = 'TEST106489623e2c172f530574b842ff26984601';
+    const clientSecret = 'cfsk_ma_test_0589d87377526934331f4b6aae6a61b0_c42796b2';
     
     if (!clientId || !clientSecret) {
       console.error('Cashfree credentials not configured');
@@ -34,12 +36,13 @@ serve(async (req) => {
       });
     }
 
-    const cashfreeBaseUrl = 'https://sandbox.cashfree.com/pg'; // Using sandbox for testing
+    // Using sandbox environment for test mode
+    const cashfreeBaseUrl = 'https://sandbox.cashfree.com/pg';
 
     if (action === 'create_order') {
       const { amount, sessionRequestId, userId, customerInfo } = data;
       
-      console.log('Creating Cashfree order:', { amount, sessionRequestId, userId, customerInfo });
+      console.log('Creating Cashfree order with test credentials:', { amount, sessionRequestId, userId, customerInfo });
 
       // Validate required fields
       if (!amount || !sessionRequestId || !userId) {
@@ -71,7 +74,7 @@ serve(async (req) => {
         }
       };
 
-      console.log('Sending order request to Cashfree:', orderRequest);
+      console.log('Sending order request to Cashfree sandbox:', orderRequest);
 
       const response = await fetch(`${cashfreeBaseUrl}/orders`, {
         method: 'POST',
@@ -94,7 +97,7 @@ serve(async (req) => {
         if (response.status === 401) {
           return new Response(JSON.stringify({
             success: false,
-            error: 'Payment gateway authentication failed. Please contact support.'
+            error: 'Payment gateway authentication failed. Please check test credentials.'
           }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
