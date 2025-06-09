@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -56,7 +55,7 @@ serve(async (req) => {
       }
 
       // Generate shorter unique order ID (max 50 chars for Cashfree)
-      const timestamp = Date.now().toString();
+      const timestamp = Date.now().toString().slice(-8); // Use last 8 digits
       const shortSessionId = sessionRequestId.slice(0, 8); // Take first 8 chars of session ID
       const orderId = `ORD_${shortSessionId}_${timestamp}`;
       
@@ -78,7 +77,7 @@ serve(async (req) => {
         order_amount: parseFloat(amount.toString()),
         order_currency: 'INR',
         customer_details: {
-          customer_id: userId,
+          customer_id: userId.slice(0, 50), // Limit customer ID length
           customer_name: customerInfo?.name || 'Student',
           customer_email: customerInfo?.email || 'student@example.com',
           customer_phone: customerInfo?.phone || '9999999999'
@@ -144,9 +143,9 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // Generate payment URL from session ID since payment_link might not be available in test mode
+      // Generate correct payment URL for sandbox environment
       const paymentUrl = orderData.payment_link || 
-        `https://test.cashfree.com/billpay/checkout/post/submit?order_id=${orderId}&cf_id=${orderData.cf_order_id}`;
+        `https://sandbox.cashfree.com/pg/orders/${orderId}/pay`;
 
       console.log('Using payment URL:', paymentUrl);
 
@@ -186,10 +185,30 @@ serve(async (req) => {
     }
 
     if (action === 'payment_return') {
-      const { order_id } = data;
+      const url = new URL(req.url);
+      const order_id = url.searchParams.get('order_id');
       console.log('Payment return for order:', order_id);
       
-      // Redirect to a success/failure page based on payment status
+      if (!order_id) {
+        return new Response(`
+          <html>
+            <head><title>Payment Error</title></head>
+            <body>
+              <h1>Payment Error</h1>
+              <p>Invalid payment return request.</p>
+              <script>
+                setTimeout(() => {
+                  window.close();
+                }, 3000);
+              </script>
+            </body>
+          </html>
+        `, {
+          headers: { 'Content-Type': 'text/html' }
+        });
+      }
+      
+      // Verify payment status
       const verifyResult = await verifyPayment(order_id, supabase, clientId, clientSecret, cashfreeBaseUrl);
       
       if (verifyResult.success && verifyResult.payment_status === 'PAID') {
@@ -202,7 +221,9 @@ serve(async (req) => {
               <script>
                 setTimeout(() => {
                   window.close();
-                  window.opener && window.opener.location.reload();
+                  if (window.opener) {
+                    window.opener.location.reload();
+                  }
                 }, 3000);
               </script>
             </body>
