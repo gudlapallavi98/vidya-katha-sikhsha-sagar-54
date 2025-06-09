@@ -144,8 +144,8 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // Use the correct payment session URL for Cashfree
-      const paymentUrl = `https://sandbox.cashfree.com/pg/orders/sessions/${orderData.payment_session_id}`;
+      // Use the correct Cashfree sandbox checkout URL
+      const paymentUrl = `https://checkout.cashfree.com/links/${orderData.payment_session_id}`;
 
       console.log('Using payment URL:', paymentUrl);
 
