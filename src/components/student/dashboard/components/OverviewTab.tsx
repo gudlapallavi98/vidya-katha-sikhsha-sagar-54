@@ -14,6 +14,7 @@ import {
   Play,
   ArrowRight
 } from "lucide-react";
+import { format } from "date-fns";
 
 interface OverviewTabProps {
   enrolledCourses: any[];
@@ -32,12 +33,22 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   progress,
   handleJoinClass,
 }) => {
-  // Mock data for demonstration
+  // Use real data instead of mock data
   const stats = {
     enrolledCourses: enrolledCourses.length,
     upcomingSessions: upcomingSessions.length,
-    completedSessions: 12,
-    achievementPoints: 285
+    completedSessions: 12, // This could be calculated from actual data if available
+    achievementPoints: 285 // This could be calculated from actual data if available
+  };
+
+  const formatSessionDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'MMM dd, h:mm a');
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
   };
 
   return (
@@ -126,20 +137,20 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 ))}
               </div>
             ) : upcomingSessions.length > 0 ? (
-              upcomingSessions.slice(0, 3).map((session, index) => (
-                <div key={index} className="p-4 bg-white rounded-xl border border-gray-100 hover:border-[#FF9933]/30 transition-all duration-200 group">
+              upcomingSessions.slice(0, 3).map((session) => (
+                <div key={session.id} className="p-4 bg-white rounded-xl border border-gray-100 hover:border-[#FF9933]/30 transition-all duration-200 group">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h4 className="font-semibold text-gray-900 group-hover:text-[#FF9933] transition-colors">
-                        {session.title || "Mathematics Session"}
+                        {session.title}
                       </h4>
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
-                          June 4, 2:00 PM
+                          {formatSessionDate(session.start_time)}
                         </span>
                         <Badge variant="outline" className="text-xs">
-                          Individual
+                          {session.course?.title ? 'Course' : 'Individual'}
                         </Badge>
                       </div>
                     </div>
@@ -191,37 +202,45 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 ))}
               </div>
             ) : enrolledCourses.length > 0 ? (
-              enrolledCourses.slice(0, 3).map((course, index) => (
-                <div key={index} className="p-4 bg-white rounded-xl border border-gray-100 hover:border-[#138808]/30 transition-all duration-200 group">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold text-gray-900 group-hover:text-[#138808] transition-colors">
-                      {course.title || `Course ${index + 1}`}
-                    </h4>
-                    <Badge variant="secondary" className="text-xs">
-                      {Math.floor(Math.random() * 50 + 30)}% Complete
-                    </Badge>
+              enrolledCourses.slice(0, 3).map((enrollment) => {
+                const course = enrollment.course || enrollment;
+                const courseProgress = course.total_lessons > 0 
+                  ? Math.round((enrollment.completed_lessons / course.total_lessons) * 100)
+                  : 0;
+                const lessonsRemaining = course.total_lessons - (enrollment.completed_lessons || 0);
+                
+                return (
+                  <div key={enrollment.id} className="p-4 bg-white rounded-xl border border-gray-100 hover:border-[#138808]/30 transition-all duration-200 group">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900 group-hover:text-[#138808] transition-colors">
+                        {course.title}
+                      </h4>
+                      <Badge variant="secondary" className="text-xs">
+                        {courseProgress}% Complete
+                      </Badge>
+                    </div>
+                    
+                    <Progress 
+                      value={courseProgress} 
+                      className="mb-3 h-2"
+                    />
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600">
+                        {lessonsRemaining} lessons remaining
+                      </span>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="border-[#FF9933] text-[#FF9933] hover:bg-[#FF9933] hover:text-white group-hover:scale-105 transition-all"
+                      >
+                        Continue
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
                   </div>
-                  
-                  <Progress 
-                    value={Math.floor(Math.random() * 50 + 30)} 
-                    className="mb-3 h-2"
-                  />
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      {Math.floor(Math.random() * 10 + 5)} lessons remaining
-                    </span>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="border-[#FF9933] text-[#FF9933] hover:bg-[#FF9933] hover:text-white group-hover:scale-105 transition-all"
-                    >
-                      Continue
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <BookOpen className="h-12 w-12 mx-auto mb-3 text-gray-300" />
