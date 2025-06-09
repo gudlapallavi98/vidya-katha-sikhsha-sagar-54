@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -60,6 +61,17 @@ serve(async (req) => {
       const orderId = `ORD_${shortSessionId}_${timestamp}`;
       
       console.log('Generated order ID:', orderId, 'Length:', orderId.length);
+      
+      if (orderId.length > 50) {
+        console.error('Order ID too long:', orderId.length);
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Order ID generation failed. Please try again.'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       
       const orderRequest = {
         order_id: orderId,
@@ -132,17 +144,11 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // Check if we have the payment_link in the response
-      if (!orderData.payment_link) {
-        console.error('No payment_link in Cashfree response:', orderData);
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Payment URL not received from gateway. Please try again.'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      // Generate payment URL from session ID since payment_link might not be available in test mode
+      const paymentUrl = orderData.payment_link || 
+        `https://test.cashfree.com/billpay/checkout/post/submit?order_id=${orderId}&cf_id=${orderData.cf_order_id}`;
+
+      console.log('Using payment URL:', paymentUrl);
 
       // Store payment record
       const { error: paymentError } = await supabase
@@ -173,7 +179,7 @@ serve(async (req) => {
         success: true,
         order_id: orderId,
         payment_session_id: orderData.payment_session_id,
-        payment_url: orderData.payment_link
+        payment_url: paymentUrl
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePricing } from "@/utils/pricingUtils";
@@ -9,17 +10,18 @@ export const useSessionRequestHandlers = (
 ) => {
   const { user } = useAuth();
 
- const calculateDurationFromTimeSlot = (startTime: string, endTime: string): number => {
-  try {
-    const start = new Date(`2000-01-01T${startTime}`); // ✅ FIXED: removed extra :00
-    const end = new Date(`2000-01-01T${endTime}`);
-    const durationMs = end.getTime() - start.getTime();
-    return Math.floor(durationMs / (1000 * 60));
-  } catch (error) {
-    console.error("Error calculating duration:", error);
-    return 60;
-  }
-};
+  const calculateDurationFromTimeSlot = (startTime: string, endTime: string): number => {
+    try {
+      const start = new Date(`2000-01-01T${startTime}`);
+      const end = new Date(`2000-01-01T${endTime}`);
+      const durationMs = end.getTime() - start.getTime();
+      return Math.floor(durationMs / (1000 * 60));
+    } catch (error) {
+      console.error("Error calculating duration:", error);
+      return 60;
+    }
+  };
+
   const handleSelectTeacher = (teacherId: string) => {
     console.log("Teacher selected:", teacherId);
     setState(prev => ({
@@ -37,6 +39,26 @@ export const useSessionRequestHandlers = (
 
     console.log("Processing slot selection:", slot);
 
+    // Check if there's already a pending request for this slot
+    const { data: existingRequests, error: checkError } = await supabase
+      .from('session_requests')
+      .select('id, status')
+      .eq('student_id', user.id)
+      .eq('teacher_id', state.selectedTeacherId)
+      .eq('availability_id', slot.id)
+      .in('status', ['pending', 'approved']);
+
+    if (checkError) {
+      console.error("Error checking existing requests:", checkError);
+      return;
+    }
+
+    if (existingRequests && existingRequests.length > 0) {
+      console.log("Request already exists for this slot:", existingRequests);
+      alert("You already have a pending or approved request for this time slot.");
+      return;
+    }
+
     const type = slot.session_type === 'individual' ? 'individual' : 'course';
 
     setState(prev => ({
@@ -52,7 +74,6 @@ export const useSessionRequestHandlers = (
 
       const pricing = calculatePricing(teacherRate);
 
-      // ✅ Fixing date parsing logic
       const slotStartDateTimeString = `${slot.available_date}T${slot.start_time}`;
       const slotEndDateTimeString = `${slot.available_date}T${slot.end_time}`;
 

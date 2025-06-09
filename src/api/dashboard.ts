@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { calculatePricing, createPaymentRecord } from '@/utils/pricingUtils';
 
@@ -40,6 +41,8 @@ export const acceptSessionRequest = async (requestId: string) => {
 
     // If there's an availability_id, update the availability to mark it as booked
     if (request.availability_id) {
+      console.log("Updating availability status to booked for ID:", request.availability_id);
+      
       const { error: availabilityError } = await supabase
         .from('teacher_availability')
         .update({ 
@@ -51,6 +54,8 @@ export const acceptSessionRequest = async (requestId: string) => {
       if (availabilityError) {
         console.error("Availability update error:", availabilityError);
         // Don't throw here as the main operation succeeded
+      } else {
+        console.log("Successfully updated availability to booked");
       }
     }
     
@@ -183,6 +188,8 @@ export const rejectSessionRequest = async (requestId: string) => {
 
     // If there was an availability slot, make it available again
     if (request.availability_id) {
+      console.log("Updating availability status back to available for ID:", request.availability_id);
+      
       const { error: availabilityError } = await supabase
         .from('teacher_availability')
         .update({ 
@@ -194,6 +201,8 @@ export const rejectSessionRequest = async (requestId: string) => {
       if (availabilityError) {
         console.error("Availability update error:", availabilityError);
         // Don't throw here as the main operation succeeded
+      } else {
+        console.log("Successfully updated availability back to available");
       }
     }
     
