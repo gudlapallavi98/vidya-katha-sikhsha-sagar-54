@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -143,9 +144,8 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // Generate correct payment URL for sandbox environment
-      const paymentUrl = orderData.payment_link || 
-        `https://sandbox.cashfree.com/pg/orders/${orderId}/pay`;
+      // Use the correct payment session URL for Cashfree
+      const paymentUrl = `https://sandbox.cashfree.com/pg/orders/sessions/${orderData.payment_session_id}`;
 
       console.log('Using payment URL:', paymentUrl);
 
