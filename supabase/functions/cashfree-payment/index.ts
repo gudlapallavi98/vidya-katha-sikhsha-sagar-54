@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -21,8 +22,8 @@ serve(async (req) => {
     );
 
     // Use production credentials
-    const clientId = '98605539c17d394daf9e37952f550689';
-    const clientSecret = 'cfsk_ma_prod_01e87fed9afbeda3f9cac36d06f18392_532e4ce2';
+    const clientId = Deno.env.get('CASHFREE_CLIENT_ID') ?? '';
+    const clientSecret = Deno.env.get('CASHFREE_CLIENT_SECRET') ?? '';
     
     if (!clientId || !clientSecret) {
       console.error('Cashfree credentials not configured');
@@ -55,8 +56,8 @@ serve(async (req) => {
       }
 
       // Generate shorter unique order ID (max 50 chars for Cashfree)
-      const timestamp = Date.now().toString().slice(-8); // Use last 8 digits
-      const shortSessionId = sessionRequestId.slice(0, 8); // Take first 8 chars of session ID
+      const timestamp = Date.now().toString().slice(-8);
+      const shortSessionId = sessionRequestId.slice(0, 8);
       const orderId = `ORD_${shortSessionId}_${timestamp}`;
       
       console.log('Generated order ID:', orderId, 'Length:', orderId.length);
@@ -77,7 +78,7 @@ serve(async (req) => {
         order_amount: parseFloat(amount.toString()),
         order_currency: 'INR',
         customer_details: {
-          customer_id: userId.slice(0, 50), // Limit customer ID length
+          customer_id: userId.slice(0, 50),
           customer_name: customerInfo?.name || 'Student',
           customer_email: customerInfo?.email || 'student@example.com',
           customer_phone: customerInfo?.phone || '9999999999'
@@ -107,7 +108,6 @@ serve(async (req) => {
       if (!response.ok) {
         console.error('Cashfree API error:', responseText);
         
-        // Check if it's an authentication error
         if (response.status === 401) {
           return new Response(JSON.stringify({
             success: false,
@@ -143,25 +143,7 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // For production, redirect directly to the payment session URL
-      let paymentUrl;
-      if (orderData.payment_session_id) {
-        // Create a direct payment link for production
-        paymentUrl = `https://payments.cashfree.com/forms/${orderData.payment_session_id}`;
-      } else {
-        console.error('No payment_session_id in response:', orderData);
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Payment session not created. Please try again.'
-        }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      console.log('Using payment URL:', paymentUrl);
-
-      // Store payment record
+      // Store payment record first
       const { error: paymentError } = await supabase
         .from('payment_history')
         .insert({
@@ -186,11 +168,12 @@ serve(async (req) => {
         });
       }
 
+      // Return the payment session ID for frontend to handle checkout
       return new Response(JSON.stringify({
         success: true,
         order_id: orderId,
         payment_session_id: orderData.payment_session_id,
-        payment_url: paymentUrl
+        cf_order_id: orderData.cf_order_id
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

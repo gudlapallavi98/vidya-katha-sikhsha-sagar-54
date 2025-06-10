@@ -17,6 +17,22 @@ interface CashfreePaymentFormProps {
   onBack: () => void;
 }
 
+// Load Cashfree Checkout script
+const loadCashfreeCheckout = () => {
+  return new Promise((resolve, reject) => {
+    if (window.Cashfree) {
+      resolve(window.Cashfree);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://sdk.cashfree.com/js/v3/cashfree.js';
+    script.onload = () => resolve(window.Cashfree);
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
+
 export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
   availability,
   type,
@@ -91,84 +107,53 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
       console.log('Payment order created successfully:', orderData);
 
-      const paymentUrl = orderData.payment_url;
-      if (!paymentUrl) {
-        throw new Error('Payment URL not received from gateway');
-      }
+      // Load Cashfree Checkout SDK
+      await loadCashfreeCheckout();
 
-      // Open payment in popup window
-      const paymentWindow = window.open(
-        paymentUrl,
-        'payment',
-        'width=800,height=600,scrollbars=yes,resizable=yes'
-      );
+      // Initialize Cashfree with production environment
+      const cashfree = window.Cashfree({
+        mode: "production" // Use production mode
+      });
 
-      if (!paymentWindow) {
-        // Fallback: redirect in same window if popup is blocked
-        window.location.href = paymentUrl;
-        return;
-      }
+      // Configure checkout options
+      const checkoutOptions = {
+        paymentSessionId: orderData.payment_session_id,
+        returnUrl: `https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/cashfree-payment?action=payment_return&order_id=${orderData.order_id}`,
+      };
 
-      // Poll for payment completion
-      const pollInterval = setInterval(async () => {
-        try {
-          // Check if payment window is closed
-          if (paymentWindow.closed) {
-            clearInterval(pollInterval);
-            setIsProcessing(false);
-            
-            // Verify payment status
-            const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
-              body: { action: 'verify_payment', order_id: orderData.order_id }
-            });
+      console.log('Initiating Cashfree checkout with options:', checkoutOptions);
 
-            if (verifyData?.success && verifyData.payment_status === 'PAID') {
-              toast({ title: "Payment Successful" });
-              onPaymentSuccess();
-            } else {
-              toast({
-                variant: "destructive",
-                title: "Payment Status Unclear",
-                description: "Please check your payment history or contact support.",
-              });
-            }
-            return;
-          }
-
-          // Also check payment status while window is open
-          const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
-            body: { action: 'verify_payment', order_id: orderData.order_id }
+      // Open Cashfree checkout
+      cashfree.checkout(checkoutOptions).then((result: any) => {
+        console.log('Checkout result:', result);
+        
+        if (result.error) {
+          console.error('Checkout error:', result.error);
+          toast({
+            variant: "destructive",
+            title: "Payment Error",
+            description: result.error.message || "Payment failed. Please try again.",
           });
-
-          if (verifyData?.success && verifyData.payment_status === 'PAID') {
-            clearInterval(pollInterval);
-            paymentWindow.close();
-            setIsProcessing(false);
-            toast({ title: "Payment Successful" });
-            onPaymentSuccess();
-          } else if (verifyData?.payment_status === 'FAILED') {
-            clearInterval(pollInterval);
-            paymentWindow.close();
-            setIsProcessing(false);
-            toast({
-              variant: "destructive",
-              title: "Payment Failed",
-              description: "Your payment was not successful. Please try again.",
-            });
-          }
-        } catch (err) {
-          console.error("Polling error:", err);
+          setIsProcessing(false);
+          return;
         }
-      }, 3000);
 
-      // Stop polling after 10 minutes
-      setTimeout(() => {
-        clearInterval(pollInterval);
-        if (!paymentWindow.closed) {
-          paymentWindow.close();
+        if (result.redirect) {
+          console.log('Payment redirect:', result.redirect);
+          // Handle redirect if needed
         }
+
+        // Verify payment after checkout
+        verifyPaymentStatus(orderData.order_id);
+      }).catch((error: any) => {
+        console.error('Checkout initiation error:', error);
+        toast({
+          variant: "destructive",
+          title: "Payment Error",
+          description: "Failed to open payment window. Please try again.",
+        });
         setIsProcessing(false);
-      }, 600000);
+      });
 
     } catch (error: any) {
       console.error("Payment error:", error);
@@ -177,6 +162,35 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         variant: "destructive",
         title: "Payment Error",
         description: error?.message || "Failed to initiate payment. Please try again.",
+      });
+    }
+  };
+
+  const verifyPaymentStatus = async (orderId: string) => {
+    try {
+      const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
+        body: { action: 'verify_payment', order_id: orderId }
+      });
+
+      if (verifyData?.success && verifyData.payment_status === 'PAID') {
+        setIsProcessing(false);
+        toast({ title: "Payment Successful" });
+        onPaymentSuccess();
+      } else {
+        setIsProcessing(false);
+        toast({
+          variant: "destructive",
+          title: "Payment Status Unclear",
+          description: "Please check your payment history or contact support.",
+        });
+      }
+    } catch (err) {
+      console.error("Payment verification error:", err);
+      setIsProcessing(false);
+      toast({
+        variant: "destructive",
+        title: "Payment Verification Failed",
+        description: "Please contact support for assistance.",
       });
     }
   };
@@ -284,7 +298,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
           {isProcessing && (
             <div className="text-center text-sm text-gray-600">
-              <p>A payment window will open. Please complete the payment there.</p>
+              <p>Please complete the payment in the Cashfree checkout window.</p>
               <p>This page will automatically update once payment is completed.</p>
             </div>
           )}
