@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -21,12 +20,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Use production credentials
+    // Use production credentials - fixed the secret key name
     const clientId = Deno.env.get('CASHFREE_CLIENT_ID') ?? '';
-    const clientSecret = Deno.env.get('CASHFREE_CLIENT_SECRET') ?? '';
+    const clientSecret = Deno.env.get('CASHFREE_SECRET_KEY') ?? ''; // Changed from CASHFREE_CLIENT_SECRET
     
     if (!clientId || !clientSecret) {
-      console.error('Cashfree credentials not configured');
+      console.error('Cashfree credentials not configured:', { 
+        hasClientId: !!clientId, 
+        hasClientSecret: !!clientSecret 
+      });
       return new Response(JSON.stringify({
         success: false,
         error: 'Cashfree credentials not configured. Please contact support.'
