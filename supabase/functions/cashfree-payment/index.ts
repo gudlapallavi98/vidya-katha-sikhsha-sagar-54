@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -21,9 +20,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Use the updated test credentials
-    const clientId = 'TEST106489623e2c172f530574b842ff26984601';
-    const clientSecret = 'cfsk_ma_test_0589d87377526934331f4b6aae6a61b0_c42796b2';
+    // Use production credentials
+    const clientId = '98605539c17d394daf9e37952f550689';
+    const clientSecret = 'cfsk_ma_prod_01e87fed9afbeda3f9cac36d06f18392_532e4ce2';
     
     if (!clientId || !clientSecret) {
       console.error('Cashfree credentials not configured');
@@ -36,13 +35,13 @@ serve(async (req) => {
       });
     }
 
-    // Using sandbox environment for test mode
-    const cashfreeBaseUrl = 'https://sandbox.cashfree.com/pg';
+    // Using production environment
+    const cashfreeBaseUrl = 'https://api.cashfree.com/pg';
 
     if (action === 'create_order') {
       const { amount, sessionRequestId, userId, customerInfo } = data;
       
-      console.log('Creating Cashfree order with test credentials:', { amount, sessionRequestId, userId, customerInfo });
+      console.log('Creating Cashfree order with production credentials:', { amount, sessionRequestId, userId, customerInfo });
 
       // Validate required fields
       if (!amount || !sessionRequestId || !userId) {
@@ -89,7 +88,7 @@ serve(async (req) => {
         }
       };
 
-      console.log('Sending order request to Cashfree sandbox:', orderRequest);
+      console.log('Sending order request to Cashfree production:', orderRequest);
 
       const response = await fetch(`${cashfreeBaseUrl}/orders`, {
         method: 'POST',
@@ -112,7 +111,7 @@ serve(async (req) => {
         if (response.status === 401) {
           return new Response(JSON.stringify({
             success: false,
-            error: 'Payment gateway authentication failed. Please check test credentials.'
+            error: 'Payment gateway authentication failed. Please check production credentials.'
           }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -144,7 +143,7 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // Use the correct Cashfree sandbox checkout URL
+      // Use the correct Cashfree production checkout URL
       const paymentUrl = `https://checkout.cashfree.com/links/${orderData.payment_session_id}`;
 
       console.log('Using payment URL:', paymentUrl);
