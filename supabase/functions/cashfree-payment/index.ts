@@ -143,10 +143,10 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // For production, use the payment_session_id directly to create checkout URL
+      // For production, redirect directly to the payment session URL
       let paymentUrl;
       if (orderData.payment_session_id) {
-        // Use the correct production checkout URL format
+        // Create a direct payment link for production
         paymentUrl = `https://payments.cashfree.com/forms/${orderData.payment_session_id}`;
       } else {
         console.error('No payment_session_id in response:', orderData);
