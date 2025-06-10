@@ -143,8 +143,21 @@ serve(async (req) => {
 
       console.log('Cashfree order created successfully:', orderData);
 
-      // Use the correct Cashfree production checkout URL
-      const paymentUrl = `https://checkout.cashfree.com/links/${orderData.payment_session_id}`;
+      // For production, use the payment_session_id directly to create checkout URL
+      let paymentUrl;
+      if (orderData.payment_session_id) {
+        // Use the correct production checkout URL format
+        paymentUrl = `https://payments.cashfree.com/forms/${orderData.payment_session_id}`;
+      } else {
+        console.error('No payment_session_id in response:', orderData);
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Payment session not created. Please try again.'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       console.log('Using payment URL:', paymentUrl);
 
