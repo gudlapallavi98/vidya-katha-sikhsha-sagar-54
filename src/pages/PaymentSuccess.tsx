@@ -12,7 +12,7 @@ export default function PaymentSuccess() {
       return;
     }
 
-    fetch(`/api/verify-payment?order_id=${orderId}`)
+    fetch(`https://nxdsszdobgbikrnqqrue.functions.supabase.co/verify-payment?order_id=${orderId}`)
   .then(async (res) => {
     const contentType = res.headers.get("Content-Type");
     if (!res.ok || !contentType?.includes("application/json")) {
