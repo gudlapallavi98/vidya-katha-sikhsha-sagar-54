@@ -12,22 +12,26 @@ export default function PaymentSuccess() {
       return;
     }
 
-    fetch(`https://etutorss.com/api/verify-payment?order_id=${orderId}`)
-      .then(res => {
-        if (!res.ok) throw new Error("Verification failed");
-        return res.json();
-      })
-      .then(data => {
-        if (data.verified) {
-          setStatus("✅ Payment verified! Redirecting...");
-          setTimeout(() => {
-            window.location.href = "/session-confirmation";
-          }, 3000);
-        } else {
-          throw new Error("Payment could not be verified.");
-        }
-      })
-      .catch(err => setError(err.message || "Something went wrong."));
+    fetch(`/api/verify-payment?order_id=${orderId}`)
+  .then(async (res) => {
+    const contentType = res.headers.get("Content-Type");
+    if (!res.ok || !contentType?.includes("application/json")) {
+      const errorText = await res.text();
+      throw new Error("Invalid response: " + errorText);
+    }
+    return res.json();
+  })
+  .then((data) => {
+    if (data.verified) {
+      setStatus("✅ Payment verified! Redirecting...");
+      setTimeout(() => {
+        window.location.href = "/session-confirmation";
+      }, 3000);
+    } else {
+      throw new Error("Payment could not be verified.");
+    }
+  })
+  .catch((err) => setError(err.message || "Something went wrong."));
   }, []);
 
   return (
