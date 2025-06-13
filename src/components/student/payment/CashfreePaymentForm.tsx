@@ -195,40 +195,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
     }
   };
 
-  const handleTestPayment = async () => {
-    if (!user || !sessionRequestId) return;
-
-    setIsProcessing(true);
-    try {
-      const { error: updateError } = await supabase
-        .from("session_requests")
-        .update({
-          payment_status: "completed",
-          status: "pending"
-        })
-        .eq("id", sessionRequestId);
-
-      if (updateError) {
-        throw updateError;
-      }
-
-      toast({
-        title: "Payment Marked as Completed",
-        description: "Session request moved to pending status."
-      });
-      onPaymentSuccess();
-    } catch (error: any) {
-      console.error("Test payment error:", error);
-      toast({
-        variant: "destructive",
-        title: "Test Payment Failed",
-        description: error.message || "Failed to mark payment as completed."
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -285,15 +251,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
                 Pay {formatCurrency(amount)}
               </>
             )}
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={handleTestPayment}
-            disabled={isProcessing}
-            className="w-full"
-          >
-            ✅ Mark as Paid (Test)
           </Button>
 
           {isProcessing && (

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -14,16 +13,33 @@ serve(async (req) => {
   }
 
   try {
-    const { action, ...data } = await req.json();
+    let action, data;
+    
+    // Handle GET requests (like payment_return) that don't have JSON body
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      action = url.searchParams.get('action');
+      data = Object.fromEntries(url.searchParams.entries());
+    } else {
+      // Handle POST requests with JSON body
+      const requestBody = await req.text();
+      if (requestBody) {
+        const parsedBody = JSON.parse(requestBody);
+        action = parsedBody.action;
+        data = parsedBody;
+      } else {
+        throw new Error('No request body provided');
+      }
+    }
     
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Use production credentials - fixed the secret key name
+    // Use production credentials
     const clientId = Deno.env.get('CASHFREE_CLIENT_ID') ?? '';
-    const clientSecret = Deno.env.get('CASHFREE_SECRET_KEY') ?? ''; // Changed from CASHFREE_CLIENT_SECRET
+    const clientSecret = Deno.env.get('CASHFREE_SECRET_KEY') ?? '';
     
     if (!clientId || !clientSecret) {
       console.error('Cashfree credentials not configured:', { 
@@ -183,8 +199,7 @@ serve(async (req) => {
     }
 
     if (action === 'payment_return') {
-      const url = new URL(req.url);
-      const order_id = url.searchParams.get('order_id');
+      const order_id = data.order_id;
       console.log('Payment return for order:', order_id);
       
       if (!order_id) {
