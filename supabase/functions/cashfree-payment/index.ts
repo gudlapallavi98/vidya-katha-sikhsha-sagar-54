@@ -229,16 +229,22 @@ serve(async (req) => {
           <html>
             <head><title>Payment Successful</title></head>
             <body>
-              <h1>Payment Successful!</h1>
-              <p>Your payment has been processed successfully.</p>
-              <script>
-                setTimeout(() => {
-                  window.close();
-                  if (window.opener) {
-                    window.opener.location.reload();
-                  }
-                }, 3000);
-              </script>
+              <div style="text-align: center; font-family: Arial, sans-serif; padding: 50px;">
+                <h1 style="color: green;">✅ Payment Successful!</h1>
+                <p>Your payment has been processed successfully.</p>
+                <p>Your session request has been sent to the teacher for approval.</p>
+                <p>You will receive a confirmation email shortly.</p>
+                <p style="margin-top: 30px;">This window will close automatically...</p>
+                <script>
+                  setTimeout(() => {
+                    window.close();
+                    if (window.opener) {
+                      window.opener.postMessage('payment_success', '*');
+                      window.opener.location.href = '/student-dashboard?tab=sessions';
+                    }
+                  }, 3000);
+                </script>
+              </div>
             </body>
           </html>
         `, {
@@ -249,13 +255,19 @@ serve(async (req) => {
           <html>
             <head><title>Payment Failed</title></head>
             <body>
-              <h1>Payment Failed</h1>
-              <p>Your payment could not be processed. Please try again.</p>
-              <script>
-                setTimeout(() => {
-                  window.close();
-                }, 3000);
-              </script>
+              <div style="text-align: center; font-family: Arial, sans-serif; padding: 50px;">
+                <h1 style="color: red;">❌ Payment Failed</h1>
+                <p>Your payment could not be processed. Please try again.</p>
+                <p style="margin-top: 30px;">This window will close automatically...</p>
+                <script>
+                  setTimeout(() => {
+                    window.close();
+                    if (window.opener) {
+                      window.opener.postMessage('payment_failed', '*');
+                    }
+                  }, 3000);
+                </script>
+              </div>
             </body>
           </html>
         `, {
@@ -350,7 +362,7 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
     throw updateError;
   }
 
-  // If payment is successful, update session request
+  // If payment is successful, update session request and make it ready for teacher approval
   if (orderData.order_status === 'PAID') {
     const { data: paymentRecord, error: paymentFetchError } = await supabase
       .from('payment_history')
@@ -363,13 +375,15 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
         .from('session_requests')
         .update({
           payment_status: 'completed',
-          status: 'pending',
+          status: 'pending', // Ready for teacher approval
           updated_at: new Date().toISOString()
         })
         .eq('id', paymentRecord.session_request_id);
 
       if (sessionUpdateError) {
         console.error('Error updating session request:', sessionUpdateError);
+      } else {
+        console.log('Session request updated to pending status for teacher approval');
       }
     }
   }

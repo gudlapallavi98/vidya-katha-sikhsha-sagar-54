@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, CreditCard, Loader2 } from "lucide-react";
@@ -44,6 +44,32 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Listen for payment success message from popup window
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data === 'payment_success') {
+        console.log('Payment success message received from popup');
+        setIsProcessing(false);
+        toast({
+          title: "Payment Successful!",
+          description: "Your session request has been sent to the teacher for approval.",
+        });
+        onPaymentSuccess();
+      } else if (event.data === 'payment_failed') {
+        console.log('Payment failed message received from popup');
+        setIsProcessing(false);
+        toast({
+          variant: "destructive",
+          title: "Payment Failed",
+          description: "Your payment could not be processed. Please try again.",
+        });
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [toast, onPaymentSuccess]);
 
   const handlePayment = async () => {
     if (!user) {
@@ -140,11 +166,10 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
         if (result.redirect) {
           console.log('Payment redirect:', result.redirect);
-          // Handle redirect if needed
+          // Payment window will handle the redirect and send message back
         }
 
-        // Verify payment after checkout
-        verifyPaymentStatus(orderData.order_id);
+        // The payment result will be handled by the message listener
       }).catch((error: any) => {
         console.error('Checkout initiation error:', error);
         toast({
@@ -162,35 +187,6 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         variant: "destructive",
         title: "Payment Error",
         description: error?.message || "Failed to initiate payment. Please try again.",
-      });
-    }
-  };
-
-  const verifyPaymentStatus = async (orderId: string) => {
-    try {
-      const { data: verifyData } = await supabase.functions.invoke('cashfree-payment', {
-        body: { action: 'verify_payment', order_id: orderId }
-      });
-
-      if (verifyData?.success && verifyData.payment_status === 'PAID') {
-        setIsProcessing(false);
-        toast({ title: "Payment Successful" });
-        onPaymentSuccess();
-      } else {
-        setIsProcessing(false);
-        toast({
-          variant: "destructive",
-          title: "Payment Status Unclear",
-          description: "Please check your payment history or contact support.",
-        });
-      }
-    } catch (err) {
-      console.error("Payment verification error:", err);
-      setIsProcessing(false);
-      toast({
-        variant: "destructive",
-        title: "Payment Verification Failed",
-        description: "Please contact support for assistance.",
       });
     }
   };
