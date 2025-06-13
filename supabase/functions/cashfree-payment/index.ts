@@ -240,16 +240,19 @@ serve(async (req) => {
               <div class="container">
                 <h1 class="success">✅ Payment Successful!</h1>
                 <p>Your payment has been processed successfully.</p>
-                <p><strong>Next Step:</strong> Please confirm to send your session request to the teacher for approval.</p>
-                <p>If the teacher rejects your request, the amount will be automatically refunded to your account within 3-5 business days.</p>
-                <button class="btn" onclick="confirmAndRedirect()">Confirm & Send Request to Teacher</button>
-                <p style="margin-top: 30px; font-size: 14px; color: #666;">This window will redirect you back to the dashboard...</p>
+                <p><strong>Important:</strong> Your payment is completed, but the session request has NOT been sent to the teacher yet.</p>
+                <p>Please go back to the website to confirm and send your session request to the teacher.</p>
+                <p><em>If the teacher rejects your request, the amount will be automatically refunded to your account within 3-5 business days.</em></p>
+                <button class="btn" onclick="closeAndRedirect()">Go Back to Website</button>
+                <p style="margin-top: 30px; font-size: 14px; color: #666;">This window will close automatically and redirect you...</p>
                 <script>
-                  function confirmAndRedirect() {
+                  function closeAndRedirect() {
                     if (window.opener) {
+                      // Send message to parent window about successful payment
                       window.opener.postMessage({
                         type: 'payment_success',
-                        confirmed: true
+                        confirmed: false,
+                        order_id: '${order_id}'
                       }, '*');
                     }
                     setTimeout(() => {
@@ -257,10 +260,10 @@ serve(async (req) => {
                     }, 1000);
                   }
                   
-                  // Auto-redirect after 30 seconds if no action taken
+                  // Auto-redirect after 10 seconds if no action taken
                   setTimeout(() => {
-                    confirmAndRedirect();
-                  }, 30000);
+                    closeAndRedirect();
+                  }, 10000);
                 </script>
               </div>
             </body>
@@ -292,6 +295,33 @@ serve(async (req) => {
           headers: { 'Content-Type': 'text/html' }
         });
       }
+    }
+
+    if (action === 'confirm_and_send_request') {
+      const { session_request_id } = data;
+      
+      console.log('Confirming and sending request to teacher for:', session_request_id);
+      
+      // Update session request status to pending for teacher approval
+      const { error } = await supabase
+        .from('session_requests')
+        .update({
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', session_request_id);
+
+      if (error) {
+        console.error('Error updating session request status:', error);
+        throw error;
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Request sent to teacher successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (action === 'process_refund') {
@@ -413,7 +443,7 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
   }
 
   // If payment is successful, update session request to payment_completed status
-  // Don't change to 'pending' until user confirms
+  // DON'T change to 'pending' until user confirms
   if (orderData.order_status === 'PAID') {
     const { data: paymentRecord, error: paymentFetchError } = await supabase
       .from('payment_history')
@@ -426,7 +456,7 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
         .from('session_requests')
         .update({
           payment_status: 'completed',
-          status: 'payment_completed', // New status for payment completed but not yet sent to teacher
+          status: 'payment_completed', // Keep as payment_completed until user confirms
           updated_at: new Date().toISOString()
         })
         .eq('id', paymentRecord.session_request_id);
