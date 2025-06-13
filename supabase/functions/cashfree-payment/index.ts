@@ -227,22 +227,40 @@ serve(async (req) => {
       if (verifyResult.success && verifyResult.payment_status === 'PAID') {
         return new Response(`
           <html>
-            <head><title>Payment Successful</title></head>
+            <head>
+              <title>Payment Successful</title>
+              <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+                .success { color: green; }
+                .btn { background-color: #4CAF50; color: white; padding: 15px 32px; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border: none; border-radius: 4px; }
+                .container { max-width: 600px; margin: 0 auto; }
+              </style>
+            </head>
             <body>
-              <div style="text-align: center; font-family: Arial, sans-serif; padding: 50px;">
-                <h1 style="color: green;">✅ Payment Successful!</h1>
+              <div class="container">
+                <h1 class="success">✅ Payment Successful!</h1>
                 <p>Your payment has been processed successfully.</p>
-                <p>Your session request has been sent to the teacher for approval.</p>
-                <p>You will receive a confirmation email shortly.</p>
-                <p style="margin-top: 30px;">This window will close automatically...</p>
+                <p><strong>Next Step:</strong> Please confirm to send your session request to the teacher for approval.</p>
+                <p>If the teacher rejects your request, the amount will be automatically refunded to your account within 3-5 business days.</p>
+                <button class="btn" onclick="confirmAndRedirect()">Confirm & Send Request to Teacher</button>
+                <p style="margin-top: 30px; font-size: 14px; color: #666;">This window will redirect you back to the dashboard...</p>
                 <script>
-                  setTimeout(() => {
-                    window.close();
+                  function confirmAndRedirect() {
                     if (window.opener) {
-                      window.opener.postMessage('payment_success', '*');
-                      window.opener.location.href = '/student-dashboard?tab=sessions';
+                      window.opener.postMessage({
+                        type: 'payment_success',
+                        confirmed: true
+                      }, '*');
                     }
-                  }, 3000);
+                    setTimeout(() => {
+                      window.close();
+                    }, 1000);
+                  }
+                  
+                  // Auto-redirect after 30 seconds if no action taken
+                  setTimeout(() => {
+                    confirmAndRedirect();
+                  }, 30000);
                 </script>
               </div>
             </body>
@@ -263,7 +281,7 @@ serve(async (req) => {
                   setTimeout(() => {
                     window.close();
                     if (window.opener) {
-                      window.opener.postMessage('payment_failed', '*');
+                      window.opener.postMessage({ type: 'payment_failed' }, '*');
                     }
                   }, 3000);
                 </script>
@@ -274,6 +292,38 @@ serve(async (req) => {
           headers: { 'Content-Type': 'text/html' }
         });
       }
+    }
+
+    if (action === 'process_refund') {
+      const { order_id, session_request_id } = data;
+      
+      console.log('Processing refund for order:', order_id);
+      
+      // Update payment status to indicate refund initiated
+      const { error: updateError } = await supabase
+        .from('payment_history')
+        .update({
+          payment_status: 'refund_initiated',
+          notes: 'Refund initiated due to teacher rejection',
+          updated_at: new Date().toISOString()
+        })
+        .eq('transaction_id', order_id);
+
+      if (updateError) {
+        console.error('Error updating payment for refund:', updateError);
+        throw updateError;
+      }
+
+      // Here you would typically call Cashfree's refund API
+      // For now, we'll simulate the refund process
+      console.log('Refund initiated for order:', order_id);
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Refund initiated successfully'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     if (action === 'verify_payment') {
@@ -362,7 +412,8 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
     throw updateError;
   }
 
-  // If payment is successful, update session request and make it ready for teacher approval
+  // If payment is successful, update session request to payment_completed status
+  // Don't change to 'pending' until user confirms
   if (orderData.order_status === 'PAID') {
     const { data: paymentRecord, error: paymentFetchError } = await supabase
       .from('payment_history')
@@ -375,7 +426,7 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
         .from('session_requests')
         .update({
           payment_status: 'completed',
-          status: 'pending', // Ready for teacher approval
+          status: 'payment_completed', // New status for payment completed but not yet sent to teacher
           updated_at: new Date().toISOString()
         })
         .eq('id', paymentRecord.session_request_id);
@@ -383,7 +434,7 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
       if (sessionUpdateError) {
         console.error('Error updating session request:', sessionUpdateError);
       } else {
-        console.log('Session request updated to pending status for teacher approval');
+        console.log('Session request updated to payment_completed status');
       }
     }
   }

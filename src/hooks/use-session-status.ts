@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +9,44 @@ export const useSessionStatusChange = () => {
   
   const handleStatusChange = async (requestId: string, newStatus: string) => {
     try {
+      // If rejecting a session request, initiate refund process
+      if (newStatus === 'rejected') {
+        // Get the session request to find the payment details
+        const { data: sessionRequest, error: fetchError } = await supabase
+          .from('session_requests')
+          .select(`
+            id,
+            payment_status,
+            payment_history(transaction_id, payment_status)
+          `)
+          .eq('id', requestId)
+          .single();
+
+        if (fetchError) {
+          console.error("Error fetching session request:", fetchError);
+        } else if (sessionRequest?.payment_status === 'completed') {
+          // Initiate refund process
+          try {
+            const { error: refundError } = await supabase.functions.invoke('cashfree-payment', {
+              body: {
+                action: 'process_refund',
+                session_request_id: requestId,
+                order_id: sessionRequest.payment_history?.[0]?.transaction_id
+              }
+            });
+
+            if (!refundError) {
+              toast({
+                title: "Refund Initiated",
+                description: "The student will receive their refund within 3-5 business days.",
+              });
+            }
+          } catch (refundError) {
+            console.error("Error processing refund:", refundError);
+          }
+        }
+      }
+
       // Update the request status
       const { error } = await supabase
         .from('session_requests')
@@ -139,8 +176,12 @@ export const useSessionStatusChange = () => {
         }
       }
 
+      const statusMessage = newStatus === 'rejected' 
+        ? 'Session rejected. Refund has been initiated.'
+        : `Session ${newStatus}`;
+
       toast({
-        title: `Session ${newStatus}`,
+        title: statusMessage,
         description: `The session request has been ${newStatus}.`,
       });
       

@@ -38,10 +38,23 @@ const PaymentHistoryTab: React.FC = () => {
         return 'bg-yellow-100 text-yellow-800';
       case 'failed':
         return 'bg-red-100 text-red-800';
-      case 'reverted':
+      case 'refund_initiated':
+        return 'bg-blue-100 text-blue-800';
+      case 'refunded':
         return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'refund_initiated':
+        return 'Refund Initiated';
+      case 'refunded':
+        return 'Refunded';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -84,6 +97,7 @@ const PaymentHistoryTab: React.FC = () => {
                   <TableHead>Platform Fee</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Method</TableHead>
+                  <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -111,11 +125,19 @@ const PaymentHistoryTab: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(payment.payment_status)}>
-                        {payment.payment_status}
+                        {getStatusText(payment.payment_status)}
                       </Badge>
+                      {payment.payment_status === 'refund_initiated' && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Refund will be processed within 3-5 business days
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="uppercase">
                       {payment.payment_method}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {payment.notes || '-'}
                     </TableCell>
                   </TableRow>
                 ))}

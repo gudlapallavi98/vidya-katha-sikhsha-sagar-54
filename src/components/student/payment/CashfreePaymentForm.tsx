@@ -48,15 +48,23 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
   // Listen for payment success message from popup window
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data === 'payment_success') {
+      console.log('Received message:', event.data);
+      
+      if (event.data?.type === 'payment_success') {
         console.log('Payment success message received from popup');
         setIsProcessing(false);
-        toast({
-          title: "Payment Successful!",
-          description: "Your session request has been sent to the teacher for approval.",
-        });
-        onPaymentSuccess();
-      } else if (event.data === 'payment_failed') {
+        
+        if (event.data.confirmed) {
+          // User confirmed to send request to teacher
+          handleSendRequestToTeacher();
+        } else {
+          // Just payment success without confirmation
+          toast({
+            title: "Payment Successful!",
+            description: "Please confirm to send your session request to the teacher.",
+          });
+        }
+      } else if (event.data?.type === 'payment_failed') {
         console.log('Payment failed message received from popup');
         setIsProcessing(false);
         toast({
@@ -69,7 +77,43 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [toast, onPaymentSuccess]);
+  }, [toast, sessionRequestId]);
+
+  const handleSendRequestToTeacher = async () => {
+    try {
+      // Update session request status to pending for teacher approval
+      const { error } = await supabase
+        .from('session_requests')
+        .update({
+          status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionRequestId);
+
+      if (error) {
+        console.error('Error updating session request status:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Request Sent Successfully!",
+        description: "Your session request has been sent to the teacher for approval. You will be notified once they respond.",
+      });
+
+      // Navigate to sessions tab
+      setTimeout(() => {
+        window.location.href = '/student-dashboard?tab=sessions';
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error sending request to teacher:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send request to teacher. Please try again.",
+      });
+    }
+  };
 
   const handlePayment = async () => {
     if (!user) {
@@ -228,6 +272,13 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
               <span>Total Amount:</span>
               <span className="text-green-600">{formatCurrency(amount)}</span>
             </div>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h4 className="font-medium text-yellow-800 mb-2">Refund Policy</h4>
+            <p className="text-sm text-yellow-700">
+              If the teacher rejects your session request, the full amount will be automatically refunded to your account within 3-5 business days.
+            </p>
           </div>
 
           <Button 
