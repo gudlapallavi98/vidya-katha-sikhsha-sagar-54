@@ -1,4 +1,4 @@
-
+import PaymentSuccess from "./pages/PaymentSuccess";
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { Suspense, lazy, useEffect } from 'react';
@@ -64,6 +64,7 @@ function App() {
             <Route path="support" element={<SupportPage />} />
             <Route path="signup" element={<SignUpPage />} />
             <Route path="login" element={<LoginPage />} />
+            <Route path="payment-success" element={<PaymentSuccess />} />
             <Route path="dashboard" element={<AuthRedirect />} />
             <Route 
               path="student-dashboard/*" 
