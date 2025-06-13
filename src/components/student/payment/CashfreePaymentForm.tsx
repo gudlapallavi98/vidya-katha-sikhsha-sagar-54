@@ -196,7 +196,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
       // Configure checkout options
       const checkoutOptions = {
         paymentSessionId: orderData.payment_session_id,
-        returnUrl: `https://nxdsszdobgbikrnqqrue.supabase.co/functions/v1/cashfree-payment?action=payment_return&order_id=${orderData.order_id}`,
+        returnUrl: `https://etutorss.com/payment-success?order_id=${orderData.order_id}`,
       };
 
       console.log('Initiating Cashfree checkout with options:', checkoutOptions);
