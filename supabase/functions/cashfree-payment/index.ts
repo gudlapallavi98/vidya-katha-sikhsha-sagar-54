@@ -240,30 +240,17 @@ serve(async (req) => {
               <div class="container">
                 <h1 class="success">✅ Payment Successful!</h1>
                 <p>Your payment has been processed successfully.</p>
-                <p><strong>Important:</strong> Your payment is completed, but the session request has NOT been sent to the teacher yet.</p>
-                <p>Please go back to the website to confirm and send your session request to the teacher.</p>
-                <p><em>If the teacher rejects your request, the amount will be automatically refunded to your account within 3-5 business days.</em></p>
-                <button class="btn" onclick="closeAndRedirect()">Go Back to Website</button>
-                <p style="margin-top: 30px; font-size: 14px; color: #666;">This window will close automatically and redirect you...</p>
+                <p><strong>Important:</strong> Please go back to the website to complete your session request.</p>
+                <button class="btn" onclick="redirectToSuccess()">Continue</button>
                 <script>
-                  function closeAndRedirect() {
-                    if (window.opener) {
-                      // Send message to parent window about successful payment
-                      window.opener.postMessage({
-                        type: 'payment_success',
-                        confirmed: false,
-                        order_id: '${order_id}'
-                      }, '*');
-                    }
-                    setTimeout(() => {
-                      window.close();
-                    }, 1000);
+                  function redirectToSuccess() {
+                    window.location.href = 'https://etutorss.com/payment-success?order_id=${order_id}';
                   }
                   
-                  // Auto-redirect after 10 seconds if no action taken
+                  // Auto-redirect after 5 seconds
                   setTimeout(() => {
-                    closeAndRedirect();
-                  }, 10000);
+                    redirectToSuccess();
+                  }, 5000);
                 </script>
               </div>
             </body>
@@ -283,9 +270,6 @@ serve(async (req) => {
                 <script>
                   setTimeout(() => {
                     window.close();
-                    if (window.opener) {
-                      window.opener.postMessage({ type: 'payment_failed' }, '*');
-                    }
                   }, 3000);
                 </script>
               </div>
@@ -427,11 +411,13 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
   const orderData = await response.json();
   console.log('Payment verification result:', orderData);
 
-  // Update payment status
+  // Update payment status to completed if payment is successful
+  const paymentStatus = orderData.order_status === 'PAID' ? 'completed' : 'failed';
+  
   const { error: updateError } = await supabase
     .from('payment_history')
     .update({
-      payment_status: orderData.order_status === 'PAID' ? 'completed' : 'failed',
+      payment_status: paymentStatus,
       gateway_response: orderData,
       updated_at: new Date().toISOString()
     })
@@ -443,7 +429,6 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
   }
 
   // If payment is successful, update session request to payment_completed status
-  // DON'T change to 'pending' until user confirms
   if (orderData.order_status === 'PAID') {
     const { data: paymentRecord, error: paymentFetchError } = await supabase
       .from('payment_history')

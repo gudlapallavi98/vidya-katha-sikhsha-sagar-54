@@ -39,9 +39,9 @@ export default function PaymentSuccess() {
       }
 
       if (!paymentHistory || paymentHistory.length === 0) {
-        if (attempt < 3) {
-          console.log('Payment not found, retrying in 2 seconds...');
-          setTimeout(() => verifyPayment(orderId, attempt + 1), 2000);
+        if (attempt < 5) { // Increased retry attempts
+          console.log('Payment not found, retrying in 3 seconds...');
+          setTimeout(() => verifyPayment(orderId, attempt + 1), 3000);
           return;
         }
         throw new Error('Payment record not found. Please contact support.');
@@ -52,14 +52,16 @@ export default function PaymentSuccess() {
       
       setPaymentData(payment);
 
-      if (payment.payment_status === 'completed') {
+      // Check for both 'completed' and 'PAID' status (Cashfree returns 'PAID')
+      if (payment.payment_status === 'completed' || 
+          (payment.gateway_response && payment.gateway_response.order_status === 'PAID')) {
         setStatus("✅ Payment verified successfully!");
         setIsLoading(false);
         
         // Check if session request needs to be sent to teacher
-        if (payment.session_requests && payment.session_requests.status === 'pending') {
+        if (payment.session_requests && payment.session_requests.status === 'payment_completed') {
           setTimeout(() => {
-            setStatus("🎉 Payment successful! Redirecting to your dashboard...");
+            setStatus("🎉 Payment successful! Redirecting to confirmation...");
             setTimeout(() => {
               window.location.href = "/student-dashboard?tab=sessions&status=payment_success";
             }, 2000);
@@ -72,8 +74,13 @@ export default function PaymentSuccess() {
         }
       } else if (payment.payment_status === 'pending') {
         setStatus("⏳ Payment is being processed. Please wait...");
-        // Retry after 3 seconds for pending payments
-        setTimeout(() => verifyPayment(orderId, attempt + 1), 3000);
+        // Retry after 5 seconds for pending payments
+        if (attempt < 10) { // Allow more retries for pending
+          setTimeout(() => verifyPayment(orderId, attempt + 1), 5000);
+        } else {
+          setIsLoading(false);
+          setError("Payment verification is taking longer than expected. Please contact support.");
+        }
       } else if (payment.payment_status === 'failed') {
         setIsLoading(false);
         setError("Payment failed. Please try again or contact support.");
@@ -105,6 +112,10 @@ export default function PaymentSuccess() {
     const subject = `Payment Verification Issue - Order ${orderId}`;
     const body = `Hello, I need help with payment verification for Order ID: ${orderId}. The payment was completed but verification failed.`;
     window.location.href = `/contact?subject=${encodeURIComponent(subject)}&message=${encodeURIComponent(body)}`;
+  };
+
+  const handleGoToDashboard = () => {
+    window.location.href = "/student-dashboard?tab=sessions";
   };
 
   useEffect(() => {
@@ -153,7 +164,7 @@ export default function PaymentSuccess() {
               </Button>
               
               <Button 
-                onClick={() => window.location.href = "/student-dashboard"}
+                onClick={handleGoToDashboard}
                 variant="ghost" 
                 className="w-full"
               >
