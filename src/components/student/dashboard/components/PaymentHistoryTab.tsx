@@ -5,11 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CreditCard, DollarSign } from "lucide-react";
+import { CreditCard, DollarSign, Download, FileText } from "lucide-react";
+import { generateInvoicePDF } from "@/utils/invoiceGenerator";
+import { useToast } from "@/hooks/use-toast";
 
 const PaymentHistoryTab: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: paymentHistory = [], isLoading } = useQuery({
     queryKey: ['payment_history', user?.id],
@@ -18,7 +22,7 @@ const PaymentHistoryTab: React.FC = () => {
         .from('payment_history')
         .select(`
           *,
-          session_requests(proposed_title),
+          session_requests(proposed_title, status),
           sessions(title)
         `)
         .eq('user_id', user?.id)
@@ -55,6 +59,48 @@ const PaymentHistoryTab: React.FC = () => {
         return 'Refunded';
       default:
         return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const getNotes = (payment: any) => {
+    if (payment.payment_status === 'refund_initiated') {
+      return 'Refund initiated - Teacher rejected the session request. Refund will be processed within 3-5 business days.';
+    }
+    if (payment.payment_status === 'refunded') {
+      return 'Refund completed - Amount has been credited back to your account.';
+    }
+    if (payment.payment_status === 'failed') {
+      return 'Payment failed - Please try again or contact support.';
+    }
+    if (payment.payment_status === 'completed') {
+      return 'Payment successful - Session request sent to teacher.';
+    }
+    return payment.notes || 'Payment processing';
+  };
+
+  const handleDownloadInvoice = (payment: any) => {
+    if (payment.payment_status !== 'completed') {
+      toast({
+        variant: "destructive",
+        title: "Invoice Not Available",
+        description: "Invoice can only be downloaded for completed payments.",
+      });
+      return;
+    }
+
+    try {
+      generateInvoicePDF(payment);
+      toast({
+        title: "Invoice Downloaded",
+        description: "Your invoice is being generated and will open shortly.",
+      });
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: "Failed to generate invoice. Please try again.",
+      });
     }
   };
 
@@ -98,6 +144,7 @@ const PaymentHistoryTab: React.FC = () => {
                   <TableHead>Status</TableHead>
                   <TableHead>Method</TableHead>
                   <TableHead>Notes</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,8 +183,23 @@ const PaymentHistoryTab: React.FC = () => {
                     <TableCell className="uppercase">
                       {payment.payment_method}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {payment.notes || '-'}
+                    <TableCell className="text-sm text-muted-foreground max-w-48">
+                      <div className="truncate" title={getNotes(payment)}>
+                        {getNotes(payment)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadInvoice(payment)}
+                        disabled={payment.payment_status !== 'completed'}
+                        className="flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" />
+                        <FileText className="h-3 w-3" />
+                        Invoice
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +18,7 @@ export const useSessionStatusChange = () => {
           .select(`
             id,
             payment_status,
-            payment_history(transaction_id, payment_status)
+            payment_history(transaction_id, payment_status, id)
           `)
           .eq('id', requestId)
           .single();
@@ -36,6 +37,19 @@ export const useSessionStatusChange = () => {
             });
 
             if (!refundError) {
+              // Update payment history with enhanced notes
+              const { error: updateNotesError } = await supabase
+                .from('payment_history')
+                .update({
+                  notes: 'Refund initiated - Teacher rejected the session request. The student will receive their full refund within 3-5 business days. No charges will apply.',
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', sessionRequest.payment_history?.[0]?.id);
+
+              if (updateNotesError) {
+                console.error('Error updating payment notes:', updateNotesError);
+              }
+
               toast({
                 title: "Refund Initiated",
                 description: "The student will receive their refund within 3-5 business days.",

@@ -12,11 +12,26 @@ export default function PaymentSuccess() {
   const [retryCount, setRetryCount] = useState(0);
   const [paymentData, setPaymentData] = useState<any>(null);
 
-  const verifyPayment = async (orderId: string, attempt = 1) => {
+  const verifyAndUpdatePaymentStatus = async (orderId: string, attempt = 1) => {
     try {
       console.log(`Verifying payment attempt ${attempt} for order:`, orderId);
       
-      // Query payment_history directly using Supabase client
+      // First, verify payment status with Cashfree
+      const { data: verificationResult, error: verifyError } = await supabase.functions.invoke('cashfree-payment', {
+        body: {
+          action: 'verify_payment',
+          order_id: orderId
+        }
+      });
+
+      if (verifyError) {
+        console.error('Payment verification error:', verifyError);
+        throw new Error('Failed to verify payment with Cashfree');
+      }
+
+      console.log('Cashfree verification result:', verificationResult);
+
+      // Now get the updated payment record from our database
       const { data: paymentHistory, error: paymentError } = await supabase
         .from('payment_history')
         .select(`
@@ -25,6 +40,7 @@ export default function PaymentSuccess() {
             id,
             proposed_title,
             status,
+            payment_status,
             teacher_id,
             student_id
           )
@@ -34,79 +50,67 @@ export default function PaymentSuccess() {
         .limit(1);
 
       if (paymentError) {
-        console.error('Payment verification error:', paymentError);
-        throw new Error('Failed to verify payment status');
+        console.error('Database query error:', paymentError);
+        throw new Error('Failed to fetch payment record');
       }
 
       if (!paymentHistory || paymentHistory.length === 0) {
-        if (attempt < 5) {
-          console.log('Payment not found, retrying in 3 seconds...');
-          setTimeout(() => verifyPayment(orderId, attempt + 1), 3000);
+        if (attempt < 8) {
+          console.log('Payment record not found, retrying in 3 seconds...');
+          setTimeout(() => verifyAndUpdatePaymentStatus(orderId, attempt + 1), 3000);
           return;
         }
         throw new Error('Payment record not found. Please contact support.');
       }
 
       const payment = paymentHistory[0];
-      console.log('Payment found:', payment);
+      console.log('Payment record found:', payment);
       
       setPaymentData(payment);
 
-      // Check for both 'completed' and 'PAID' status (Cashfree returns 'PAID')
-      // Add proper type checking for gateway_response
-      const gatewayResponse = payment.gateway_response;
-      const isGatewayPaid = gatewayResponse && 
-        typeof gatewayResponse === 'object' && 
-        !Array.isArray(gatewayResponse) &&
-        'order_status' in gatewayResponse &&
-        gatewayResponse.order_status === 'PAID';
+      // Check if payment is completed in Cashfree and our database
+      const isCashfreeSuccess = verificationResult?.success && verificationResult?.payment_status === 'PAID';
+      const isDbCompleted = payment.payment_status === 'completed';
 
-      if (payment.payment_status === 'completed' || isGatewayPaid) {
-        setStatus("✅ Payment verified successfully!");
-        setIsLoading(false);
-        
-        // Only update session request status if payment is truly completed
-        // Check current session request status first
+      if (isCashfreeSuccess && isDbCompleted) {
+        // Payment is verified as successful, now automatically send to teacher
         if (payment.session_requests) {
-          const currentStatus = payment.session_requests.status;
-          console.log('Current session request status:', currentStatus);
+          const sessionRequest = payment.session_requests;
           
-          // Only update to pending if it's not already sent
-          if (currentStatus === 'payment_completed' || currentStatus === 'draft') {
+          // Auto-update session request to pending (send to teacher) if payment is completed
+          if (sessionRequest.payment_status === 'completed' && sessionRequest.status === 'payment_completed') {
+            console.log('Auto-sending request to teacher...');
+            
             const { error: updateError } = await supabase
               .from('session_requests')
               .update({ 
                 status: 'pending',
-                payment_status: 'completed'
+                updated_at: new Date().toISOString()
               })
-              .eq('id', payment.session_request_id);
+              .eq('id', sessionRequest.id);
 
             if (updateError) {
-              console.error('Error updating session request:', updateError);
+              console.error('Error auto-updating session request:', updateError);
             } else {
-              console.log('Session request sent to teacher successfully');
-              setTimeout(() => {
-                setStatus("🎉 Payment successful! Your request has been sent to the teacher.");
-                setTimeout(() => {
-                  window.location.href = "/student-dashboard?tab=sessions&status=payment_success";
-                }, 2000);
-              }, 1500);
+              console.log('Session request automatically sent to teacher');
             }
-          } else {
-            // Session request already processed
-            setTimeout(() => {
-              setStatus("🎉 Payment successful! Request already sent to teacher.");
-              setTimeout(() => {
-                window.location.href = "/student-dashboard?tab=sessions";
-              }, 2000);
-            }, 1500);
           }
         }
-      } else if (payment.payment_status === 'pending') {
+
+        setStatus("🎉 Payment successful! Your request has been sent to the teacher.");
+        setIsLoading(false);
+        
+        // Auto-redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          window.location.href = "/student-dashboard?tab=sessions&status=payment_success";
+        }, 3000);
+        
+      } else if (payment.payment_status === 'pending' || !isCashfreeSuccess) {
         setStatus("⏳ Payment is being processed. Please wait...");
-        // Retry after 5 seconds for pending payments
-        if (attempt < 10) {
-          setTimeout(() => verifyPayment(orderId, attempt + 1), 5000);
+        
+        // Retry for pending payments
+        if (attempt < 12) {
+          setTimeout(() => verifyAndUpdatePaymentStatus(orderId, attempt + 1), 4000);
         } else {
           setIsLoading(false);
           setError("Payment verification is taking longer than expected. Please contact support.");
@@ -121,8 +125,14 @@ export default function PaymentSuccess() {
 
     } catch (err: any) {
       console.error("Payment verification error:", err);
-      setIsLoading(false);
-      setError(err.message || "Failed to verify payment. Please contact support.");
+      
+      if (attempt < 5) {
+        console.log('Retrying due to error...');
+        setTimeout(() => verifyAndUpdatePaymentStatus(orderId, attempt + 1), 5000);
+      } else {
+        setIsLoading(false);
+        setError(err.message || "Failed to verify payment. Please contact support.");
+      }
     }
   };
 
@@ -133,7 +143,7 @@ export default function PaymentSuccess() {
       setIsLoading(true);
       setError("");
       setStatus("Retrying payment verification...");
-      verifyPayment(orderId);
+      verifyAndUpdatePaymentStatus(orderId);
     }
   };
 
@@ -157,7 +167,7 @@ export default function PaymentSuccess() {
       return;
     }
 
-    verifyPayment(orderId);
+    verifyAndUpdatePaymentStatus(orderId);
   }, []);
 
   return (
@@ -174,7 +184,7 @@ export default function PaymentSuccess() {
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-500" />
               <p className="text-blue-600 font-medium">{status}</p>
               <p className="text-sm text-gray-600">
-                This may take a few moments. Please don't close this page.
+                Automatically verifying with Cashfree and updating status...
               </p>
             </div>
           ) : error ? (
@@ -212,13 +222,13 @@ export default function PaymentSuccess() {
                   <div className="space-y-1 text-green-700">
                     <p><span className="font-medium">Amount:</span> ₹{paymentData.amount}</p>
                     <p><span className="font-medium">Session:</span> {paymentData.session_requests?.proposed_title || 'Session Request'}</p>
-                    <p><span className="font-medium">Status:</span> {paymentData.payment_status}</p>
+                    <p><span className="font-medium">Status:</span> Completed</p>
                   </div>
                 </div>
               )}
               
               <p className="text-sm text-gray-600">
-                Your session request will be sent to the teacher for approval.
+                Redirecting to your dashboard...
               </p>
             </div>
           )}
