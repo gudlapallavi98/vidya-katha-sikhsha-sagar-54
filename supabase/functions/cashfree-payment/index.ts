@@ -353,10 +353,13 @@ serve(async (req) => {
       const webhookData = data;
       console.log('Received Cashfree webhook:', webhookData);
 
+      // Update payment status based on webhook
+      const paymentStatus = webhookData.order_status === 'PAID' ? 'completed' : 'failed';
+      
       const { error: webhookUpdateError } = await supabase
         .from('payment_history')
         .update({
-          payment_status: webhookData.order_status === 'PAID' ? 'completed' : 'failed',
+          payment_status: paymentStatus,
           gateway_response: webhookData,
           updated_at: new Date().toISOString()
         })
@@ -365,6 +368,32 @@ serve(async (req) => {
       if (webhookUpdateError) {
         console.error('Error processing webhook:', webhookUpdateError);
         throw webhookUpdateError;
+      }
+
+      // If payment successful, update session request to payment_completed (but don't send to teacher yet)
+      if (paymentStatus === 'completed') {
+        const { data: paymentRecord, error: paymentFetchError } = await supabase
+          .from('payment_history')
+          .select('session_request_id')
+          .eq('transaction_id', webhookData.order_id)
+          .single();
+
+        if (!paymentFetchError && paymentRecord) {
+          const { error: sessionUpdateError } = await supabase
+            .from('session_requests')
+            .update({
+              payment_status: 'completed',
+              status: 'payment_completed', // Will be changed to 'pending' by frontend after user confirmation
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', paymentRecord.session_request_id);
+
+          if (sessionUpdateError) {
+            console.error('Error updating session request:', sessionUpdateError);
+          } else {
+            console.log('Session request updated to payment_completed status');
+          }
+        }
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -428,7 +457,7 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
     throw updateError;
   }
 
-  // If payment is successful, update session request to payment_completed status
+  // If payment is successful, update session request to payment_completed status (but don't send to teacher yet)
   if (orderData.order_status === 'PAID') {
     const { data: paymentRecord, error: paymentFetchError } = await supabase
       .from('payment_history')
@@ -441,7 +470,7 @@ async function verifyPayment(orderId: string, supabase: any, clientId: string, c
         .from('session_requests')
         .update({
           payment_status: 'completed',
-          status: 'payment_completed', // Keep as payment_completed until user confirms
+          status: 'payment_completed', // Will be changed to 'pending' by frontend after user confirmation
           updated_at: new Date().toISOString()
         })
         .eq('id', paymentRecord.session_request_id);

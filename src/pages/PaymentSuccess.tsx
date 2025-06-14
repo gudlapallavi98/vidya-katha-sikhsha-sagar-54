@@ -39,7 +39,7 @@ export default function PaymentSuccess() {
       }
 
       if (!paymentHistory || paymentHistory.length === 0) {
-        if (attempt < 5) { // Increased retry attempts
+        if (attempt < 5) {
           console.log('Payment not found, retrying in 3 seconds...');
           setTimeout(() => verifyPayment(orderId, attempt + 1), 3000);
           return;
@@ -65,24 +65,47 @@ export default function PaymentSuccess() {
         setStatus("✅ Payment verified successfully!");
         setIsLoading(false);
         
-        // Check if session request needs to be sent to teacher
-        if (payment.session_requests && payment.session_requests.status === 'payment_completed') {
-          setTimeout(() => {
-            setStatus("🎉 Payment successful! Redirecting to confirmation...");
+        // Only update session request status if payment is truly completed
+        // Check current session request status first
+        if (payment.session_requests) {
+          const currentStatus = payment.session_requests.status;
+          console.log('Current session request status:', currentStatus);
+          
+          // Only update to pending if it's not already sent
+          if (currentStatus === 'payment_completed' || currentStatus === 'draft') {
+            const { error: updateError } = await supabase
+              .from('session_requests')
+              .update({ 
+                status: 'pending',
+                payment_status: 'completed'
+              })
+              .eq('id', payment.session_request_id);
+
+            if (updateError) {
+              console.error('Error updating session request:', updateError);
+            } else {
+              console.log('Session request sent to teacher successfully');
+              setTimeout(() => {
+                setStatus("🎉 Payment successful! Your request has been sent to the teacher.");
+                setTimeout(() => {
+                  window.location.href = "/student-dashboard?tab=sessions&status=payment_success";
+                }, 2000);
+              }, 1500);
+            }
+          } else {
+            // Session request already processed
             setTimeout(() => {
-              window.location.href = "/student-dashboard?tab=sessions&status=payment_success";
-            }, 2000);
-          }, 1500);
-        } else {
-          // Payment completed but request already processed
-          setTimeout(() => {
-            window.location.href = "/student-dashboard?tab=sessions";
-          }, 3000);
+              setStatus("🎉 Payment successful! Request already sent to teacher.");
+              setTimeout(() => {
+                window.location.href = "/student-dashboard?tab=sessions";
+              }, 2000);
+            }, 1500);
+          }
         }
       } else if (payment.payment_status === 'pending') {
         setStatus("⏳ Payment is being processed. Please wait...");
         // Retry after 5 seconds for pending payments
-        if (attempt < 10) { // Allow more retries for pending
+        if (attempt < 10) {
           setTimeout(() => verifyPayment(orderId, attempt + 1), 5000);
         } else {
           setIsLoading(false);
