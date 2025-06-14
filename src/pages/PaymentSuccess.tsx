@@ -53,8 +53,15 @@ export default function PaymentSuccess() {
       setPaymentData(payment);
 
       // Check for both 'completed' and 'PAID' status (Cashfree returns 'PAID')
-      if (payment.payment_status === 'completed' || 
-          (payment.gateway_response && payment.gateway_response.order_status === 'PAID')) {
+      // Add proper type checking for gateway_response
+      const gatewayResponse = payment.gateway_response;
+      const isGatewayPaid = gatewayResponse && 
+        typeof gatewayResponse === 'object' && 
+        !Array.isArray(gatewayResponse) &&
+        'order_status' in gatewayResponse &&
+        gatewayResponse.order_status === 'PAID';
+
+      if (payment.payment_status === 'completed' || isGatewayPaid) {
         setStatus("✅ Payment verified successfully!");
         setIsLoading(false);
         
