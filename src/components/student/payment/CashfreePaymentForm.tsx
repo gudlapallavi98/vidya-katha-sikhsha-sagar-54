@@ -47,13 +47,13 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Listen for payment success message from popup window
+  // Listen for payment success from the payment success page
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       console.log('Received message:', event.data);
       
       if (event.data?.type === 'payment_success') {
-        console.log('Payment success message received from popup');
+        console.log('Payment success message received');
         setIsProcessing(false);
         setPaymentCompleted(true);
         
@@ -62,7 +62,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
           description: "Your payment has been completed. Please confirm to send your session request to the teacher.",
         });
       } else if (event.data?.type === 'payment_failed') {
-        console.log('Payment failed message received from popup');
+        console.log('Payment failed message received');
         setIsProcessing(false);
         toast({
           variant: "destructive",
@@ -88,16 +88,14 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
     setIsSendingRequest(true);
     try {
-      // Call edge function to confirm and send request
-      const { error } = await supabase.functions.invoke('cashfree-payment', {
-        body: {
-          action: 'confirm_and_send_request',
-          session_request_id: sessionRequestId
-        }
-      });
+      // Update session request status to pending so teacher can see it
+      const { error } = await supabase
+        .from('session_requests')
+        .update({ status: 'pending' })
+        .eq('id', sessionRequestId);
 
       if (error) {
-        console.error('Error confirming request:', error);
+        console.error('Error updating session request:', error);
         throw error;
       }
 
@@ -108,7 +106,7 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
       // Navigate to sessions tab
       setTimeout(() => {
-        window.location.href = '/student-dashboard?tab=sessions';
+        window.location.href = '/student-dashboard?tab=sessions&status=request_sent';
       }, 2000);
 
     } catch (error) {
@@ -190,13 +188,13 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
       // Initialize Cashfree with production environment
       const cashfree = window.Cashfree({
-        mode: "production" // Use production mode
+        mode: "production"
       });
 
-      // Configure checkout options
+      // Configure checkout options - redirect to our payment success page
       const checkoutOptions = {
         paymentSessionId: orderData.payment_session_id,
-        returnUrl: `https://etutorss.com/payment-success?order_id=${orderData.order_id}`,
+        returnUrl: `${window.location.origin}/payment-success?order_id=${orderData.order_id}`,
       };
 
       console.log('Initiating Cashfree checkout with options:', checkoutOptions);
@@ -217,11 +215,10 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
         }
 
         if (result.redirect) {
-          console.log('Payment redirect:', result.redirect);
-          // Payment window will handle the redirect and send message back
+          console.log('Payment redirect initiated');
+          // User will be redirected to payment gateway and then back to our success page
         }
 
-        // The payment result will be handled by the message listener
       }).catch((error: any) => {
         console.error('Checkout initiation error:', error);
         toast({
@@ -314,8 +311,8 @@ export const CashfreePaymentForm: React.FC<CashfreePaymentFormProps> = ({
 
               {isProcessing && (
                 <div className="text-center text-sm text-gray-600">
-                  <p>Please complete the payment in the Cashfree checkout window.</p>
-                  <p>This page will automatically update once payment is completed.</p>
+                  <p>You will be redirected to Cashfree to complete your payment.</p>
+                  <p>After payment, you'll return to confirm your session request.</p>
                 </div>
               )}
             </>
