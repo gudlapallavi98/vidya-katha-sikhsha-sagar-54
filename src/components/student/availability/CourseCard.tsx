@@ -3,6 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, IndianRupee } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface CourseCardProps {
   course: any;
@@ -13,9 +14,24 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   course,
   onSelectSlot,
 }) => {
+  const navigate = useNavigate();
+
   const handleCourseClick = () => {
     console.log("Course selected:", course);
-    onSelectSlot(course);
+    
+    // If this is being used in the course enrollment context, use the course enrollment flow
+    if (course.enrollment_status === "open") {
+      // Navigate to course detail page for enrollment
+      navigate(`/courses/${course.id}`);
+    } else {
+      // Use the session request flow for live courses
+      onSelectSlot({
+        ...course,
+        session_type: 'course',
+        title: course.title,
+        price: course.price || course.teacher_rate || 500
+      });
+    }
   };
 
   return (
@@ -36,7 +52,9 @@ export const CourseCard: React.FC<CourseCardProps> = ({
               <IndianRupee className="h-5 w-5" />
               {course.price || course.teacher_rate || 500}
             </div>
-            <p className="text-sm text-gray-500">full course</p>
+            <p className="text-sm text-gray-500">
+              {course.enrollment_status === "open" ? "full course" : "live session"}
+            </p>
           </div>
         </div>
       </CardHeader>
@@ -55,7 +73,10 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           </Badge>
         </div>
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          Click to enroll in this course
+          {course.enrollment_status === "open" 
+            ? "Click to enroll in this course" 
+            : "Click to book a live session"
+          }
         </div>
       </CardContent>
     </Card>

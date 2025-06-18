@@ -14,6 +14,7 @@ interface SessionRequestFormProps {
     selectedTeacherId?: string;
     selectedCourse?: any;
     enrollmentMode?: boolean;
+    sessionRequestId?: string;
   };
 }
 
@@ -35,7 +36,8 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
       console.log("Setting initial teacher:", propInitialState.selectedTeacherId);
       setState(prev => ({
         ...prev,
-        selectedTeacherId: propInitialState.selectedTeacherId!
+        selectedTeacherId: propInitialState.selectedTeacherId!,
+        sessionRequestId: propInitialState.sessionRequestId || null
       }));
       
       if (propInitialState.enrollmentMode && propInitialState.selectedCourse) {
@@ -44,6 +46,7 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
           ...prev,
           selectedAvailability: propInitialState.selectedCourse,
           availabilityType: 'course',
+          sessionRequestId: propInitialState.sessionRequestId || null,
           step: "payment"
         }));
       } else {
@@ -77,7 +80,8 @@ const SessionRequestForm: React.FC<SessionRequestFormProps> = ({ initialState: p
         <div>
           <h3 className="text-lg font-semibold mb-4">Payment Required</h3>
           <p className="text-sm text-gray-600 mb-4">
-            Session: {state.selectedAvailability.title || state.selectedAvailability.subject?.name || 'Session'}
+            {state.availabilityType === 'course' ? 'Course: ' : 'Session: '}
+            {state.selectedAvailability.title || state.selectedAvailability.subject?.name || 'Session'}
           </p>
           <p className="text-sm text-gray-600 mb-4">
             Amount: ₹{calculateAmount()}

@@ -1,9 +1,11 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CourseDetailsEnrollmentProps {
   course: {
@@ -34,7 +36,7 @@ export const CourseDetailsEnrollment: React.FC<CourseDetailsEnrollmentProps> = (
   const navigate = useNavigate();
   const [isEnrolling, setIsEnrolling] = useState(false);
 
-  const handleEnrollNow = () => {
+  const handleEnrollNow = async () => {
     if (!user) {
       toast({
         variant: "destructive",
@@ -45,30 +47,79 @@ export const CourseDetailsEnrollment: React.FC<CourseDetailsEnrollmentProps> = (
       return;
     }
 
-    console.log("Enrolling in course:", course.id);
+    console.log("Starting enrollment process for course:", course.id);
     setIsEnrolling(true);
     
     try {
-      // Navigate to student dashboard with course enrollment data
+      // Check if already enrolled
+      const { data: existingEnrollment } = await supabase
+        .from('enrollments')
+        .select('id')
+        .eq('student_id', user.id)
+        .eq('course_id', course.id)
+        .single();
+
+      if (existingEnrollment) {
+        toast({
+          title: "Already Enrolled",
+          description: "You are already enrolled in this course",
+        });
+        navigate('/student-dashboard?tab=courses');
+        return;
+      }
+
+      // Create a session request for course enrollment
+      const { data: sessionRequest, error: requestError } = await supabase
+        .from('session_requests')
+        .insert({
+          student_id: user.id,
+          teacher_id: course.teacher_id,
+          course_id: course.id,
+          proposed_title: `Course Enrollment: ${course.title}`,
+          proposed_date: new Date().toISOString(),
+          proposed_duration: 60,
+          status: 'pending',
+          session_type: 'course',
+          payment_amount: course.price,
+          payment_status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (requestError) {
+        console.error('Error creating session request:', requestError);
+        throw new Error('Failed to create enrollment request');
+      }
+
+      console.log("Session request created:", sessionRequest);
+
+      // Navigate to student dashboard with payment flow
       navigate("/student-dashboard", {
         state: {
           activeTab: "request-session",
           selectedTeacherId: course.teacher_id,
-          selectedCourse: course,
-          enrollmentMode: true
+          selectedCourse: {
+            ...course,
+            id: sessionRequest.id,
+            session_type: 'course',
+            price: course.price,
+            title: course.title
+          },
+          enrollmentMode: true,
+          sessionRequestId: sessionRequest.id
         }
       });
       
       toast({
-        title: "Redirecting to Enrollment",
-        description: "Please complete the enrollment process in your dashboard.",
+        title: "Redirecting to Payment",
+        description: "Please complete the payment to enroll in this course.",
       });
     } catch (error) {
-      console.error("Error during enrollment redirect:", error);
+      console.error("Error during enrollment:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to redirect to enrollment page.",
+        title: "Enrollment Failed",
+        description: error instanceof Error ? error.message : "Failed to start enrollment process.",
       });
     } finally {
       setIsEnrolling(false);

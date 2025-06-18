@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Clock, Users, Star } from "lucide-react";
@@ -107,51 +106,18 @@ export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({
           title: "Already Enrolled",
           description: "You are already enrolled in this course",
         });
+        navigate('/student-dashboard?tab=courses');
         return;
       }
 
-      // Create enrollment
-      const { error: enrollmentError } = await supabase
-        .from('enrollments')
-        .insert({
-          student_id: user.id,
-          course_id: course.id,
-          enrolled_at: new Date().toISOString(),
-          completed_lessons: 0,
-          last_accessed_at: new Date().toISOString()
-        });
-
-      if (enrollmentError) throw enrollmentError;
-
-      // Create payment record
-      const { error: paymentError } = await supabase
-        .from('payment_history')
-        .insert({
-          user_id: user.id,
-          amount: course.student_price || course.price,
-          payment_type: 'course_enrollment',
-          payment_status: 'completed',
-          payment_method: 'direct',
-          platform_fee: (course.student_price || course.price) * 0.1,
-          teacher_payout: (course.student_price || course.price) * 0.9,
-          notes: `Enrollment in course: ${course.title}`
-        });
-
-      if (paymentError) throw paymentError;
-
-      toast({
-        title: "Enrollment Successful",
-        description: "You have been enrolled in the course successfully!",
-      });
-
-      // Navigate to student dashboard with courses tab active
-      navigate('/student-dashboard?tab=courses');
+      // Navigate to course detail page for enrollment
+      navigate(`/courses/${course.id}`);
     } catch (error) {
       console.error('Enrollment error:', error);
       toast({
         variant: "destructive",
-        title: "Enrollment Failed",
-        description: "Failed to enroll in the course. Please try again.",
+        title: "Navigation Failed",
+        description: "Failed to navigate to course page. Please try again.",
       });
     }
   };

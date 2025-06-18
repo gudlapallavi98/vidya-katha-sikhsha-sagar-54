@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   useTeacherCourses, 
@@ -11,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTabNavigation } from "@/hooks/use-tab-navigation";
 import { useNavigate } from "react-router-dom";
 import { useAuthStatus } from "@/hooks/use-auth-status";
+import { useSessionStatusUpdater } from "@/hooks/use-session-status-updater";
 
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import TeacherDashboardSidebar from "@/components/teacher/dashboard/TeacherDashboardSidebar";
@@ -23,6 +23,9 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isChecking } = useAuthStatus();
   const queryClient = useQueryClient();
+  
+  // Use the session status updater hook
+  useSessionStatusUpdater();
   
   const { data: teacherCourses = [], isLoading: coursesLoading } = useTeacherCourses();
   const { data: sessionRequests = [], isLoading: requestsLoading } = useSessionRequests(searchQuery);
