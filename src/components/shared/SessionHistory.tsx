@@ -81,7 +81,8 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
             proposed_date,
             payment_status,
             status,
-            sessions!session_requests_id_fkey(
+            session_id,
+            sessions(
               id,
               title,
               start_time,
