@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,9 +111,15 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
                 .single();
 
               results.push({
-                ...request.sessions,
+                id: request.sessions.id,
+                title: request.sessions.title,
+                start_time: request.sessions.start_time,
+                end_time: request.sessions.end_time,
+                status: request.sessions.status,
                 payment_status: request.payment_status,
                 attended: attendance?.attended || false,
+                course: request.sessions.course,
+                profiles: request.sessions.profiles,
                 session_requests: [{ payment_status: request.payment_status }]
               });
             } else {
