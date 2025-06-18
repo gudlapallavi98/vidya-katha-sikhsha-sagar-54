@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,8 +55,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
             end_time,
             status,
             course:courses(title),
-            profiles!sessions_teacher_id_fkey(first_name, last_name),
-            session_requests!sessions_session_id_fkey(payment_status)
+            profiles!sessions_teacher_id_fkey(first_name, last_name)
           `)
           .eq('teacher_id', user.id)
           .gte('end_time', threeMonthsAgo.toISOString())
@@ -73,7 +73,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
         const results: SessionData[] = [];
 
         // Get sessions where student made payment (from session_requests)
-        const { data: paidSessions, error: paidError } = await supabase
+        const { data: paidRequests, error: paidError } = await supabase
           .from('session_requests')
           .select(`
             id,
@@ -81,16 +81,8 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
             proposed_date,
             payment_status,
             status,
-            session_id,
-            sessions(
-              id,
-              title,
-              start_time,
-              end_time,
-              status,
-              course:courses(title),
-              profiles!sessions_teacher_id_fkey(first_name, last_name)
-            )
+            teacher_id,
+            profiles!session_requests_teacher_id_fkey(first_name, last_name)
           `)
           .eq('student_id', user.id)
           .eq('payment_status', 'completed')
@@ -99,28 +91,44 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
           .order('proposed_date', { ascending: false });
 
         if (paidError) {
-          console.error('Error fetching paid sessions:', paidError);
-        } else if (paidSessions) {
-          for (const request of paidSessions) {
-            if (request.sessions) {
+          console.error('Error fetching paid session requests:', paidError);
+        } else if (paidRequests) {
+          for (const request of paidRequests) {
+            // Look for corresponding session
+            const { data: session } = await supabase
+              .from('sessions')
+              .select(`
+                id,
+                title,
+                start_time,
+                end_time,
+                status,
+                course:courses(title)
+              `)
+              .eq('teacher_id', request.teacher_id)
+              .gte('start_time', new Date(request.proposed_date).toISOString())
+              .lte('start_time', new Date(new Date(request.proposed_date).getTime() + 24 * 60 * 60 * 1000).toISOString())
+              .single();
+
+            if (session) {
               // Check if student attended
               const { data: attendance } = await supabase
                 .from('session_attendees')
                 .select('attended')
-                .eq('session_id', request.sessions.id)
+                .eq('session_id', session.id)
                 .eq('student_id', user.id)
                 .single();
 
               results.push({
-                id: request.sessions.id,
-                title: request.sessions.title,
-                start_time: request.sessions.start_time,
-                end_time: request.sessions.end_time,
-                status: request.sessions.status,
+                id: session.id,
+                title: session.title,
+                start_time: session.start_time,
+                end_time: session.end_time,
+                status: session.status,
                 payment_status: request.payment_status,
                 attended: attendance?.attended || false,
-                course: request.sessions.course,
-                profiles: request.sessions.profiles,
+                course: session.course,
+                profiles: request.profiles,
                 session_requests: [{ payment_status: request.payment_status }]
               });
             } else {
@@ -133,6 +141,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
                 status: request.status,
                 payment_status: request.payment_status,
                 attended: false,
+                profiles: request.profiles,
                 session_requests: [{ payment_status: request.payment_status }]
               });
             }
