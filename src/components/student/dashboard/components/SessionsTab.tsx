@@ -1,15 +1,17 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, Video } from "lucide-react";
+import { Calendar, Video, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import { DashboardHeader, DashboardShell } from "@/components/ui/dashboard-shell";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Session } from "@/hooks/types";
 import { format, isAfter, isBefore, subMinutes } from "date-fns";
 import { SessionJoinButton } from "@/components/student/session/SessionJoinButton";
+import SessionHistory from "@/components/shared/SessionHistory";
 
 interface SessionsTabProps {
   upcomingSessions: Session[];
@@ -23,6 +25,7 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
   handleJoinClass,
 }) => {
   const navigate = useNavigate();
+  const [showHistory, setShowHistory] = useState(false);
 
   // Filter sessions to ensure they are truly upcoming and current date forward
   const filteredSessions = upcomingSessions.filter(session => {
@@ -114,7 +117,23 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
 
   return (
     <DashboardShell>
-      <DashboardHeader heading="Upcoming Sessions" />
+      <div className="flex items-center justify-between">
+        <DashboardHeader heading="Upcoming Sessions" />
+        <Dialog open={showHistory} onOpenChange={setShowHistory}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              View History
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Session History</DialogTitle>
+            </DialogHeader>
+            <SessionHistory userType="student" />
+          </DialogContent>
+        </Dialog>
+      </div>
       
       <DashboardCard isLoading={sessionsLoading}>
         {filteredSessions.length > 0 ? (

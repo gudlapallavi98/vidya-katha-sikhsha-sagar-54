@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import IndianStatsCard from "@/components/dashboard/IndianStatsCard";
+import { useStudentCompletedSessions, useStudentAchievementPoints } from "@/hooks/use-student-stats";
 import { 
   BookOpen, 
   Calendar, 
@@ -33,12 +34,16 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   progress,
   handleJoinClass,
 }) => {
+  // Use real data hooks
+  const { data: completedSessionsCount = 0, isLoading: completedSessionsLoading } = useStudentCompletedSessions();
+  const { data: achievementPoints = 0, isLoading: achievementPointsLoading } = useStudentAchievementPoints();
+
   // Use real data instead of mock data
   const stats = {
     enrolledCourses: enrolledCourses.length,
     upcomingSessions: upcomingSessions.length,
-    completedSessions: 12, // This could be calculated from actual data if available
-    achievementPoints: 285 // This could be calculated from actual data if available
+    completedSessions: completedSessionsCount,
+    achievementPoints: achievementPoints
   };
 
   const formatSessionDate = (dateString: string) => {
@@ -93,16 +98,16 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         
         <IndianStatsCard
           title="Completed Sessions"
-          value={stats.completedSessions}
+          value={completedSessionsLoading ? "..." : stats.completedSessions}
           icon={<CheckCircle />}
-          description="This month"
+          description="Total completed"
           borderColor="blue"
           trend={{ value: 8, isPositive: true }}
         />
         
         <IndianStatsCard
           title="Achievement Points"
-          value={stats.achievementPoints}
+          value={achievementPointsLoading ? "..." : stats.achievementPoints}
           icon={<Trophy />}
           description="Total earned"
           borderColor="saffron"

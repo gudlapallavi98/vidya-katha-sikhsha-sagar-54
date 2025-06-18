@@ -1,10 +1,11 @@
-
-import React from "react";
-import { Calendar, Clock, Users, Video } from "lucide-react";
+import React, { useState } from "react";
+import { Calendar, Clock, Users, Video, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { format, isAfter, isBefore, addMinutes, subMinutes } from "date-fns";
+import SessionHistory from "@/components/shared/SessionHistory";
 
 export interface TeacherScheduleProps {
   teacherSessions: any[];
@@ -19,6 +20,8 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
   sessionsLoading,
   handleStartClass,
 }) => {
+  const [showHistory, setShowHistory] = useState(false);
+
   if (sessionsLoading) {
     return (
       <div className="p-4">
@@ -163,9 +166,25 @@ const TeacherSchedule: React.FC<TeacherScheduleProps> = ({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">My Schedule</h2>
-        <p className="text-muted-foreground">View and manage your upcoming sessions</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">My Schedule</h2>
+          <p className="text-muted-foreground">View and manage your upcoming sessions</p>
+        </div>
+        <Dialog open={showHistory} onOpenChange={setShowHistory}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              View History
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Session History</DialogTitle>
+            </DialogHeader>
+            <SessionHistory userType="teacher" />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-4">
