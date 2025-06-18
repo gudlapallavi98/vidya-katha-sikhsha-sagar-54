@@ -1,12 +1,12 @@
+
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff, Mail, Info } from "lucide-react";
+import { Eye, EyeOff, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LoginWithPassword = () => {
@@ -48,49 +48,6 @@ const LoginWithPassword = () => {
     }
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      toast({
-        variant: "destructive",
-        title: "Email required",
-        description: "Please enter your email address",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Reset failed",
-          description: error.message,
-        });
-        return;
-      }
-
-      toast({
-        title: "Reset email sent",
-        description: "Check your email for password reset instructions",
-      });
-      setShowForgotPassword(false);
-    } catch (error) {
-      console.error("Password reset error:", error);
-      toast({
-        variant: "destructive",
-        title: "Reset failed",
-        description: "An unexpected error occurred",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   if (showForgotPassword) {
     return (
       <div className="space-y-4">
@@ -101,30 +58,15 @@ const LoginWithPassword = () => {
           </AlertDescription>
         </Alert>
         
-        <form onSubmit={handleForgotPassword} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="reset-email">Email</Label>
-            <Input
-              id="reset-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" disabled={isLoading} className="flex-1">
-              {isLoading ? "Sending..." : "Send Reset Email"}
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setShowForgotPassword(false)}
-            >
-              Back to Login
-            </Button>
-          </div>
-        </form>
+        <div className="flex justify-center">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => setShowForgotPassword(false)}
+          >
+            Back to Login
+          </Button>
+        </div>
       </div>
     );
   }

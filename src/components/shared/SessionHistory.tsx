@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, User, BookOpen } from "lucide-react";
+import { Calendar, Clock, User } from "lucide-react";
 import { format, subMonths } from "date-fns";
 
 interface SessionHistoryProps {
@@ -18,6 +19,8 @@ interface SessionData {
   start_time: string;
   end_time: string;
   status: string;
+  payment_status?: string;
+  attended?: boolean;
   course?: {
     title: string;
   } | null;
@@ -25,6 +28,9 @@ interface SessionData {
     first_name: string;
     last_name: string;
   } | null;
+  session_requests?: {
+    payment_status: string;
+  }[] | null;
 }
 
 const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
@@ -38,30 +44,45 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
       // Get sessions from 3 months ago
       const threeMonthsAgo = subMonths(new Date(), 3);
       
-      let query = supabase
-        .from('sessions')
-        .select(`
-          id,
-          title,
-          start_time,
-          end_time,
-          status,
-          course:courses(title),
-          profiles!sessions_teacher_id_fkey(first_name, last_name)
-        `)
-        .gte('end_time', threeMonthsAgo.toISOString())
-        .lte('end_time', new Date().toISOString())
-        .in('status', ['completed', 'cancelled'])
-        .order('end_time', { ascending: false });
-
       if (userType === 'teacher') {
-        query = query.eq('teacher_id', user.id);
-      } else {
-        // For students, we need to join with session_attendees
-        const { data: attendedSessions, error } = await supabase
-          .from('session_attendees')
+        // For teachers, get all sessions they taught
+        const { data, error } = await supabase
+          .from('sessions')
           .select(`
-            sessions!inner(
+            id,
+            title,
+            start_time,
+            end_time,
+            status,
+            course:courses(title),
+            profiles!sessions_teacher_id_fkey(first_name, last_name),
+            session_requests!sessions_session_id_fkey(payment_status)
+          `)
+          .eq('teacher_id', user.id)
+          .gte('end_time', threeMonthsAgo.toISOString())
+          .lte('end_time', new Date().toISOString())
+          .order('end_time', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching teacher sessions:', error);
+          throw error;
+        }
+
+        return data || [];
+      } else {
+        // For students, get sessions based on payments and attendance
+        const results: SessionData[] = [];
+
+        // Get sessions where student made payment (from session_requests)
+        const { data: paidSessions, error: paidError } = await supabase
+          .from('session_requests')
+          .select(`
+            id,
+            proposed_title,
+            proposed_date,
+            payment_status,
+            status,
+            sessions!session_requests_id_fkey(
               id,
               title,
               start_time,
@@ -72,28 +93,48 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
             )
           `)
           .eq('student_id', user.id)
-          .eq('attended', true)
-          .gte('sessions.end_time', threeMonthsAgo.toISOString())
-          .lte('sessions.end_time', new Date().toISOString())
-          .in('sessions.status', ['completed', 'cancelled'])
-          .order('sessions.end_time', { ascending: false });
+          .eq('payment_status', 'completed')
+          .gte('proposed_date', threeMonthsAgo.toISOString())
+          .lte('proposed_date', new Date().toISOString())
+          .order('proposed_date', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching attended sessions:', error);
-          throw error;
+        if (paidError) {
+          console.error('Error fetching paid sessions:', paidError);
+        } else if (paidSessions) {
+          for (const request of paidSessions) {
+            if (request.sessions) {
+              // Check if student attended
+              const { data: attendance } = await supabase
+                .from('session_attendees')
+                .select('attended')
+                .eq('session_id', request.sessions.id)
+                .eq('student_id', user.id)
+                .single();
+
+              results.push({
+                ...request.sessions,
+                payment_status: request.payment_status,
+                attended: attendance?.attended || false,
+                session_requests: [{ payment_status: request.payment_status }]
+              });
+            } else {
+              // Session request was paid but session wasn't created (rejected)
+              results.push({
+                id: request.id,
+                title: request.proposed_title,
+                start_time: request.proposed_date,
+                end_time: request.proposed_date,
+                status: request.status,
+                payment_status: request.payment_status,
+                attended: false,
+                session_requests: [{ payment_status: request.payment_status }]
+              });
+            }
+          }
         }
 
-        return (attendedSessions || []).map(item => item.sessions as SessionData);
+        return results;
       }
-
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching session history:', error);
-        throw error;
-      }
-      
-      return data || [];
     },
     enabled: !!user,
   });
@@ -104,9 +145,29 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
         return 'bg-green-100 text-green-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
+      case 'rejected':
+        return 'bg-orange-100 text-orange-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getSessionStatusForStudent = (session: SessionData) => {
+    if (session.status === 'rejected') {
+      return { label: 'Rejected - Refund Initiated', color: 'bg-orange-100 text-orange-800' };
+    }
+    
+    if (session.payment_status === 'completed') {
+      if (session.attended) {
+        return { label: 'Paid & Attended', color: 'bg-green-100 text-green-800' };
+      } else if (session.status === 'completed') {
+        return { label: 'Paid - Did Not Join', color: 'bg-yellow-100 text-yellow-800' };
+      } else {
+        return { label: 'Paid - Not Attended', color: 'bg-blue-100 text-blue-800' };
+      }
+    }
+    
+    return { label: session.status, color: getStatusColor(session.status) };
   };
 
   const formatSessionDate = (dateString: string) => {
@@ -156,7 +217,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
               <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No Session History</h3>
               <p className="text-muted-foreground">
-                Your completed sessions will appear here
+                Your sessions will appear here
               </p>
             </div>
           ) : (
@@ -177,6 +238,10 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
                   const startTime = new Date(session.start_time);
                   const endTime = new Date(session.end_time);
                   const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+                  
+                  const statusInfo = userType === 'student' 
+                    ? getSessionStatusForStudent(session)
+                    : { label: session.status.charAt(0).toUpperCase() + session.status.slice(1), color: getStatusColor(session.status) };
                   
                   return (
                     <TableRow key={session.id}>
@@ -203,14 +268,14 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
                         </TableCell>
                       )}
                       <TableCell>
-                        <Badge className={getStatusColor(session.status)}>
-                          {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                        <Badge className={statusInfo.color}>
+                          {statusInfo.label}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{durationMinutes} min</span>
+                          <span className="text-sm">{durationMinutes || 60} min</span>
                         </div>
                       </TableCell>
                     </TableRow>
