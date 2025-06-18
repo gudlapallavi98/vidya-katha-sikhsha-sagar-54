@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
@@ -31,7 +30,44 @@ export default function PaymentSuccess() {
 
       console.log('Cashfree verification result:', verificationResult);
 
-      // Now get the updated payment record from our database
+      // Check if this is a course enrollment payment
+      if (orderId.startsWith('COURSE_')) {
+        const orderParts = orderId.split('_');
+        const courseId = orderParts[1];
+        const studentId = orderParts[2];
+
+        if (verificationResult?.success && verificationResult?.payment_status === 'PAID') {
+          console.log('Course payment verified, creating enrollment...');
+          
+          // Create enrollment directly
+          const { error: enrollmentError } = await supabase
+            .from('enrollments')
+            .insert({
+              student_id: studentId,
+              course_id: courseId,
+              enrolled_at: new Date().toISOString(),
+              completed_lessons: 0,
+              last_accessed_at: new Date().toISOString()
+            });
+
+          if (enrollmentError) {
+            console.error('Error creating enrollment:', enrollmentError);
+          } else {
+            console.log('Enrollment created successfully');
+          }
+
+          setStatus("🎉 Payment successful! You have been enrolled in the course.");
+          setIsLoading(false);
+          
+          // Auto-redirect to student dashboard after 3 seconds
+          setTimeout(() => {
+            window.location.href = "/student-dashboard?tab=courses&status=enrollment_success";
+          }, 3000);
+          return;
+        }
+      }
+
+      // For other payment types, get the payment record from database
       const { data: paymentHistory, error: paymentError } = await supabase
         .from('payment_history')
         .select(`

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Clock, Users, Star } from "lucide-react";
@@ -110,14 +111,52 @@ export const FeaturedCourses: React.FC<FeaturedCoursesProps> = ({
         return;
       }
 
-      // Navigate to course detail page for enrollment
-      navigate(`/courses/${course.id}`);
+      // Create payment session directly using Cashfree
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('cashfree-payment', {
+        body: {
+          action: 'create_payment',
+          amount: course.student_price || course.price,
+          order_id: `COURSE_${course.id}_${user.id}_${Date.now()}`,
+          customer_details: {
+            customer_id: user.id,
+            customer_email: user.email,
+            customer_phone: '9999999999'
+          },
+          order_meta: {
+            course_id: course.id,
+            student_id: user.id,
+            teacher_id: course.teacher_id,
+            payment_type: 'course_enrollment',
+            course_title: course.title
+          }
+        }
+      });
+
+      if (paymentError) {
+        console.error('Payment creation error:', paymentError);
+        throw new Error('Failed to create payment session');
+      }
+
+      console.log("Payment session created:", paymentData);
+
+      if (paymentData?.payment_session_id) {
+        // Open payment in new tab
+        const paymentUrl = `https://payments.cashfree.com/order/#${paymentData.payment_session_id}`;
+        window.open(paymentUrl, '_blank');
+        
+        toast({
+          title: "Payment Gateway Opened",
+          description: "Complete your payment in the new tab to enroll in the course.",
+        });
+      } else {
+        throw new Error('Invalid payment session response');
+      }
     } catch (error) {
       console.error('Enrollment error:', error);
       toast({
         variant: "destructive",
-        title: "Navigation Failed",
-        description: "Failed to navigate to course page. Please try again.",
+        title: "Enrollment Failed",
+        description: error instanceof Error ? error.message : "Failed to start enrollment process. Please try again.",
       });
     }
   };

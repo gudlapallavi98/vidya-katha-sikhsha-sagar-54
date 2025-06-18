@@ -47,7 +47,7 @@ export const CourseDetailsEnrollment: React.FC<CourseDetailsEnrollmentProps> = (
       return;
     }
 
-    console.log("Starting enrollment process for course:", course.id);
+    console.log("Starting direct course enrollment for course:", course.id);
     setIsEnrolling(true);
     
     try {
@@ -68,57 +68,52 @@ export const CourseDetailsEnrollment: React.FC<CourseDetailsEnrollmentProps> = (
         return;
       }
 
-      // Create a session request for course enrollment
-      const { data: sessionRequest, error: requestError } = await supabase
-        .from('session_requests')
-        .insert({
-          student_id: user.id,
-          teacher_id: course.teacher_id,
-          course_id: course.id,
-          proposed_title: `Course Enrollment: ${course.title}`,
-          proposed_date: new Date().toISOString(),
-          proposed_duration: 60,
-          status: 'pending',
-          session_type: 'course',
-          payment_amount: course.price,
-          payment_status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (requestError) {
-        console.error('Error creating session request:', requestError);
-        throw new Error('Failed to create enrollment request');
-      }
-
-      console.log("Session request created:", sessionRequest);
-
-      // Navigate to student dashboard with payment flow
-      navigate("/student-dashboard", {
-        state: {
-          activeTab: "request-session",
-          selectedTeacherId: course.teacher_id,
-          selectedCourse: {
-            ...course,
-            id: sessionRequest.id,
-            session_type: 'course',
-            price: course.price,
-            title: course.title
+      // Create payment session directly using Cashfree
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke('cashfree-payment', {
+        body: {
+          action: 'create_payment',
+          amount: course.price,
+          order_id: `COURSE_${course.id}_${user.id}_${Date.now()}`,
+          customer_details: {
+            customer_id: user.id,
+            customer_email: user.email,
+            customer_phone: '9999999999'
           },
-          enrollmentMode: true,
-          sessionRequestId: sessionRequest.id
+          order_meta: {
+            course_id: course.id,
+            student_id: user.id,
+            teacher_id: course.teacher_id,
+            payment_type: 'course_enrollment',
+            course_title: course.title
+          }
         }
       });
+
+      if (paymentError) {
+        console.error('Payment creation error:', paymentError);
+        throw new Error('Failed to create payment session');
+      }
+
+      console.log("Payment session created:", paymentData);
+
+      if (paymentData?.payment_session_id) {
+        // Open payment in new tab
+        const paymentUrl = `https://payments.cashfree.com/order/#${paymentData.payment_session_id}`;
+        window.open(paymentUrl, '_blank');
+        
+        toast({
+          title: "Payment Gateway Opened",
+          description: "Complete your payment in the new tab to enroll in the course.",
+        });
+      } else {
+        throw new Error('Invalid payment session response');
+      }
       
-      toast({
-        title: "Redirecting to Payment",
-        description: "Please complete the payment to enroll in this course.",
-      });
     } catch (error) {
-      console.error("Error during enrollment:", error);
+      console.error("Error during course enrollment:", error);
       toast({
         variant: "destructive",
-        title: "Enrollment Failed",
+        title: "Enrollment Failed", 
         description: error instanceof Error ? error.message : "Failed to start enrollment process.",
       });
     } finally {
@@ -196,7 +191,7 @@ export const CourseDetailsEnrollment: React.FC<CourseDetailsEnrollmentProps> = (
                 className="w-full"
                 size="lg"
               >
-                {isEnrolling ? "Processing..." : "Enroll Now"}
+                {isEnrolling ? "Opening Payment..." : "Enroll Now"}
               </Button>
 
               {!course.is_published && (
