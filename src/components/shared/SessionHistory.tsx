@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar, Clock, User } from "lucide-react";
 import { format, subMonths } from "date-fns";
+import DisputeEmailForm from "./DisputeEmailForm";
 
 interface SessionHistoryProps {
   userType: 'teacher' | 'student';
@@ -246,6 +246,7 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
                   {userType === 'student' && <TableHead>Teacher</TableHead>}
                   <TableHead>Status</TableHead>
                   <TableHead>Duration</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -292,6 +293,14 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">{durationMinutes || 60} min</span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <DisputeEmailForm
+                          sessionId={session.id}
+                          sessionTitle={session.title}
+                          otherPartyName={`${session.profiles?.first_name} ${session.profiles?.last_name}`}
+                          userType={userType}
+                        />
                       </TableCell>
                     </TableRow>
                   );

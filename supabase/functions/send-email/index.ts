@@ -36,6 +36,15 @@ interface ScheduleNotificationRequest {
   additionalInfo?: string;
 }
 
+interface DisputeNotificationRequest {
+  sessionId: string;
+  sessionTitle: string;
+  disputeReason: string;
+  reporterEmail: string;
+  reporterType: 'teacher' | 'student';
+  otherPartyName: string;
+}
+
 const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -190,6 +199,87 @@ const handler = async (req: Request): Promise<Response> => {
       
       return new Response(
         JSON.stringify({ success: true, message: "Schedule notifications sent successfully" }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+    
+    else if (path === "dispute-notification") {
+      const {
+        sessionId,
+        sessionTitle,
+        disputeReason,
+        reporterEmail,
+        reporterType,
+        otherPartyName
+      }: DisputeNotificationRequest = await req.json();
+      
+      // Send dispute notification to support team
+      const supportHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #FF9933;">Session Dispute Report</h2>
+          <p>A dispute has been reported for a session on the etutorss platform.</p>
+          
+          <h3>Dispute Details:</h3>
+          <ul>
+            <li><strong>Session ID:</strong> ${sessionId}</li>
+            <li><strong>Session Title:</strong> ${sessionTitle}</li>
+            <li><strong>Reported by:</strong> ${reporterType} (${reporterEmail})</li>
+            <li><strong>Other party:</strong> ${otherPartyName}</li>
+          </ul>
+          
+          <h3>Issue Description:</h3>
+          <p style="background-color: #f3f4f6; padding: 15px; border-radius: 5px;">${disputeReason}</p>
+          
+          <p>Please investigate this matter and contact both parties if necessary.</p>
+          
+          <p>Best regards,<br>etutorss System</p>
+        </div>
+      `;
+      
+      // Send confirmation email to the reporter
+      const confirmationHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #FF9933;">Dispute Report Received</h2>
+          <p>Dear User,</p>
+          <p>We have received your dispute report regarding the session "<strong>${sessionTitle}</strong>".</p>
+          
+          <h3>Your Report:</h3>
+          <p style="background-color: #f3f4f6; padding: 15px; border-radius: 5px;">${disputeReason}</p>
+          
+          <p>Our support team will review your report and get back to you within 24-48 hours.</p>
+          <p>We take all disputes seriously and will work to resolve this matter fairly.</p>
+          
+          <p>If you have any additional information or questions, please don't hesitate to contact us.</p>
+          
+          <p>Thank you for your patience.</p>
+          <p>Best regards,<br>The etutorss Support Team</p>
+        </div>
+      `;
+      
+      // Send emails in parallel
+      const [supportEmailResponse, confirmationEmailResponse] = await Promise.all([
+        resend.emails.send({
+          from: "etutorss Disputes <info@etutorss.com>",
+          to: ["info@etutorss.com"],
+          subject: `Dispute Report: ${sessionTitle} (${sessionId})`,
+          html: supportHtml,
+        }),
+        resend.emails.send({
+          from: "etutorss Support <info@etutorss.com>",
+          to: [reporterEmail],
+          subject: "Dispute Report Received - etutorss",
+          html: confirmationHtml,
+        })
+      ]);
+      
+      console.log("Support email sent:", supportEmailResponse);
+      console.log("Confirmation email sent:", confirmationEmailResponse);
+      
+      return new Response(
+        JSON.stringify({ success: true, message: "Dispute notifications sent successfully" }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
