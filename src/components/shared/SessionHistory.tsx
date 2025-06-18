@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,30 +12,79 @@ interface SessionHistoryProps {
   userType: 'teacher' | 'student';
 }
 
+interface SessionData {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  course?: {
+    title: string;
+  } | null;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+  } | null;
+}
+
 const SessionHistory: React.FC<SessionHistoryProps> = ({ userType }) => {
   const { user } = useAuth();
 
   const { data: sessionHistory = [], isLoading } = useQuery({
     queryKey: ['session_history', user?.id, userType],
-    queryFn: async () => {
+    queryFn: async (): Promise<SessionData[]> => {
       if (!user) return [];
       
       // Get sessions from 3 months ago
       const threeMonthsAgo = subMonths(new Date(), 3);
       
-      const query = supabase
+      let query = supabase
         .from('sessions')
         .select(`
-          *,
+          id,
+          title,
+          start_time,
+          end_time,
+          status,
           course:courses(title),
-          session_attendees(student_id, attended),
           profiles!sessions_teacher_id_fkey(first_name, last_name)
         `)
-        .eq(userType === 'teacher' ? 'teacher_id' : 'student_id', user.id)
         .gte('end_time', threeMonthsAgo.toISOString())
         .lte('end_time', new Date().toISOString())
         .in('status', ['completed', 'cancelled'])
         .order('end_time', { ascending: false });
+
+      if (userType === 'teacher') {
+        query = query.eq('teacher_id', user.id);
+      } else {
+        // For students, we need to join with session_attendees
+        const { data: attendedSessions, error } = await supabase
+          .from('session_attendees')
+          .select(`
+            sessions!inner(
+              id,
+              title,
+              start_time,
+              end_time,
+              status,
+              course:courses(title),
+              profiles!sessions_teacher_id_fkey(first_name, last_name)
+            )
+          `)
+          .eq('student_id', user.id)
+          .eq('attended', true)
+          .gte('sessions.end_time', threeMonthsAgo.toISOString())
+          .lte('sessions.end_time', new Date().toISOString())
+          .in('sessions.status', ['completed', 'cancelled'])
+          .order('sessions.end_time', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching attended sessions:', error);
+          throw error;
+        }
+
+        return (attendedSessions || []).map(item => item.sessions as SessionData);
+      }
 
       const { data, error } = await query;
       

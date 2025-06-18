@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ const LoginWithPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { login } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,17 +25,8 @@ const LoginWithPassword = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await login(email, password);
+      await signIn(email, password);
       
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: error.message,
-        });
-        return;
-      }
-
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -51,7 +41,7 @@ const LoginWithPassword = () => {
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: "An unexpected error occurred",
+        description: error instanceof Error ? error.message : "Invalid email or password",
       });
     } finally {
       setIsLoading(false);
