@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Calendar, Video, History } from "lucide-react";
@@ -30,20 +29,21 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
   // Filter sessions to ensure they are truly upcoming and current date forward
   const filteredSessions = upcomingSessions.filter(session => {
     const now = new Date();
-    const sessionStart = new Date(session.start_time);
+    const sessionEnd = new Date(session.end_time);
     
-    // Only show sessions that start today or in the future
-    const isUpcoming = sessionStart >= now && 
+    // Only show sessions that haven't ended yet
+    const isUpcoming = sessionEnd >= now && 
                       (session.status === 'scheduled' || session.status === 'in_progress');
     
     console.log("Filtering session:", {
       sessionId: session.id,
       title: session.title,
       startTime: session.start_time,
+      endTime: session.end_time,
       status: session.status,
       isUpcoming,
       now: now.toISOString(),
-      sessionStart: sessionStart.toISOString()
+      sessionEnd: sessionEnd.toISOString()
     });
     
     return isUpcoming;
@@ -155,6 +155,7 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
                   sessionId: session.id,
                   title: session.title,
                   startTime: session.start_time,
+                  endTime: session.end_time,
                   status: status.label
                 });
                 
@@ -180,6 +181,7 @@ const SessionsTab: React.FC<SessionsTabProps> = ({
                     <TableCell className="text-right">
                       <SessionJoinButton
                         sessionStartTime={session.start_time}
+                        sessionEndTime={session.end_time}
                         meetingLink={session.meeting_link}
                         onJoin={() => handleJoinClass(session.id)}
                       />
