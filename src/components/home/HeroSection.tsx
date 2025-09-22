@@ -65,7 +65,7 @@ const HeroSection = () => {
                 size="lg" 
                 className="group bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-4 text-lg font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700 hover:scale-105"
               >
-                Start Learning Now
+                MSLV
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
               
@@ -77,15 +77,6 @@ const HeroSection = () => {
               >
                 <BookOpen className="mr-2 h-5 w-5" />
                 Explore Courses
-              </Button>
-
-              <Button 
-                onClick={() => window.open('https://campus-link-core.lovable.app', '_blank')}
-                variant="outline" 
-                size="lg" 
-                className="group border-2 border-blue-600 px-8 py-4 text-lg font-semibold text-blue-600 transition-all hover:bg-blue-50 hover:scale-105"
-              >
-                MSLV
               </Button>
             </div>
 
