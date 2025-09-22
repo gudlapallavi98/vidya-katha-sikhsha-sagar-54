@@ -78,6 +78,15 @@ const HeroSection = () => {
                 <BookOpen className="mr-2 h-5 w-5" />
                 Explore Courses
               </Button>
+
+              <Button 
+                onClick={() => window.open('https://campus-link-core.lovable.app', '_blank')}
+                variant="outline" 
+                size="lg" 
+                className="group border-2 border-blue-600 px-8 py-4 text-lg font-semibold text-blue-600 transition-all hover:bg-blue-50 hover:scale-105"
+              >
+                MSLV
+              </Button>
             </div>
 
             {/* Stats */}
